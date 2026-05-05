@@ -1,0 +1,17 @@
+{
+  "title": "系统管理与监控",
+  "pages": [
+    "index",
+    "environment-config",
+    "environment-effect",
+    "uname-system-information",
+    "shutdown",
+    "dmesg",
+    "cal",
+    "ulimit",
+    "firewalld",
+    "iptables",
+    "ufw",
+    "monitor"
+  ]
+}

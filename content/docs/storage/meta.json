@@ -1,0 +1,9 @@
+{
+  "title": "存储",
+  "root": true,
+  "pages": [
+    "index",
+    "database",
+    "minio"
+  ]
+}

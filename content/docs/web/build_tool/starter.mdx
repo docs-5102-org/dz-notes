@@ -1,0 +1,127 @@
+---
+title: JavaScript 构建工具入门
+description: 从 Vite、Webpack 到构建链路选择的实用指南
+category:
+  - 工具链
+tags:
+  - Vite
+  - Webpack
+---
+
+# JavaScript 构建工具入门
+
+构建工具负责把源码、样式、图片和环境配置整理成可运行、可部署的前端产物。现代 Web 项目里，最常见的两条路线是：
+
+- 用 `Vite` 获得更快的本地开发体验
+- 用 `Webpack` 处理更复杂、历史包袱更多的工程
+
+## 构建工具解决什么问题
+
+- 模块解析：把多个入口和依赖组织成可运行的构建产物
+- 代码转换：处理 `ts`、JSX、现代语法和浏览器兼容
+- 资源处理：处理 CSS、图片、字体、SVG 等静态资源
+- 开发体验：提供本地 dev server、热更新、代理能力
+- 生产优化：压缩、拆包、缓存、按需加载和产物分析
+
+## Vite 适合什么场景
+
+Vite 的核心优势是开发阶段直接利用浏览器原生 ESM，冷启动和热更新都更快，特别适合中小型到中大型的现代前端项目。
+
+### 常见使用场景
+
+- 新建 Vue / React / Svelte 项目
+- 中后台系统、官网、活动页
+- 需要快速启动、快速热更新的日常业务开发
+
+### 快速开始
+
+```bash
+npm create vite@latest my-app
+cd my-app
+npm install
+npm run dev
+```
+
+### 常见配置示例
+
+```ts
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 3000,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+    },
+  },
+  resolve: {
+    alias: {
+      '@': '/src',
+    },
+  },
+});
+```
+
+## Webpack 适合什么场景
+
+Webpack 更适合构建链路复杂、插件体系较重、需要深度定制打包行为的项目。它的配置成本更高，但可控性也更强。
+
+### 常见使用场景
+
+- 老项目维护与增量改造
+- 微前端、多入口、复杂资源编排
+- 对 loader / plugin 链路有深度定制需求的工程
+
+### 基础配置示例
+
+```js
+const path = require('path');
+
+module.exports = {
+  mode: 'development',
+  entry: './src/index.js',
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+    filename: 'js/[name].[contenthash].js',
+    clean: true,
+  },
+  devServer: {
+    port: 3000,
+    hot: true,
+  },
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: ['style-loader', 'css-loader'],
+      },
+    ],
+  },
+};
+```
+
+## Vite 和 Webpack 怎么选
+
+| 维度 | Vite | Webpack |
+| --- | --- | --- |
+| 启动速度 | 很快 | 相对较慢 |
+| 热更新体验 | 很好 | 稳定，但依赖配置 |
+| 配置复杂度 | 较低 | 较高 |
+| 生态成熟度 | 现代化、增长快 | 非常成熟 |
+| 适合项目 | 新项目、现代栈 | 历史项目、复杂工程 |
+
+## 选型建议
+
+- 新项目优先考虑 `Vite`
+- 既有大项目、复杂构建链路优先沿用或维护 `Webpack`
+- 如果团队需要统一体验，可以先在新项目落地 Vite，再逐步迁移旧工程
+
+## 延伸阅读
+
+- [Gulp 使用指南](/docs/web/build_tool/gulp)
+- [包管理与运行时概览](/docs/web/package_manage)

@@ -1,0 +1,83 @@
+---
+title: Node.js 依赖包管理器概览
+description: 对比 npm、Yarn、pnpm、cnpm 与 Corepack 的定位
+category:
+  - 包管理
+tags:
+  - npm
+  - Yarn
+  - pnpm
+  - cnpm
+  - Corepack
+---
+
+# Node.js 依赖包管理器概览
+
+Node.js 生态里常见的包管理器不止一种。选择工具时，核心是看团队协作方式、仓库规模、依赖一致性和开发体验。
+
+## 主流工具
+
+### npm
+
+- Node.js 官方默认包管理器
+- 通用性最好
+- 大多数教程和生态都默认兼容 npm
+
+### Yarn
+
+- 较早解决了 npm 的部分性能和锁文件问题
+- 在一些历史项目和特定团队里仍然常见
+
+### pnpm
+
+- 依赖复用率高，磁盘占用低
+- monorepo 体验好
+- 现在越来越多新项目优先选择它
+
+### cnpm
+
+- 本质上是镜像和兼容 npm 命令的客户端方案
+- 现在更常见的做法是直接给 npm / pnpm 配镜像，而不是长期依赖 cnpm
+
+### Corepack
+
+- Node.js 自带的包管理器调度工具
+- 可以统一激活 `pnpm`、`yarn` 等工具的特定版本
+
+## 简单对比
+
+| 工具 | 适合场景 | 特点 |
+| --- | --- | --- |
+| npm | 通用项目 | 官方默认，兼容性强 |
+| Yarn | 历史项目 | 生态成熟，部分团队仍在使用 |
+| pnpm | 新项目、monorepo | 更省空间，更严格 |
+| cnpm | 特定网络环境 | 更偏镜像方案 |
+| Corepack | 团队统一版本 | 管理包管理器版本 |
+
+## 当前更实用的建议
+
+- 单仓新项目：优先 `pnpm`
+- 老项目：跟随现有工具链，不要无收益迁移
+- 团队协作：补齐锁文件，并固定 `packageManager`
+- 网络环境特殊：优先配置 registry，而不是混用多个客户端
+
+## 镜像配置示例
+
+```bash
+npm config set registry https://registry.npmmirror.com/
+pnpm config set registry https://registry.npmmirror.com/
+yarn config set registry https://registry.npmmirror.com/
+```
+
+## 锁文件建议
+
+- npm：`package-lock.json`
+- Yarn：`yarn.lock`
+- pnpm：`pnpm-lock.yaml`
+
+锁文件必须提交到仓库，否则团队安装结果很容易不一致。
+
+## 延伸阅读
+
+- [pnpm 入门](/docs/web/package_manage/pnpm)
+- [package.json 配置指南](/docs/web/package_manage/packagejson)

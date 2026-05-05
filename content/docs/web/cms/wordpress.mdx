@@ -1,0 +1,151 @@
+---
+title: WordPress 入门与开发概览
+description: 从站点搭建到主题、插件与部署维护的 WordPress 基础说明
+category:
+  - CMS
+tags:
+  - WordPress
+---
+
+# WordPress 入门与开发概览
+
+WordPress 是最常见的 CMS 之一，适合博客、企业官网、内容站和部分轻量电商场景。对前端开发来说，WordPress 的重点通常不只是“会用”，而是理解它的主题体系、插件扩展方式和部署结构。
+
+## WordPress 能做什么
+
+- 博客和资讯站
+- 企业官网和品牌站
+- 文档、社区、内容聚合站
+- 配合插件实现表单、会员、SEO、电商等能力
+
+## 基本结构
+
+WordPress 项目通常包含这些核心部分：
+
+- `wp-admin`：管理后台
+- `wp-content`：主题、插件和上传资源
+- `wp-includes`：核心运行库
+- `wp-config.php`：项目配置文件
+
+前端开发最常接触的是：
+
+- 主题开发
+- 插件集成
+- 模板文件组织
+- 静态资源加载
+
+## 主题开发基础
+
+一个最小主题通常至少包含：
+
+- `style.css`
+- `index.php`
+- `functions.php`
+
+常见主题结构示例：
+
+```text
+my-theme/
+  style.css
+  index.php
+  functions.php
+  header.php
+  footer.php
+  single.php
+  page.php
+  archive.php
+  template-parts/
+```
+
+## 常见模板能力
+
+输出导航菜单：
+
+```php
+<?php
+wp_nav_menu([
+  'theme_location' => 'primary',
+  'menu_class' => 'nav-menu',
+]);
+```
+
+文章循环：
+
+```php
+<?php if (have_posts()) : ?>
+  <?php while (have_posts()) : the_post(); ?>
+    <h2><?php the_title(); ?></h2>
+    <?php the_content(); ?>
+  <?php endwhile; ?>
+<?php endif; ?>
+```
+
+加载静态资源：
+
+```php
+<?php
+function my_theme_assets() {
+  wp_enqueue_style('theme-style', get_stylesheet_uri());
+}
+add_action('wp_enqueue_scripts', 'my_theme_assets');
+```
+
+## 插件与扩展
+
+WordPress 的大量能力都通过插件补充，例如：
+
+- SEO
+- 表单
+- 缓存
+- 多语言
+- 电商
+
+如果你是前端开发，常见协作方式是：
+
+- 接入已有插件的前端模板
+- 对后台输出的数据做主题层展示
+- 为特定业务写轻量插件或自定义字段扩展
+
+## 数据与内容模型
+
+WordPress 不只是“文章系统”，它还支持：
+
+- 页面
+- 分类和标签
+- 自定义文章类型
+- 自定义字段
+
+这意味着它可以承载更灵活的内容模型，只是复杂项目通常需要更严格的结构设计。
+
+## 部署与运行
+
+典型运行环境：
+
+- Nginx / Apache
+- PHP
+- MySQL 或 MariaDB
+
+部署时常见关注点：
+
+- 上传目录权限
+- 缓存策略
+- 数据库备份
+- 插件与主题版本管理
+
+## 适合前端开发者的学习顺序
+
+1. 先理解 WordPress 的目录结构和后台使用方式
+2. 学会主题模板层和资源加载
+3. 再接触自定义字段、查询和插件扩展
+4. 最后再看部署、性能和安全
+
+## 实际建议
+
+- 如果项目只是内容站，优先复用成熟主题或主题框架
+- 如果要深度定制，先划清“主题职责”和“插件职责”
+- 不要直接改第三方主题源码，优先使用子主题或自建主题
+
+## 延伸阅读
+
+- [常用工具](/docs/web/common_tool)
+- [JavaScript 构建工具入门](/docs/web/build_tool/starter)

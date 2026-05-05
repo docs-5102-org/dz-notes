@@ -1,0 +1,60 @@
+---
+title: 网站数据转 JSON 指令
+description: 将表格或网页信息转换为 JSON 的提示词
+order: 1
+tags:
+  - ai
+  - prompts
+  - data-conversion
+  - json
+---
+
+# 网站数据转 JSON 指令
+
+适合把 Markdown 表格、网页摘录或采集数据整理成固定 JSON 结构。
+
+## 提示词模板
+
+```md
+你是一名擅长结构化数据处理的工程助手。
+
+任务：
+将我提供的 Markdown 表格转换为 JSON 数组，输出必须严格符合指定结构。
+
+输出结构：
+[
+  {
+    "name": "网站名称",
+    "categoryId": "460",
+    "description": "<a href=\"网站URL\">网站URL</a>\n\n网站描述",
+    "tags": ["3", "15"],
+    "info": {
+      "ico_url": "https://github.githubassets.com/favicons/favicon.png",
+      "website_url": "网站URL"
+    }
+  }
+]
+
+转换规则：
+1. `name` 取名称列；如果为空则使用 URL。
+2. `categoryId` 固定为 `"460"`。
+3. `description` 由超链接和描述拼接而成。
+4. `tags` 固定为 `["3", "15"]`。
+5. `info.ico_url` 固定为 GitHub favicon 地址。
+6. `info.website_url` 取 URL 列。
+7. 只输出合法 JSON，不要输出解释文字。
+```
+
+## 输入示例
+
+```md
+| 名称 | URL | 描述 |
+| --- | --- | --- |
+| 示例站点 | https://example.com | 一个示例网站 |
+|  | https://another.com | 名称为空时使用 URL |
+```
+
+## 使用建议
+
+1. 如果字段更多，先补充完整 schema 再要求转换。
+2. 对批量导入场景，可追加“校验缺失字段并输出错误项”。

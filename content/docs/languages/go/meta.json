@@ -1,0 +1,16 @@
+{
+  "title": "Go",
+  "root": true,
+  "pages": [
+    "index",
+    "setup",
+    "command",
+    "cmd",
+    "project-rule",
+    "naming-rule",
+    "range",
+    "change-web-framework",
+    "resource",
+    "gin"
+  ]
+}

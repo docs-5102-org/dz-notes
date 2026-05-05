@@ -1,0 +1,84 @@
+---
+title: CommonJS vs ESM
+description: 理解 Node.js 两种主流模块体系的区别与选型
+category:
+  - 包管理
+tags:
+  - Node.js
+  - CommonJS
+  - ESM
+---
+
+# CommonJS vs ESM
+
+在 Node.js 和前端工程里，最常见的两种模块规范是 `CommonJS` 和 `ESM`。它们的语法、加载方式和工具链兼容性都不一样。
+
+## 核心语法区别
+
+### CommonJS
+
+```js
+const path = require('path');
+
+module.exports = {
+  join: path.join,
+};
+```
+
+### ESM
+
+```js
+import path from 'node:path';
+
+export const join = path.join;
+```
+
+## 主要差异
+
+| 维度 | CommonJS | ESM |
+| --- | --- | --- |
+| 导入导出 | `require` / `module.exports` | `import` / `export` |
+| 加载方式 | 以同步语义为主 | 天然支持静态分析 |
+| Node.js 默认体验 | 历史兼容性更强 | 现代项目更常见 |
+| 顶层 `await` | 不支持 | 支持 |
+| 工具链优化 | 一般 | 更利于 tree shaking |
+
+## 在 Node.js 里怎么启用 ESM
+
+最常见的方式是在 `package.json` 中声明：
+
+```json
+{
+  "type": "module"
+}
+```
+
+之后，`.js` 文件会按 ESM 解释。
+
+如果你要混用两种模块体系，通常这样约定：
+
+- `.cjs` 表示 CommonJS
+- `.mjs` 表示 ESM
+
+## 什么时候选 CommonJS
+
+- 维护老项目
+- 依赖链仍然以 CJS 为主
+- 脚本工具只追求兼容，不追求现代模块特性
+
+## 什么时候选 ESM
+
+- 新建 Node.js / 前端工程
+- 需要和现代工具链保持一致
+- 需要更好的静态分析能力和 `top-level await`
+
+## 实际建议
+
+- 新项目优先使用 `ESM`
+- 老项目没有明确收益时，不必强行迁移
+- 如果你在写库，要明确产物格式，必要时同时提供 CJS 和 ESM
+
+## 延伸阅读
+
+- [package.json 配置指南](/docs/web/package_manage/packagejson)
+- [tsx 与 ts-node 对比](/docs/web/package_manage/tsx)

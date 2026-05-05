@@ -1,0 +1,9 @@
+{
+  "title": "RabbitMQ",
+  "pages": [
+    "index",
+    "starter",
+    "tutorial",
+    "springboot-rabbitmq-example"
+  ]
+}

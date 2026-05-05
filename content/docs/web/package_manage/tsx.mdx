@@ -1,0 +1,108 @@
+---
+title: tsx 与 ts-node 对比
+description: 运行 TypeScript 脚本时，什么时候选 tsx，什么时候选 ts-node
+category:
+  - 包管理
+tags:
+  - tsx
+  - ts-node
+  - TypeScript
+---
+
+# tsx 与 ts-node 对比
+
+在 Node.js 项目里直接运行 TypeScript 文件时，常见选择是 `ts-node` 和 `tsx`。两者都能解决“无需先手动编译再运行”的问题，但设计目标不完全一样。
+
+## 简单结论
+
+- 更看重快速启动和低配置：优先 `tsx`
+- 更依赖 TypeScript 生态兼容和传统用法：可以选 `ts-node`
+
+## ts-node 的特点
+
+- 历史更久，很多老项目都在用
+- 和 TypeScript 编译配置结合更紧
+- 在某些 ESM 场景下配置相对繁琐
+
+安装：
+
+```bash
+npm install --save-dev typescript ts-node
+```
+
+运行：
+
+```bash
+npx ts-node src/index.ts
+```
+
+## tsx 的特点
+
+- 启动快，开发体验更轻
+- 对 ESM 支持更自然
+- 很适合脚本、工具和现代 Node.js 项目
+
+安装：
+
+```bash
+npm install --save-dev tsx
+```
+
+运行：
+
+```bash
+npx tsx src/index.ts
+```
+
+## 核心对比
+
+| 维度 | ts-node | tsx |
+| --- | --- | --- |
+| 启动速度 | 较慢 | 较快 |
+| ESM 体验 | 可能需要额外配置 | 更自然 |
+| 历史兼容性 | 更强 | 更现代 |
+| 适合场景 | 老项目、传统脚本 | 新项目、开发脚本、工具 |
+
+## ESM 下常见问题
+
+如果项目里开启了：
+
+```json
+{
+  "type": "module"
+}
+```
+
+这时 `ts-node` 可能需要额外参数：
+
+```bash
+npx ts-node --esm src/index.ts
+```
+
+而 `tsx` 往往直接运行就够了：
+
+```bash
+npx tsx src/index.ts
+```
+
+## 实际建议
+
+- 新项目直接优先 `tsx`
+- 老项目如果已经围绕 `ts-node` 配好了，不需要为了迁移而迁移
+- 类型检查不要依赖运行器，建议单独保留 `tsc --noEmit`
+
+## 推荐脚本写法
+
+```json
+{
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit"
+  }
+}
+```
+
+## 延伸阅读
+
+- [CommonJS vs ESM](/docs/web/package_manage/commonjs-vs-esm)
+- [package.json 配置指南](/docs/web/package_manage/packagejson)

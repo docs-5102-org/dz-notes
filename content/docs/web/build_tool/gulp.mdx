@@ -1,0 +1,88 @@
+---
+title: Gulp 使用指南
+description: 了解 Gulp 的定位、常见任务与适用场景
+category:
+  - 工具链
+tags:
+  - Gulp
+---
+
+# Gulp 使用指南
+
+Gulp 是基于 Node.js 的任务流工具，适合把一系列重复性的前端处理步骤串成自动化流程，例如编译 Sass、压缩资源、复制静态文件和监听目录变化。
+
+## Gulp 适合做什么
+
+- 编译 Sass / Less
+- 压缩 CSS、JavaScript、图片
+- 复制和整理构建产物
+- 监听文件变化后自动重新执行任务
+- 作为旧项目或简单站点的轻量自动化工具
+
+## 安装方式
+
+```bash
+npm install --global gulp-cli
+npm install --save-dev gulp
+```
+
+## 最小示例
+
+在项目根目录创建 `gulpfile.js`：
+
+```js
+const { src, dest, series } = require('gulp');
+const sass = require('gulp-sass')(require('sass'));
+const cleanCSS = require('gulp-clean-css');
+
+function buildStyles() {
+  return src('src/scss/**/*.scss')
+    .pipe(sass().on('error', sass.logError))
+    .pipe(cleanCSS())
+    .pipe(dest('dist/css'));
+}
+
+exports.default = series(buildStyles);
+```
+
+然后执行：
+
+```bash
+gulp
+```
+
+## 常见任务组合
+
+```js
+const { src, dest, series, parallel, watch } = require('gulp');
+
+function styles() {
+  return src('src/styles/**/*.scss').pipe(dest('dist/styles'));
+}
+
+function scripts() {
+  return src('src/scripts/**/*.js').pipe(dest('dist/scripts'));
+}
+
+function watcher() {
+  watch('src/styles/**/*.scss', styles);
+  watch('src/scripts/**/*.js', scripts);
+}
+
+exports.build = parallel(styles, scripts);
+exports.dev = series(exports.build, watcher);
+```
+
+## 什么时候用 Gulp
+
+- 项目不需要完整打包工具，只想做资源处理和自动化
+- 老项目已经依赖 Gulp，不想整体迁移
+- 需要自定义任务流，但不需要 Vite / Webpack 那种完整工程能力
+
+## 什么时候不建议优先选 Gulp
+
+- 新建 SPA / SSR / 组件化工程
+- 需要模块打包、HMR、按需拆包
+- 团队已经统一使用 Vite 或 Webpack
+
+这类场景通常直接选 [JavaScript 构建工具入门](/docs/web/build_tool/starter) 里提到的现代工具会更合适。

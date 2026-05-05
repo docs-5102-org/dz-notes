@@ -1,0 +1,138 @@
+---
+title: dumi教程
+category:
+  - react
+  - dumi
+date: 2025-09-20
+---
+
+# dumi 教程
+
+## 什么是 dumi
+
+dumi 是面向组件开发场景的文档工具，常用于 React 组件库文档站、示例站和主题开发。它与 father、Umi 生态结合较紧，适合构建一体化的组件开发与展示环境。
+
+## 快速开始
+
+### 安装过程
+
+1. 创建目录
+
+```bash
+mkdir dumi-test
+cd dumi-test
+```
+
+2. 使用脚手架初始化
+
+```bash
+npx create-dumi
+```
+
+3. 选择模板类型
+
+- `Static Site`
+- `React Library`
+- `Theme Package`
+
+4. 安装依赖并启动
+
+```bash
+npm install
+npm start
+```
+
+或：
+
+```bash
+yarn install
+yarn start
+```
+
+## 核心特性
+
+### 元数据解析
+
+dumi 可以基于组件源码、JSDoc 和 TypeScript 类型自动生成 API 文档。
+
+### 主题系统
+
+- [默认主题源码](https://github.com/umijs/dumi/tree/master/src/client/theme-default)
+- 支持自定义主题
+- 支持主题市场扩展
+
+## 环境变量与配置
+
+### 环境变量
+
+macOS / Linux：
+
+```bash
+PORT=3000 dumi dev
+```
+
+Windows：
+
+```bash
+set PORT=3000&&dumi dev
+```
+
+### 跨平台环境变量方案
+
+推荐使用 `cross-env`：
+
+```bash
+yarn add cross-env -D
+cross-env PORT=3000 dumi dev
+```
+
+### package.json 示例
+
+Windows 原生方案：
+
+```json
+{
+  "scripts": {
+    "dev": "set APP_ROOT=example dumi dev",
+    "build": "father build",
+    "prepare": "husky install && father link-dev-theme && set APP_ROOT=example dumi setup"
+  }
+}
+```
+
+跨平台方案：
+
+```json
+{
+  "scripts": {
+    "build": "father build",
+    "build:docs": "cross-env APP_ROOT=example dumi build",
+    "docs": "cross-env APP_ROOT=example dumi dev",
+    "prepare": "husky install && father link-dev-theme && cross-env APP_ROOT=example dumi setup"
+  }
+}
+```
+
+## 主题开发
+
+`dumi setup` 会生成 `.dumi` 和主题开发所需的基础结构，便于二次定制。
+
+## 插件开发
+
+- [dumi 插件开发文档](https://d.umijs.org/plugin/new)
+- [father 插件开发指南](https://github.com/umijs/father/blob/master/docs/guide/dev)
+
+## 相关资源
+
+- [官网](https://d.umijs.org/)
+- [完整教程](https://d.umijs.org/guide)
+- [自定义主题文档](https://d.umijs.org/theme)
+- [主题市场](https://d.umijs.org/theme/market)
+- [升级指南](https://umijs.org/docs/introduce/upgrade-to-umi-4)
+
+## 最佳实践
+
+1. 保持组件、文档、示例分层清晰。
+2. 使用 `cross-env` 统一环境变量写法。
+3. 主题定制尽量和业务组件隔离。
+4. 文档示例要与源码同步维护。

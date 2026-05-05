@@ -1,0 +1,10 @@
+{
+  "title": "Web 开发",
+  "pages": [
+    "index",
+    "html-css-development",
+    "react-ant-design",
+    "react-tailwind-development",
+    "nextjs+shadcn"
+  ]
+}

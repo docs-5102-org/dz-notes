@@ -1,0 +1,30 @@
+{
+  "title": "软件安装与包管理",
+  "pages": [
+    "index",
+    "yum",
+    "rpm",
+    "doc2unix",
+    "install-git",
+    "install-jdk",
+    "uninstall-jdk",
+    "install-maven",
+    "install-nginx",
+    "nginx",
+    "nginx-conf",
+    "nginx-ssl",
+    "nginx-install-server",
+    "nginx-add-video-module",
+    "install-mysql",
+    "mysql-service-command",
+    "mysql-config",
+    "mysql-memory-optimization",
+    "mysql-backup-import",
+    "rpm-uninstall-mysql",
+    "install-redis",
+    "postgreSQL",
+    "tomcat",
+    "tomcat-config",
+    "install-1panel"
+  ]
+}

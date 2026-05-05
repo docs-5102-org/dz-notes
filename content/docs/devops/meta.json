@@ -1,0 +1,12 @@
+{
+  "title": "DevOps",
+  "root": true,
+  "pages": [
+    "index",
+    "linux",
+    "docker",
+    "kubernetes",
+    "ci-cd",
+    "resources"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "title": "以太坊开发",
+  "pages": [
+    "index",
+    "solidity",
+    "dapp",
+    "vscode_config_solidity",
+    "solidity_note"
+  ]
+}

@@ -1,0 +1,186 @@
+---
+title: v2、v3 环境变量配置
+category:
+  - 跨平台框架
+tags:
+  - uni-app
+order: 7
+---
+
+# uni-app 基于 HBuilderX 的多环境变量配置
+
+这篇文档整理 uni-app 在 HBuilderX 场景下的多环境变量配置方式，兼容 Vue 2 与 Vue 3。
+
+## 推荐目录结构
+
+```text
+project-root/
+├── env.js
+├── env.dev.js
+├── env.test.js
+├── env.prod.js
+├── common/
+│   └── constants.js
+├── main.js
+└── package.json
+```
+
+## 环境配置文件
+
+### `env.dev.js`
+
+```js
+const config = {
+  baseUrl: 'https://dev-api.example.com',
+  apiTimeout: 10000,
+  debug: true,
+  version: '1.0.0-dev',
+};
+
+export default config;
+```
+
+### `env.test.js`
+
+```js
+const config = {
+  baseUrl: 'https://test-api.example.com',
+  apiTimeout: 8000,
+  debug: false,
+  version: '1.0.0-test',
+};
+
+export default config;
+```
+
+### `env.prod.js`
+
+```js
+const config = {
+  baseUrl: 'https://api.example.com',
+  apiTimeout: 5000,
+  debug: false,
+  version: '1.0.0',
+};
+
+export default config;
+```
+
+## 环境切换入口 `env.js`
+
+```js
+import dev from './env.dev.js';
+import test from './env.test.js';
+import prod from './env.prod.js';
+
+const EnvChannel = {
+  DEVELOPMENT: 'development',
+  TEST: 'test',
+  PRODUCTION: 'production',
+};
+
+const APP_ENV = process.env.NODE_ENV || EnvChannel.DEVELOPMENT;
+
+let ENV_CONFIG = {};
+
+switch (APP_ENV) {
+  case EnvChannel.DEVELOPMENT:
+    ENV_CONFIG = { ...dev };
+    break;
+  case EnvChannel.TEST:
+    ENV_CONFIG = { ...test };
+    break;
+  case EnvChannel.PRODUCTION:
+    ENV_CONFIG = { ...prod };
+    break;
+  default:
+    ENV_CONFIG = { ...dev };
+}
+
+process.uniEnv = process.uniEnv || {};
+Object.assign(process.uniEnv, ENV_CONFIG);
+process.uniEnv.NODE_ENV = APP_ENV;
+
+export default ENV_CONFIG;
+```
+
+## Vue 2 接入
+
+```js
+import Vue from 'vue';
+import App from './App';
+import './env.js';
+
+Vue.prototype.$utils = {
+  getEnv(key) {
+    return process.uniEnv?.[key] || '';
+  },
+};
+
+App.mpType = 'app';
+
+const app = new Vue({
+  ...App,
+});
+
+app.$mount();
+```
+
+## Vue 3 接入
+
+```js
+import { createSSRApp } from 'vue';
+import App from './App.vue';
+import './env.js';
+
+export function createApp() {
+  const app = createSSRApp(App);
+
+  app.config.globalProperties.$utils = {
+    getEnv(key) {
+      return process.uniEnv?.[key] || '';
+    },
+  };
+
+  return { app };
+}
+```
+
+## package.json 示例
+
+```json
+{
+  "uni-app": {
+    "scripts": {
+      "h5:dev": {
+        "title": "H5 开发环境",
+        "env": {
+          "UNI_PLATFORM": "h5",
+          "NODE_ENV": "development"
+        }
+      },
+      "h5:test": {
+        "title": "H5 测试环境",
+        "env": {
+          "UNI_PLATFORM": "h5",
+          "NODE_ENV": "test"
+        }
+      },
+      "h5:prod": {
+        "title": "H5 生产环境",
+        "env": {
+          "UNI_PLATFORM": "h5",
+          "NODE_ENV": "production"
+        }
+      }
+    }
+  }
+}
+```
+
+## 使用建议
+
+1. 把接口地址、调试开关、版本号这类变量统一放进环境配置。
+2. 通过 `process.uniEnv` 对外暴露，避免在业务代码里直接散落判断。
+3. 开发、测试、生产环境的配置文件保持字段结构一致。
+4. 如果项目同时覆盖 H5、小程序、App，建议把平台变量和环境变量分开管理。

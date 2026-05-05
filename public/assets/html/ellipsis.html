@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSS 文本省略号效果演示</title>
+    <link rel="stylesheet" href="../styles/scrollbar.css" />
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg-page: #f2f1ed;
+            --bg-card: #ffffff;
+            --bg-demo: #f7f7f5;
+            --bg-code: #1e1e1c;
+            --text: #1a1a18;
+            --text2: #5a5a56;
+            --text3: #9a9a94;
+            --border: rgba(0, 0, 0, 0.08);
+            --border2: rgba(0, 0, 0, 0.14);
+            --accent: #4f46e5;
+            --accent-dim: rgba(79, 70, 229, 0.08);
+            --code-text: #e4e4df;
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-page: #141412;
+                --bg-card: #1e1e1c;
+                --bg-demo: #252523;
+                --bg-code: #111110;
+                --text: #f0efe8;
+                --text2: #9a9a94;
+                --text3: #5a5a56;
+                --border: rgba(255, 255, 255, 0.06);
+                --border2: rgba(255, 255, 255, 0.12);
+                --accent-dim: rgba(99, 88, 255, 0.12);
+            }
+        }
+
+        body {
+            font-family: -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background: var(--bg-page);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        .page {
+            max-width: 760px;
+            margin: 0 auto;
+        }
+
+        /* ── Page header ── */
+        .page-header {
+            margin-bottom: 40px;
+        }
+
+        .page-eyebrow {
+            font-size: 11px;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--text3);
+            margin-bottom: 10px;
+        }
+
+        .page-title {
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -1px;
+            color: var(--text);
+            line-height: 1.15;
+        }
+
+        .page-title span {
+            color: var(--accent);
+        }
+
+        .page-desc {
+            margin-top: 10px;
+            font-size: 14px;
+            color: var(--text2);
+            max-width: 500px;
+        }
+
+        /* ── Cards ── */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 28px;
+            margin-bottom: 20px;
+            transition: box-shadow 0.2s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.07);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 17px;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            color: var(--text);
+        }
+
+        .card-desc {
+            font-size: 13px;
+            color: var(--text2);
+            margin-top: 3px;
+        }
+
+        .badge {
+            flex-shrink: 0;
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            padding: 4px 10px;
+            border-radius: 100px;
+            border: 1px solid var(--border2);
+            color: var(--text3);
+            white-space: nowrap;
+        }
+
+        /* ── Demo box ── */
+        .demo-box {
+            background: var(--bg-demo);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .demo-box-label {
+            font-size: 10px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text3);
+            margin-bottom: 10px;
+        }
+
+        /* ── Single line ellipsis ── */
+        .demo-single {
+            background: var(--bg-card);
+            border: 1px solid var(--border2);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            font-size: 14px;
+            color: var(--text);
+
+            /* THE TECHNIQUE */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+            max-width: 320px;
+        }
+
+        /* ── Multi line ellipsis ── */
+        .demo-multi {
+            background: var(--bg-card);
+            border: 1px solid var(--border2);
+            border-radius: var(--radius-sm);
+            padding: 12px 14px;
+            font-size: 14px;
+            color: var(--text);
+            line-height: 1.65;
+
+            /* THE TECHNIQUE */
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 3;
+            overflow: hidden;
+        }
+
+        /* ── Responsive example ── */
+        .demo-responsive-wrapper {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 10px;
+        }
+
+        .demo-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border2);
+            border-radius: var(--radius-sm);
+            padding: 12px;
+        }
+
+        .demo-card-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 6px;
+        }
+
+        .demo-card-body {
+            font-size: 12px;
+            color: var(--text2);
+            line-height: 1.55;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            overflow: hidden;
+        }
+
+        /* ── Code block ── */
+        .code-wrap {
+            position: relative;
+        }
+
+        .code-lang {
+            position: absolute;
+            top: 12px;
+            right: 14px;
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #5a5a56;
+            user-select: none;
+        }
+
+        .code-block {
+            background: var(--bg-code);
+            color: var(--code-text);
+            border-radius: var(--radius-md);
+            font-family: 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', monospace;
+            font-size: 13px;
+            padding: 18px 20px;
+            line-height: 1.7;
+            overflow-x: auto;
+            white-space: pre;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-color: #3a3a36 transparent;
+        }
+
+        .code-block::-webkit-scrollbar {
+            height: 5px;
+        }
+
+        .code-block::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .code-block::-webkit-scrollbar-thumb {
+            background: #3a3a36;
+            border-radius: 3px;
+        }
+
+        /* syntax tints */
+        .tok-prop {
+            color: #7dd3fc;
+        }
+
+        .tok-val {
+            color: #86efac;
+        }
+
+        .tok-cmt {
+            color: #52525b;
+            font-style: italic;
+        }
+
+        .tok-num {
+            color: #fca5a5;
+        }
+
+        /* ── Divider ── */
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 24px 0;
+        }
+
+        /* ── Tip box ── */
+        .tip {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            background: var(--accent-dim);
+            border: 1px solid rgba(79, 70, 229, 0.18);
+            border-radius: var(--radius-md);
+            padding: 14px 16px;
+            margin-top: 16px;
+        }
+
+        .tip-icon {
+            font-size: 15px;
+            line-height: 1;
+            margin-top: 1px;
+            flex-shrink: 0;
+        }
+
+        .tip-text {
+            font-size: 13px;
+            color: var(--text2);
+            line-height: 1.55;
+        }
+
+        .tip-text strong {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        /* ── Footer ── */
+        .footer {
+            font-size: 12px;
+            color: var(--text3);
+            text-align: center;
+            padding-top: 32px;
+            border-top: 1px solid var(--border);
+            margin-top: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+
+        <div class="page-header">
+            <div class="page-eyebrow">CSS Techniques</div>
+            <h1 class="page-title">文本<span>省略号</span>效果演示</h1>
+            <p class="page-desc">三种常见场景的实现方式，含完整代码与浏览器兼容说明。</p>
+        </div>
+
+        <!-- ─────────────── Card 1: Single line ─────────────── -->
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <div class="card-title">单行文本省略</div>
+                    <div class="card-desc">超出容器宽度后自动截断并显示 <code>…</code></div>
+                </div>
+                <span class="badge">全浏览器支持</span>
+            </div>
+
+            <div class="demo-box">
+                <div class="demo-box-label">效果预览 · 最大宽度 320px</div>
+                <div class="demo-single">
+                    这是一段非常长的文本内容，当它超出容器的宽度限制时，会自动显示省略号来表示还有更多内容未显示。
+                </div>
+            </div>
+
+            <div class="code-wrap">
+                <span class="code-lang">CSS</span>
+                <div class="code-block"><span class="tok-prop">.single-line</span> {
+                    <span class="tok-prop">white-space</span>: <span class="tok-val">nowrap</span>; <span
+                        class="tok-cmt">/* 禁止换行 */</span>
+                    <span class="tok-prop">overflow</span>: <span class="tok-val">hidden</span>; <span
+                        class="tok-cmt">/* 隐藏溢出 */</span>
+                    <span class="tok-prop">text-overflow</span>: <span class="tok-val">ellipsis</span>; <span
+                        class="tok-cmt">/* 显示 … */</span>
+                    <span class="tok-prop">width</span>: <span class="tok-val">100%</span>; <span class="tok-cmt">/*
+                        必须设定宽度 */</span>
+                    }
+                </div>
+            </div>
+
+            <div class="tip">
+                <span class="tip-icon">💡</span>
+                <span class="tip-text"><strong>注意：</strong>容器必须有明确的宽度（<code>width</code> 或
+                    <code>max-width</code>），三个属性缺一不可。</span>
+            </div>
+        </div>
+
+        <!-- ─────────────── Card 2: Multi line ─────────────── -->
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <div class="card-title">多行文本省略</div>
+                    <div class="card-desc">限制显示行数，超出部分用 <code>…</code> 代替</div>
+                </div>
+                <span class="badge">现代浏览器</span>
+            </div>
+
+            <div class="demo-box">
+                <div class="demo-box-label">效果预览 · 限制 3 行</div>
+                <div class="demo-multi">
+                    这是一段很长的文本内容，用来演示多行文本省略号的效果。当文本内容超过指定的行数时，多余的内容会被隐藏，并在最后一行的末尾显示省略号。这种方法使用了 -webkit-line-clamp
+                    属性，目前已被所有主流浏览器支持，是最推荐的多行省略实现方案。你可以根据实际需求调整 line-clamp 的数值来控制显示行数。
+                </div>
+            </div>
+
+            <div class="code-wrap">
+                <span class="code-lang">CSS</span>
+                <div class="code-block"><span class="tok-prop">.multi-line</span> {
+                    <span class="tok-prop">display</span>: <span class="tok-val">-webkit-box</span>; <span
+                        class="tok-cmt">/* 弹性盒模型 */</span>
+                    <span class="tok-prop">-webkit-box-orient</span>: <span class="tok-val">vertical</span>; <span
+                        class="tok-cmt">/* 垂直方向排列 */</span>
+                    <span class="tok-prop">-webkit-line-clamp</span>: <span class="tok-num">3</span>; <span
+                        class="tok-cmt">/* 最多显示 3 行 */</span>
+                    <span class="tok-prop">overflow</span>: <span class="tok-val">hidden</span>; <span
+                        class="tok-cmt">/* 隐藏超出内容 */</span>
+                    }
+                </div>
+            </div>
+
+            <div class="tip">
+                <span class="tip-icon">💡</span>
+                <span class="tip-text"><strong>兼容性：</strong>Chrome 6+、Firefox 68+、Safari 9+、Edge 17+
+                    均已支持，可放心用于生产环境。</span>
+            </div>
+        </div>
+
+        <!-- ─────────────── Card 3: Responsive cards ─────────────── -->
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <div class="card-title">实战场景：卡片列表</div>
+                    <div class="card-desc">标题单行省略 + 正文两行省略的组合用法</div>
+                </div>
+                <span class="badge">组合示例</span>
+            </div>
+
+            <div class="demo-box">
+                <div class="demo-box-label">效果预览 · 响应式卡片网格</div>
+                <div class="demo-responsive-wrapper">
+                    <div class="demo-card">
+                        <div class="demo-card-title">设计系统中的排版规范与最佳实践指南</div>
+                        <div class="demo-card-body">字体选择、行高、字间距的系统化方法，构建一致的视觉语言。</div>
+                    </div>
+                    <div class="demo-card">
+                        <div class="demo-card-title">色彩理论与情绪表达的深度研究报告</div>
+                        <div class="demo-card-body">从心理学角度分析色彩对用户决策和情绪状态的多维度影响。</div>
+                    </div>
+                    <div class="demo-card">
+                        <div class="demo-card-title">响应式布局与断点策略</div>
+                        <div class="demo-card-body">移动优先的设计思路与常见的 breakpoint 设置方案，适配各种屏幕尺寸。</div>
+                    </div>
+                    <div class="demo-card">
+                        <div class="demo-card-title">CSS 动画性能优化实践</div>
+                        <div class="demo-card-body">使用 transform 和 opacity 触发 GPU 合成层，避免 layout 和 paint 开销。</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="code-wrap">
+                <span class="code-lang">CSS</span>
+                <div class="code-block"><span class="tok-cmt">/* 标题：单行省略 */</span>
+                    <span class="tok-prop">.card-title</span> {
+                    <span class="tok-prop">white-space</span>: <span class="tok-val">nowrap</span>;
+                    <span class="tok-prop">overflow</span>: <span class="tok-val">hidden</span>;
+                    <span class="tok-prop">text-overflow</span>: <span class="tok-val">ellipsis</span>;
+                    }
+
+                    <span class="tok-cmt">/* 正文：多行省略 */</span>
+                    <span class="tok-prop">.card-body</span> {
+                    <span class="tok-prop">display</span>: <span class="tok-val">-webkit-box</span>;
+                    <span class="tok-prop">-webkit-box-orient</span>: <span class="tok-val">vertical</span>;
+                    <span class="tok-prop">-webkit-line-clamp</span>: <span class="tok-num">2</span>;
+                    <span class="tok-prop">overflow</span>: <span class="tok-val">hidden</span>;
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">零外部依赖 · 支持深色模式 · 纯 HTML + CSS</div>
+
+    </div>
+</body>
+
+</html>

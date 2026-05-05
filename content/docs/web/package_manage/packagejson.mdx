@@ -1,0 +1,160 @@
+---
+title: package.json 配置指南
+description: 理解 Node.js 项目的核心配置文件
+category:
+  - 包管理
+tags:
+  - package.json
+---
+
+# package.json 配置指南
+
+`package.json` 是 Node.js 项目的核心配置文件，用来描述项目信息、依赖关系、脚本命令以及发布行为。无论是前端应用、CLI 工具还是组件库，都离不开它。
+
+## 一个最小的 package.json
+
+```json
+{
+  "name": "my-project",
+  "version": "1.0.0",
+  "private": true
+}
+```
+
+## 最常见的字段
+
+### 项目元信息
+
+```json
+{
+  "name": "my-project",
+  "version": "1.0.0",
+  "description": "project description",
+  "license": "MIT"
+}
+```
+
+- `name`：包名，发布到 npm 时必须唯一
+- `version`：版本号，遵循 `major.minor.patch`
+- `description`：项目简介
+- `license`：开源协议
+
+### 脚本命令
+
+```json
+{
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "test": "vitest"
+  }
+}
+```
+
+通过下面的命令执行：
+
+```bash
+npm run dev
+npm run build
+```
+
+## 依赖字段怎么区分
+
+### 运行时依赖
+
+```json
+{
+  "dependencies": {
+    "react": "^19.0.0"
+  }
+}
+```
+
+用于项目运行时真正需要的包。
+
+### 开发依赖
+
+```json
+{
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0"
+  }
+}
+```
+
+用于构建、测试、类型检查、代码规范等开发阶段工具。
+
+### 对等依赖
+
+```json
+{
+  "peerDependencies": {
+    "react": ">=18"
+  }
+}
+```
+
+常用于组件库、插件库，表示宿主项目需要自己安装该依赖。
+
+## 常见入口字段
+
+```json
+{
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "my-cli": "./bin/index.js"
+  }
+}
+```
+
+- `main`：CommonJS 入口
+- `module`：ESM 入口
+- `types`：TypeScript 类型声明入口
+- `bin`：CLI 命令入口
+
+## 发布相关字段
+
+```json
+{
+  "private": true,
+  "files": ["dist", "README.md"],
+  "publishConfig": {
+    "access": "public"
+  }
+}
+```
+
+- `private: true` 可以防止误发布
+- `files` 用来控制发包内容
+- `publishConfig` 控制发包时的 registry、access 等行为
+
+## 常见工程字段
+
+```json
+{
+  "engines": {
+    "node": ">=18"
+  },
+  "packageManager": "pnpm@10.0.0"
+}
+```
+
+- `engines` 用于声明运行环境要求
+- `packageManager` 用于固定团队使用的包管理器和版本
+
+## 实用建议
+
+- 业务项目建议默认加上 `private: true`
+- 团队项目建议加 `packageManager`
+- 组件库和 CLI 要明确 `main`、`module`、`types`、`bin`
+- 发包前务必检查 `files`、`exports` 和 `publishConfig`
+
+## 延伸阅读
+
+- [pnpm 入门](/docs/web/package_manage/pnpm)
+- [CommonJS vs ESM](/docs/web/package_manage/commonjs-vs-esm)
+- [npm 发包流程](/docs/web/package_manage/npm-publish)

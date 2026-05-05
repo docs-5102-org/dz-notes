@@ -1,0 +1,12 @@
+{
+  "title": "AI",
+  "root": true,
+  "pages": [
+    "index",
+    "common-llm",
+    "speech",
+    "computer-vision",
+    "prompts",
+    "mosaic"
+  ]
+}

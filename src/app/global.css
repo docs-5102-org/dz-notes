@@ -1,6 +1,10 @@
 @import 'tailwindcss';
-@import 'fumadocs-ui/css/neutral.css';
-@import 'fumadocs-ui/css/preset.css';
+@import 'fumadocs-ui/css/neutral.css';  /* ← 默认主题，可替换 */
+/* @import 'fumadocs-ui/css/vitepress.css';  ← 默认主题，可替换 */
+/* @import 'fumadocs-ui/css/neutral.css'; */
+@import 'fumadocs-ui/css/preset.css';   /* ← 基础样式，必须在主题后面 */
+@import './styles/theme/warm.css';
+@import './styles/scrollbar.css';
 
 html {
   scrollbar-gutter: stable;

@@ -1,0 +1,10 @@
+{
+  "title": "Queue",
+  "pages": [
+    "index",
+    "intro",
+    "blocking-queue-principle",
+    "blocking-queue-application",
+    "1"
+  ]
+}

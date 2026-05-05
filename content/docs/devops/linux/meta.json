@@ -1,0 +1,20 @@
+{
+  "title": "Linux",
+  "pages": [
+    "index",
+    "basics",
+    "shell-scripting",
+    "file-dir-management",
+    "text-operations",
+    "file-permissions",
+    "user-management",
+    "process-management",
+    "system-management-monitoring",
+    "network-tools",
+    "disk-management",
+    "package-management",
+    "service-configuration",
+    "common-scripts",
+    "troubleshooting"
+  ]
+}

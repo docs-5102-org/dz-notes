@@ -1,0 +1,19 @@
+{
+  "title": "Solidity 补充笔记",
+  "pages": [
+    "index",
+    "solidity-note-types",
+    "convert-types",
+    "types-conversion-literals",
+    "array-types-check",
+    "operator",
+    "control-structures",
+    "contracts",
+    "mapping-types",
+    "mapping-example1",
+    "mapping-example2",
+    "iterator-mapping",
+    "dangling-reference",
+    "units-and-global-variables"
+  ]
+}

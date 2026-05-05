@@ -1,0 +1,323 @@
+---
+title: Next.js 路由教程
+category:
+  - react
+  - Next.js
+---
+
+# Next.js 路由教程
+
+## `[[...sign-in]]` 路由语法解析
+
+### 基础概念
+
+这是 **Next.js App Router** 中的 **可选 Catch-All 路由**（Optional Catch-All Routes）语法。
+
+### 命名规则对比
+
+| 语法 | 名称 | 匹配规则 | 示例 |
+| --- | --- | --- | --- |
+| `sign-in/page.tsx` | 普通路由 | 只匹配 `/sign-in` | `/sign-in` |
+| `[slug]/page.tsx` | 动态路由 | 匹配单层动态参数 | `/abc`、`/123` |
+| `[...slug]/page.tsx` | Catch-All 路由 | 匹配所有子路径，至少一层 | `/sign-in/callback`、`/sign-in/sso/google` |
+| `[[...slug]]/page.tsx` | 可选 Catch-All 路由 | 匹配所有子路径，包括空路径 | `/`、`/sign-in`、`/sign-in/callback` |
+
+### 路由匹配补充
+
+- `sign-in/page.tsx`
+  - ✅ `/sign-in`
+  - ❌ `/sign-in/callback`
+- `[slug]/page.tsx`
+  - ✅ `/abc`
+  - ✅ `/123`
+  - ❌ `/abc/def`
+- `[...slug]/page.tsx`
+  - ✅ `/sign-in`
+  - ✅ `/sign-in/callback`
+  - ✅ `/sign-in/sso/google`
+  - ❌ `/`
+- `[[...slug]]/page.tsx`
+  - ✅ `/`
+  - ✅ `/sign-in`
+  - ✅ `/sign-in/callback`
+  - ✅ `/sign-in/sso/google`
+
+### `[[...sign-in]]` 的具体含义
+
+```text
+src/app/auth/sign-in/[[...sign-in]]/page.tsx
+```
+
+这个路由可以匹配：
+
+```text
+/auth/sign-in
+/auth/sign-in/
+/auth/sign-in/callback
+/auth/sign-in/sso-callback
+/auth/sign-in/verify
+/auth/sign-in/factor-one
+/auth/sign-in/factor-two
+/auth/sign-in/any/nested/path
+```
+
+### 为什么 Clerk 需要这种路由
+
+Clerk 的认证组件内部会处理多个不同的子路径，例如：
+
+```text
+/auth/sign-in
+/auth/sign-in/sso-callback
+/auth/sign-in/verify
+/auth/sign-in/factor-one
+/auth/sign-in/factor-two
+/auth/sign-in/choose-strategy
+```
+
+如果使用普通路由：
+
+```ts
+// 只能匹配 /auth/sign-in
+src/app/auth/sign-in/page.tsx
+
+// 访问 /auth/sign-in/callback 会 404
+```
+
+使用 Catch-All 路由：
+
+```ts
+// 可以匹配所有 /auth/sign-in/* 路径
+src/app/auth/sign-in/[[...sign-in]]/page.tsx
+```
+
+### 在组件中获取路径参数
+
+```ts
+export default function SignInPage({
+  params,
+}: {
+  params: { 'sign-in'?: string[] };
+}) {
+  console.log(params);
+
+  // 访问 /auth/sign-in
+  // params = { 'sign-in': undefined }
+
+  // 访问 /auth/sign-in/callback
+  // params = { 'sign-in': ['callback'] }
+
+  // 访问 /auth/sign-in/sso/google
+  // params = { 'sign-in': ['sso', 'google'] }
+
+  return <SignIn />;
+}
+```
+
+### 其他路由语法示例
+
+#### 1. 动态路由 `[id]`
+
+```text
+src/app/product/[id]/page.tsx
+
+匹配:
+/product/123
+/product/abc
+```
+
+不匹配：
+
+```text
+/product/123/edit
+```
+
+#### 2. 必需的 Catch-All `[...slug]`
+
+```text
+src/app/blog/[...slug]/page.tsx
+
+匹配:
+/blog/2024
+/blog/2024/10
+/blog/2024/10/07/my-post
+```
+
+不匹配：
+
+```text
+/blog
+```
+
+#### 3. 可选 Catch-All `[[...slug]]`
+
+```text
+src/app/docs/[[...slug]]/page.tsx
+
+匹配:
+/docs
+/docs/getting-started
+/docs/api/reference/auth
+```
+
+### 实际应用场景
+
+#### 场景 1：文档系统
+
+```text
+src/app/docs/[[...slug]]/page.tsx
+
+/docs
+/docs/introduction
+/docs/api/auth
+/docs/guides/setup/db
+```
+
+#### 场景 2：多语言路由
+
+```text
+src/app/[locale]/[[...slug]]/page.tsx
+
+/en
+/en/about
+/zh
+/zh/about
+```
+
+#### 场景 3：商品分类
+
+```text
+src/app/shop/[[...category]]/page.tsx
+
+/shop
+/shop/electronics
+/shop/electronics/phones
+/shop/electronics/phones/iphone
+```
+
+### 快速记忆
+
+```text
+[]       => 单层动态      [id]
+[...]    => 多层必需      [...path]
+[[...]]  => 多层可选      [[...path]]
+```
+
+### 注意事项
+
+1. 文件夹中的参数名可以自定义
+
+```text
+[[...sign-in]]
+[[...slug]]
+[[...params]]
+```
+
+2. 参数名会作为 `params` 的 key
+
+```ts
+// [[...sign-in]]/page.tsx
+params: { 'sign-in'?: string[] }
+
+// [[...slug]]/page.tsx
+params: { slug?: string[] }
+```
+
+3. 可选 Catch-All 会匹配父路径本身
+
+```text
+[[...slug]]/page.tsx  会匹配父目录本身
+[...slug]/page.tsx    不会匹配父目录
+```
+
+### 相关文档
+
+- [Next.js Routing - Optional Catch-all Routes](https://nextjs.org/docs/app/building-your-application/routing/dynamic-routes#optional-catch-all-segments)
+- [Clerk Next.js 路由配置](https://clerk.com/docs/quickstarts/nextjs)
+
+---
+
+## Next.js 目前更推荐使用 App Router
+
+当前更推荐直接使用 `app` 目录，也就是 **App Router**。这是 Next.js 13+ 引入的新架构。
+
+### 1. App Router（`app` 目录）
+
+```text
+app/
+├── page.tsx
+├── layout.tsx
+├── dashboard/
+│   └── page.tsx
+└── blog/
+    └── [slug]/
+        └── page.tsx
+```
+
+优点：
+
+- ✅ React Server Components
+- ✅ 流式渲染和 Suspense
+- ✅ 更好的数据获取方式
+- ✅ 内置 `loading.tsx`、`error.tsx`
+- ✅ 更灵活的布局系统
+
+### 2. Pages Router（`pages` 目录）
+
+```text
+pages/
+├── index.tsx
+├── _app.tsx
+├── dashboard.tsx
+└── blog/
+    └── [slug].tsx
+```
+
+特点：
+
+- 这是旧版 Next.js 的默认方式
+- 现在仍然支持，但新特性主要围绕 App Router
+
+### 3. 混合使用
+
+可以同时存在 `app` 和 `pages`，但只适合作为迁移过渡方案，不建议长期混用。
+
+## 官方建议
+
+> 新项目优先使用 App Router。
+
+## 我的建议
+
+| 场景 | 推荐方案 |
+| --- | --- |
+| 新项目 | **App Router** |
+| 现有 Pages Router 项目 | 先保持稳定，再按需迁移 |
+| 学习 Next.js | 优先学习 **App Router** |
+| 生产环境 | App Router 在 Next.js 14+ 已经足够稳定 |
+
+## 快速对比
+
+App Router：
+
+```tsx
+// app/dashboard/page.tsx
+export default async function DashboardPage() {
+  const data = await fetch('...');
+  return <div>Dashboard</div>;
+}
+```
+
+Pages Router：
+
+```tsx
+// pages/dashboard.tsx
+export async function getServerSideProps() {
+  const data = await fetch('...');
+  return { props: { data } };
+}
+
+export default function DashboardPage({ data }) {
+  return <div>Dashboard</div>;
+}
+```
+
+结论：新项目直接使用 `app` 目录即可。

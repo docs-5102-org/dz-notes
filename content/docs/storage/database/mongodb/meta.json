@@ -1,0 +1,14 @@
+{
+  "title": "MongoDB",
+  "pages": [
+    "index",
+    "starter",
+    "install",
+    "conf",
+    "command",
+    "tools",
+    "cluster",
+    "auto_increment",
+    "devpos"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "title": "UI 设计",
+  "pages": [
+    "index",
+    "html+bootstrap",
+    "html+dark+bootstrap",
+    "html+tailwind",
+    "react+tailwind",
+    "vue3+tailwind",
+    "ionic+tailwind"
+  ]
+}

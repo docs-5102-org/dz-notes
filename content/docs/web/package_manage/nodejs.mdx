@@ -1,0 +1,91 @@
+---
+title: Node.js 安装与使用
+description: 从安装、版本选择到基础环境配置的实用说明
+category:
+  - 包管理
+tags:
+  - Node.js
+---
+
+# Node.js 安装与使用
+
+Node.js 是前端工具链和很多服务端项目的基础运行时。大多数情况下，建议优先安装 LTS 版本，再配合版本管理工具使用。
+
+## 下载渠道
+
+- 官网：[Node.js](https://nodejs.org/)
+- 历史版本：[Node.js Downloads](https://nodejs.org/en/download)
+
+## 安装建议
+
+- 日常开发优先选择 `LTS`
+- 多项目并行开发时，建议配合 [nvm 版本管理](/docs/web/package_manage/nvm)
+- 团队项目建议在文档里明确 Node.js 版本要求
+
+## 安装完成后验证
+
+```bash
+node -v
+npm -v
+```
+
+如果你使用 `pnpm`，也可以进一步确认：
+
+```bash
+pnpm -v
+```
+
+## 常见配置
+
+查看当前 npm registry：
+
+```bash
+npm config get registry
+```
+
+切换回官方源：
+
+```bash
+npm config set registry https://registry.npmjs.org/
+```
+
+切换到常见镜像：
+
+```bash
+npm config set registry https://registry.npmmirror.com/
+```
+
+## Linux 环境说明
+
+Linux 服务器上常见两种方式：
+
+- 用包管理器安装
+- 用 `nvm` 管理多个版本
+
+如果你只是本地开发或日常部署，优先用 `nvm`，升级和切换都更轻松。
+
+## Windows 环境说明
+
+- 直接安装官方安装包即可
+- 如果你需要同时维护多个版本，建议使用 `nvm-windows`
+- 路径里尽量避免中文和空格，减少工具链兼容问题
+
+## 实用建议
+
+- 项目根目录可以补一个 `.nvmrc`
+- `package.json` 中建议增加 `engines`
+- 团队统一版本时，可以同时声明 `packageManager`
+
+```json
+{
+  "engines": {
+    "node": ">=18"
+  },
+  "packageManager": "pnpm@10.0.0"
+}
+```
+
+## 延伸阅读
+
+- [nvm 版本管理](/docs/web/package_manage/nvm)
+- [pnpm 入门](/docs/web/package_manage/pnpm)

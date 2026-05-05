@@ -1,0 +1,191 @@
+---
+title: uni-app 中使用 Android 原生 JS 开发指南
+category:
+  - 跨平台框架
+tags:
+  - uni-app
+order: 2
+---
+
+# uni-app 中使用 Android 原生 JS 开发指南
+
+## 概述
+
+uni-app 允许通过 `plus.android` 直接调用 Android 原生能力，适合在不写 Java / Kotlin 插件的情况下接入系统级功能。
+
+这类方案只适用于 App 端，并且需要注意平台兼容性、权限申请与真机验证。
+
+## 基础能力
+
+### 常用对象
+
+- `plus.android.importClass()`：导入 Android 类
+- `plus.android.runtimeMainActivity()`：获取当前 Activity
+- `plus.android.newObject()`：创建原生对象
+
+基础模式：
+
+```js
+const Intent = plus.android.importClass('android.content.Intent');
+const main = plus.android.runtimeMainActivity();
+const intent = new Intent();
+main.startActivity(intent);
+```
+
+## 示例 1：打开图片选择器
+
+### 基础版
+
+```js
+function openImagePicker(requestCode = 101) {
+  try {
+    const Intent = plus.android.importClass('android.content.Intent');
+    const main = plus.android.runtimeMainActivity();
+
+    const intent = new Intent(Intent.ACTION_GET_CONTENT);
+    intent.addCategory(Intent.CATEGORY_OPENABLE);
+    intent.setType('image/*');
+
+    main.startActivityForResult(
+      Intent.createChooser(intent, '选择图片'),
+      requestCode,
+    );
+  } catch (error) {
+    console.error('启动图片选择器失败:', error);
+    uni.showToast({
+      title: '启动图片选择器失败',
+      icon: 'none',
+    });
+  }
+}
+```
+
+### 可切换模式版
+
+```js
+function openImagePickerAdvanced(mode = 'content', requestCode = 101) {
+  try {
+    const Intent = plus.android.importClass('android.content.Intent');
+    const MediaStore = plus.android.importClass('android.provider.MediaStore');
+    const main = plus.android.runtimeMainActivity();
+
+    let intent;
+
+    switch (mode) {
+      case 'content':
+        intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType('image/*');
+        break;
+      case 'pick':
+        intent = new Intent(
+          Intent.ACTION_PICK,
+          MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+        );
+        intent.setType('image/*');
+        break;
+      case 'document':
+        intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType('image/*');
+        break;
+      default:
+        throw new Error('不支持的选择模式');
+    }
+
+    main.startActivityForResult(intent, requestCode);
+  } catch (error) {
+    console.error('启动图片选择器失败:', error);
+  }
+}
+```
+
+## 示例 2：调用微信扫码
+
+```js
+function openWeChatScan() {
+  try {
+    if (plus.os.name === 'iOS') {
+      plus.runtime.openURL('weixin://scanqrcode');
+      return;
+    }
+
+    const Intent = plus.android.importClass('android.content.Intent');
+    const ComponentName = plus.android.importClass('android.content.ComponentName');
+    const main = plus.android.runtimeMainActivity();
+
+    const intent = new Intent();
+    intent.setComponent(
+      new ComponentName('com.tencent.mm', 'com.tencent.mm.ui.LauncherUI'),
+    );
+    intent.putExtra('LauncherUI.From.Scaner.Shortcut', true);
+    intent.setFlags(335544320);
+    intent.setAction('android.intent.action.VIEW');
+
+    main.startActivity(intent);
+  } catch (error) {
+    uni.showToast({
+      title: '请确认已安装微信',
+      icon: 'none',
+    });
+  }
+}
+```
+
+检查微信是否安装：
+
+```js
+function isWeChatInstalled() {
+  try {
+    const main = plus.android.runtimeMainActivity();
+    const packageManager = main.getPackageManager();
+    packageManager.getPackageInfo('com.tencent.mm', 0);
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+```
+
+## 示例 3：读取相册图片列表
+
+```js
+function getImageListFromAlbum() {
+  try {
+    const MediaStore = plus.android.importClass('android.provider.MediaStore');
+    const main = plus.android.runtimeMainActivity();
+    const resolver = main.getContentResolver();
+
+    const cursor = resolver.query(
+      MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+      null,
+      null,
+      null,
+      `${MediaStore.Images.Media.DATE_ADDED} DESC`,
+    );
+
+    plus.android.importClass(cursor);
+    const result = [];
+
+    while (cursor.moveToNext()) {
+      result.push({
+        id: cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)),
+        path: cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)),
+      });
+    }
+
+    cursor.close();
+    return result;
+  } catch (error) {
+    console.error('获取相册失败:', error);
+    return [];
+  }
+}
+```
+
+## 使用建议
+
+1. 所有 `plus.android` 相关代码都要放在 App 环境和 `plusready` 之后执行。
+2. Android 原生能力通常伴随权限要求，发布前要同步检查 `manifest.json`。
+3. 图片、相册、安装包、扫码等系统能力尽量真机验证，不要只依赖模拟器。
+4. 如果某项能力在多个项目中重复使用，建议后续抽成统一插件或封装模块。

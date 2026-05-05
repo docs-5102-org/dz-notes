@@ -1,0 +1,178 @@
+---
+title: 常见问题
+category:
+  - 跨平台框架
+tags:
+  - uni-app
+order: 2
+---
+
+# uni-app 常见问题
+
+这篇文档汇总 uni-app 项目中常见的设备识别、安装权限、HBuilderX 调试、音频播放和 H5 发布问题。
+
+## 设备识别与安全验证
+
+### 获取设备 MAC 地址
+
+仅适用于 App 环境，且需要真机运行：
+
+```js
+function getMacAddress() {
+  try {
+    const NetworkInterface = plus.android.importClass('java.net.NetworkInterface');
+    const wl0 = NetworkInterface.getByName('wlan0');
+    const macByte = wl0.getHardwareAddress();
+    let str = '';
+
+    for (let i = 0; i < macByte.length; i += 1) {
+      let tmp = '';
+      const num = macByte[i];
+      tmp = num < 0 ? (255 + num + 1).toString(16) : num.toString(16);
+      if (tmp.length === 1) tmp = `0${tmp}`;
+      str += tmp;
+    }
+
+    return str;
+  } catch (error) {
+    console.error('获取 MAC 地址失败:', error);
+    return null;
+  }
+}
+```
+
+注意：
+
+- `plus` 对象只在 App 环境可用
+- H5 中无法获取 MAC 地址
+- 真机测试更可靠
+
+### 后端获取客户端 IP
+
+```java
+private String getClientIpAddress(HttpServletRequest request) {
+    String ip = request.getHeader("x-forwarded-for");
+    if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+        ip = request.getHeader("Proxy-Client-IP");
+    }
+    if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+        ip = request.getHeader("WL-Proxy-Client-IP");
+    }
+    if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+        ip = request.getRemoteAddr();
+    }
+    return ip;
+}
+```
+
+### 验证失败时退出应用
+
+```js
+uni.request({
+  url: 'your-api-url',
+  data: {
+    macAddress: getMacAddress(),
+  },
+  success(res) {
+    const result = res.data;
+    if (result === '0' || result === '-1') {
+      plus.runtime.quit();
+    }
+  },
+});
+```
+
+## 打包相关问题
+
+### `plus.runtime.install` 无法唤起安装
+
+如果云打包后安装能力失效，需要确认 `manifest.json` 中是否勾选：
+
+- `install_packages`
+- `request_install_packages`
+
+修改后重新云打包。
+
+## 开发环境问题
+
+### HBuilderX 检测不到手机或模拟器
+
+排查顺序：
+
+1. 确认 USB 调试已开启
+2. 确认数据线支持数据传输
+3. 重新安装 ADB 驱动
+4. 检查开发者选项中的授权提示
+5. 更换 USB 端口或数据线
+
+## 音频播放问题
+
+### iOS 无法自动播放音频
+
+iOS 对自动播放有限制，通常需要用户手势或借助微信 JS-SDK。
+
+安装：
+
+```bash
+npm install jweixin-module --save
+```
+
+示例：
+
+```js
+const jweixin = require('jweixin-module');
+
+function playAudio() {
+  const innerAudioContext = uni.createInnerAudioContext();
+
+  jweixin.ready(() => {
+    WeixinJSBridge.invoke('getNetworkType', {}, () => {
+      innerAudioContext.play();
+    });
+  });
+}
+```
+
+## H5 发布问题
+
+### 去掉 URL 中的 `#`
+
+如果 uni-app H5 默认使用 hash 路由，可以改成 history 模式。
+
+做法：
+
+1. 在项目根目录创建 `template.h5.html`
+2. 在 `manifest.json` 的 H5 配置中指定模板文件
+3. 将路由模式设为 `history`
+4. 在服务器端配置 history fallback
+
+模板示例：
+
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"
+    />
+    <title><%= htmlWebpackPlugin.options.title %></title>
+  </head>
+  <body>
+    <div id="app"></div>
+  </body>
+</html>
+```
+
+注意：
+
+- history 模式依赖服务器支持
+- 本地直接打开文件可能出现白屏
+
+## 组件与运行时建议
+
+1. 涉及 `plus.*` 的能力都要明确平台边界。
+2. App、H5、小程序三端能力差异较大，优先做条件编译。
+3. 设备能力、安装能力和音频播放问题，优先真机验证。

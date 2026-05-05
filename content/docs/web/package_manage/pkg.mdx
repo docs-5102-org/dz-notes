@@ -1,0 +1,97 @@
+---
+title: pkg 打包指南
+description: 将 Node.js 应用打成可执行文件时需要了解的关键点
+category:
+  - 包管理
+tags:
+  - pkg
+---
+
+# pkg 打包指南
+
+`pkg` 用于把 Node.js 应用打包成可执行文件，方便分发给没有安装 Node.js 环境的机器。它更常见于内部工具、CLI 程序或简单桌面辅助程序。
+
+## 适合场景
+
+- 发布内部 CLI 工具
+- 给非开发环境机器分发可执行程序
+- 减少目标机器手动安装 Node.js 的步骤
+
+## 基础安装
+
+```bash
+npm install --save-dev pkg
+```
+
+或全局安装：
+
+```bash
+npm install --global pkg
+```
+
+## 最小示例
+
+假设入口文件是 `app.js`：
+
+```bash
+pkg app.js -t node18-win-x64 -o app.exe
+```
+
+常见目标平台：
+
+```bash
+pkg app.js -t node18-win-x64
+pkg app.js -t node18-linux-x64
+pkg app.js -t node18-macos-x64
+```
+
+## package.json 配置示例
+
+```json
+{
+  "bin": "app.js",
+  "scripts": {
+    "build:win": "pkg . -t node18-win-x64 -o dist/app.exe"
+  },
+  "pkg": {
+    "assets": ["public/**/*", "views/**/*"]
+  }
+}
+```
+
+## 静态资源处理
+
+如果程序运行时依赖模板、图片或配置文件，记得把它们放进 `pkg.assets`。
+
+```json
+{
+  "pkg": {
+    "assets": ["config/*.json", "templates/**/*"]
+  }
+}
+```
+
+## 常见问题
+
+### 资源路径失效
+
+打包后，路径处理不能完全依赖开发环境下的 `__dirname` 假设，最好统一封装资源路径逻辑。
+
+### 原生模块兼容
+
+如果项目依赖原生 Node 模块，跨平台打包前要重点验证兼容性。
+
+### 产物过大
+
+这是正常现象，因为可执行文件里通常会包含 Node.js runtime。
+
+## 使用建议
+
+- 先明确是否真的需要可执行文件分发
+- 优先打包 CLI 或轻量工具，不要把复杂服务端项目硬塞进去
+- 发布前务必在目标系统实际运行验证
+
+## 延伸阅读
+
+- [npm 发包流程](/docs/web/package_manage/npm-publish)
+- [Node.js 安装与使用](/docs/web/package_manage/nodejs)

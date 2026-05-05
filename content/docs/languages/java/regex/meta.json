@@ -1,0 +1,12 @@
+{
+  "title": "Regex",
+  "pages": [
+    "index",
+    "starter",
+    "common-regex",
+    "capture-group",
+    "datetime-regex",
+    "foreign-phone",
+    "notepad-regex"
+  ]
+}

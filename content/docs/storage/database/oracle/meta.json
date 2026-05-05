@@ -1,0 +1,10 @@
+{
+  "title": "Oracle",
+  "pages": [
+    "index",
+    "install",
+    "uninstall",
+    "backup",
+    "user"
+  ]
+}

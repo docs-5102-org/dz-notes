@@ -1,0 +1,17 @@
+{
+  "title": "CI/CD",
+  "pages": [
+    "index",
+    "cron",
+    "gitea-basic",
+    "gitea-workflow",
+    "gitea-close-dashboard",
+    "gitea-ssh-config",
+    "github-actions",
+    "github-actions-tools",
+    "actions-cache",
+    "gitea-act-runner-work",
+    "gitea-act-runner-config",
+    "gitea-act-runner-image"
+  ]
+}

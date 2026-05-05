@@ -1,0 +1,16 @@
+{
+  "title": "服务配置",
+  "pages": [
+    "index",
+    "hostname",
+    "lang",
+    "date",
+    "linux-dhcp-server-configuration",
+    "linux-dns-server-configuration",
+    "linux-ftp-server-configuration",
+    "linux-nfs-server-configuration",
+    "linux-apache-web-server-configuration",
+    "linux-samba-file-server-configuration",
+    "linux-mail-server-configuration"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "title": "Web 开发",
+  "root": true,
+  "pages": [
+    "index",
+    "build_tool",
+    "package_manage",
+    "common_tool",
+    "cms",
+    "css_framework",
+    "javascript_framework",
+    "style_lang",
+    "ui_framework"
+  ]
+}

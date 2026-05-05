@@ -1,0 +1,249 @@
+---
+title: 常见问题
+category:
+  - 跨平台框架
+tags:
+  - flutter
+order: 4
+---
+
+# Flutter 常见问题
+
+这篇文档收拢 Flutter 开发中常见的运行、布局、依赖和 Android 构建问题，优先记录能直接落地的解决方式。
+
+## 文本方向问题
+
+报错：
+
+```text
+RichText widgets require a Directionality widget ancestor.
+No Directionality widget found.
+```
+
+解决：
+
+```dart
+Directionality(
+  textDirection: TextDirection.ltr,
+  child: Text('Your text here'),
+)
+```
+
+或者直接在组件中指定：
+
+```dart
+Text(
+  'Deliver features faster',
+  textAlign: TextAlign.center,
+  textDirection: TextDirection.ltr,
+)
+```
+
+## Row / RenderFlex 布局问题
+
+报错：
+
+```text
+Horizontal RenderFlex with multiple children has a null textDirection
+```
+
+解决：
+
+```dart
+Row(
+  textDirection: TextDirection.ltr,
+  children: [
+    // children
+  ],
+)
+```
+
+如果页面没有被 `MaterialApp` 或 `Directionality` 包裹，很多布局组件都可能出现同类问题。
+
+## 数据类型错误
+
+报错：
+
+```text
+type '_Map<String, String>' is not a subtype of type 'String'
+```
+
+这通常是把 `Map` 当成了 `String` 在使用。
+
+错误示例：
+
+```dart
+Image.network(listData[index])
+```
+
+正确示例：
+
+```dart
+Image.network(listData[index]['imageUrl'])
+```
+
+## 依赖安装后不生效
+
+新增依赖后，先执行：
+
+```bash
+flutter pub get
+```
+
+如果是新插件、原生能力或生成代码相关变更，通常还需要完整重启应用，而不是只热重载。
+
+## JSON 处理
+
+官方文档：
+
+- [Flutter JSON and serialization](https://flutter.cn/docs/data-and-backend/json)
+
+常用命令：
+
+```bash
+flutter pub run build_runner build --delete-conflicting-outputs
+flutter pub run build_runner watch
+```
+
+基础示例：
+
+```dart
+Map<String, dynamic> map = jsonDecode(response.data);
+String str = jsonEncode(map);
+String raw = response.data.toString();
+```
+
+## 常用文件与路径能力
+
+推荐包：
+
+- [path_provider](https://pub.dev/packages/path_provider)
+
+示例：
+
+```dart
+import 'dart:io';
+
+final rootPath = Directory.current.path;
+final currentFilePath = File(Platform.script.toFilePath()).absolute.path;
+final parentPath = File(Platform.script.toFilePath()).parent.path;
+```
+
+## 网络请求
+
+推荐包：
+
+- [dio](https://pub.dev/packages/dio)
+
+## Text 组件黄色下划线
+
+如果 `Text` 或其它 Material 风格组件出现异常样式，通常是页面外层缺少 `MaterialApp` 或 Material 上下文。
+
+## Android 方法数超限
+
+报错关键字：
+
+```text
+Cannot fit requested classes in a single dex file
+```
+
+处理方式：
+
+```groovy
+android {
+  defaultConfig {
+    multiDexEnabled true
+  }
+}
+
+dependencies {
+  implementation 'com.android.support:multidex:1.0.3'
+}
+```
+
+## ADB exited with exit code 1
+
+如果安装阶段失败，先检查模拟器或真机存储空间是否已满。清理旧应用后再重新安装。
+
+## 依赖版本冲突
+
+例如：
+
+```text
+Because package-a depends on intl ^0.17.0
+and package-b depends on intl ^0.18.0
+```
+
+可以先尝试覆盖版本：
+
+```yaml
+dependency_overrides:
+  intl: 0.17.0
+```
+
+但更稳的做法仍然是统一依赖版本或升级冲突包。
+
+## Android `minSdkVersion` 过低
+
+如果出现：
+
+```text
+uses-sdk:minSdkVersion 16 cannot be smaller than version 21 declared in library
+```
+
+优先方案：
+
+- 提高项目的 `minSdkVersion`
+- 使用兼容当前 `minSdkVersion` 的库版本
+
+临时方案：
+
+```xml
+<manifest
+  xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:tools="http://schemas.android.com/tools">
+  <uses-sdk tools:overrideLibrary="io.flutter.plugins.camera" />
+</manifest>
+```
+
+这个方案可能带来运行时风险，只建议在确认兼容性后使用。
+
+## `PlatformException(channel-error...)`
+
+如果刚新增插件后出现：
+
+```text
+PlatformException(channel-error, Unable to establish connection on channel., null, null)
+```
+
+通常是因为只做了热重载或热重启，没有完整重启应用。处理方式：
+
+```bash
+flutter clean
+flutter pub get
+flutter run
+```
+
+## Android 12 `android:exported`
+
+如果报错要求显式声明 `android:exported`，就在对应 `activity`、`service` 或 `receiver` 节点上补齐：
+
+```xml
+<activity android:name=".MainActivity" android:exported="true">
+```
+
+## Kotlin Gradle 插件版本过低
+
+如果提示：
+
+```text
+The Android Gradle plugin supports only Kotlin Gradle plugin version 1.5.20 and higher
+```
+
+需要升级项目或相关插件使用的 Kotlin Gradle 插件版本。
+
+## 建议排查顺序
+
+1. 先看是否是依赖或插件刚变更，需要完整重启。
+2. 再看是否是 Android 构建配置问题，例如 `minSdkVersion`、`multidex`、Kotlin 版本。
+3. 如果是运行时报错，优先确认组件上下文、数据类型和路径是否正确。

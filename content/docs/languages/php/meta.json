@@ -1,0 +1,13 @@
+{
+  "title": "PHP",
+  "root": true,
+  "pages": [
+    "index",
+    "intro",
+    "php-env",
+    "php-extend",
+    "php-nginx-conf",
+    "php-problem",
+    "wordpress-starter"
+  ]
+}

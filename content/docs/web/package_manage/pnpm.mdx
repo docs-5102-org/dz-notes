@@ -1,0 +1,93 @@
+---
+title: pnpm 入门
+description: 从安装、常用命令到 workspace 的实用速查
+category:
+  - 包管理
+tags:
+  - pnpm
+---
+
+# pnpm 入门
+
+`pnpm` 是一个高性能的 Node.js 包管理器。它通过内容寻址存储和符号链接机制减少磁盘占用，同时在多项目场景下也能保持较好的安装速度和一致性。
+
+官方文档：[pnpm 中文网](https://pnpm.io/zh/)
+
+## 为什么很多团队切到 pnpm
+
+- 安装速度快，重复依赖复用率高
+- 磁盘占用更低
+- workspace 支持成熟
+- 依赖关系更严格，更容易暴露错误的隐式依赖
+
+## 安装
+
+```bash
+npm install --global pnpm
+```
+
+如果你使用较新的 Node.js，也可以优先使用 `corepack`：
+
+```bash
+corepack enable
+corepack prepare pnpm@latest --activate
+```
+
+## 常用命令
+
+```bash
+pnpm install
+pnpm add axios
+pnpm add -D typescript
+pnpm remove axios
+pnpm update
+pnpm dev
+pnpm build
+```
+
+## 常见配置
+
+查看当前仓库配置：
+
+```bash
+pnpm config list
+```
+
+修改全局 store 目录：
+
+```bash
+pnpm config set store-dir D:/pnpm-store --global
+```
+
+## Workspace 示例
+
+在 monorepo 根目录创建 `pnpm-workspace.yaml`：
+
+```yaml
+packages:
+  - apps/*
+  - packages/*
+```
+
+然后安装依赖：
+
+```bash
+pnpm install
+```
+
+给某个子包单独安装依赖：
+
+```bash
+pnpm --filter @app/web add react
+```
+
+## 迁移建议
+
+- 单仓项目：可以直接把 `npm` / `yarn` 切到 `pnpm`
+- 多包仓库：优先结合 workspace 使用
+- 老项目迁移时，先删除旧锁文件，再重新安装并验证构建链路
+
+## 延伸阅读
+
+- [package.json 配置指南](/docs/web/package_manage/packagejson)
+- [Node.js 依赖包管理器概览](/docs/web/package_manage/nypt)

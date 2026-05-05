@@ -1,0 +1,9 @@
+{
+  "title": "Gin",
+  "pages": [
+    "index",
+    "lesson",
+    "hotreload",
+    "setup-swagger"
+  ]
+}

@@ -1,0 +1,4 @@
+{
+  "title": "uni-app",
+  "pages": ["index", "guide", "problem", "hbuilderx-env", "launch-wxapp", "open-wx", "album", "callphone", "rem", "subnvue", "turnpage", "uni-popup", "uni-request", "unicloud-work", "use-android-nativejs", "uv-ui", "uview", "v3", "vue-cli", "vue-cli-postcss"]
+}

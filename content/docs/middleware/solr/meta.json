@@ -1,0 +1,10 @@
+{
+  "title": "Solr",
+  "pages": [
+    "index",
+    "solr-starter",
+    "solr-install",
+    "solr-vs-lucene",
+    "solrcloud"
+  ]
+}

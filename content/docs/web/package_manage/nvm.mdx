@@ -1,0 +1,99 @@
+---
+title: nvm 版本管理
+description: 用 nvm 管理多个 Node.js 版本的常用方法
+category:
+  - 包管理
+tags:
+  - nvm
+  - Node.js
+---
+
+# nvm 版本管理
+
+`nvm` 用来在同一台机器上安装和切换多个 Node.js 版本。对于需要维护老项目、升级工具链或验证兼容性的场景，它几乎是必备工具。
+
+## 为什么建议使用 nvm
+
+- 不同项目依赖的 Node.js 版本可能不同
+- 升级 Node.js 时可以更安全地回滚
+- 更适合团队协作和 CI 环境统一版本
+
+## 常见命令
+
+查看本地已安装版本：
+
+```bash
+nvm list
+```
+
+查看可安装版本：
+
+```bash
+nvm list available
+```
+
+安装指定版本：
+
+```bash
+nvm install 20.11.1
+```
+
+切换版本：
+
+```bash
+nvm use 20.11.1
+```
+
+卸载版本：
+
+```bash
+nvm uninstall 20.11.1
+```
+
+## Windows 使用说明
+
+Windows 常用的是 `nvm-windows`，和 Unix 系的原版 `nvm` 不是同一个实现，但基本思路一致。
+
+使用时建议注意：
+
+- 安装目录不要放在中文路径下
+- 尽量避免路径中包含空格
+- 用管理员权限执行某些切换或软链接操作时更稳
+
+## 镜像配置
+
+如果安装时下载缓慢，可以配置镜像：
+
+```ini
+node_mirror: https://npmmirror.com/mirrors/node/
+npm_mirror: https://npmmirror.com/mirrors/npm/
+```
+
+这类配置通常写在 `settings.txt` 中。
+
+## 团队实践建议
+
+- 仓库根目录补一个 `.nvmrc`
+- 文档里明确 Node.js 版本
+- 配合 `package.json` 的 `engines` 使用
+
+`.nvmrc` 示例：
+
+```ini
+20.11.1
+```
+
+## 常见问题
+
+### 版本切换后命令不生效
+
+通常是终端没有重新打开，或者 PATH 没有正确刷新。
+
+### 下载失败
+
+优先检查镜像地址是否失效，再检查网络和代理设置。
+
+## 延伸阅读
+
+- [Node.js 安装与使用](/docs/web/package_manage/nodejs)
+- [pnpm 入门](/docs/web/package_manage/pnpm)

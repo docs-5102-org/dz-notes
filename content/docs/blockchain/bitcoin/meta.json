@@ -1,0 +1,18 @@
+{
+  "title": "比特币",
+  "pages": [
+    "index",
+    "blockchain",
+    "network",
+    "agreement",
+    "anonymity",
+    "utxo",
+    "script",
+    "segwit",
+    "hdwallet",
+    "mining",
+    "mining_nonce",
+    "fork",
+    "p2p"
+  ]
+}

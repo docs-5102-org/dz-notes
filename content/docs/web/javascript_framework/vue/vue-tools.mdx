@@ -1,0 +1,199 @@
+---
+title: 工具生态
+category:
+  - vue
+date: '2025-09-20'
+order: 3
+---
+
+# Vue 工具生态
+
+这里整理 Vue 项目中常见的二维码、调试、移动端适配、手势、滚动、复制、阅读器与导航类工具，方便按场景快速选型。
+
+## 二维码
+
+### `vue-qr`
+
+- 官网：[https://www.npmjs.com/package/vue-qr](https://www.npmjs.com/package/vue-qr)
+- 场景：生成二维码，并支持中间插入 logo
+
+安装：
+
+```bash
+npm install vue-qr --save
+```
+
+示例：
+
+```vue
+<template>
+  <vue-qr :logo-src="imageUrl" text="https://example.com" :size="200" />
+</template>
+
+<script>
+import vueQr from 'vue-qr';
+
+export default {
+  name: 'QrcodeDemo',
+  components: {
+    vueQr,
+  },
+  data() {
+    return {
+      imageUrl: require('../assets/logo.png'),
+    };
+  },
+};
+</script>
+```
+
+### `qrcodejs2`
+
+- 官网：[https://www.npmjs.com/package/qrcodejs2](https://www.npmjs.com/package/qrcodejs2)
+- 场景：在容器节点中动态渲染二维码
+
+安装：
+
+```bash
+npm install --save qrcodejs2
+```
+
+示例：
+
+```vue
+<template>
+  <div class="qrcode" ref="qrCodeUrl"></div>
+</template>
+
+<script>
+import QRCode from 'qrcodejs2';
+
+export default {
+  mounted() {
+    this.createQrCode();
+  },
+  methods: {
+    createQrCode() {
+      new QRCode(this.$refs.qrCodeUrl, {
+        text: 'https://example.com',
+        width: 100,
+        height: 100,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H,
+      });
+    },
+  },
+};
+</script>
+```
+
+### 其他二维码 / 条码资源
+
+- [meet-ui](https://meet-ui.com/#/)
+
+## 调试工具
+
+### `vConsole`
+
+- NPM：[https://www.npmjs.com/package/vconsole](https://www.npmjs.com/package/vconsole)
+- 参考：[https://www.pianshen.com/article/1287158965/](https://www.pianshen.com/article/1287158965/)
+
+适合移动端页面调试，在真机环境里查看日志、请求和存储信息。
+
+## 移动端适配
+
+### `lib-flexible`
+
+`lib-flexible` 是较早期的移动端适配方案，核心思路是根据 `viewport` 和 `dpr` 动态设置根字号，再通过 `rem` 做布局缩放。
+
+官方资源：
+
+- GitHub：[https://github.com/amfe/lib-flexible](https://github.com/amfe/lib-flexible)
+- NPM：[https://www.npmjs.com/package/lib-flexible](https://www.npmjs.com/package/lib-flexible)
+
+引入方式：
+
+```html
+<script src="https://cdn.bootcdn.net/ajax/libs/lib-flexible/0.3.2/flexible.min.js"></script>
+```
+
+说明：
+
+- 旧项目仍可参考
+- 新项目更建议使用 `postcss-pxtorem`、`viewport` 或框架自带方案
+
+## 手势工具
+
+### Vue 3 常见选型
+
+| 工具 | 适用环境 | 特点 |
+| --- | --- | --- |
+| `vue3-touch-events` | Vue 3 | 支持 `tap`、`swipe`、`touch`、`hold` 等常用事件 |
+| `vue3-touch-hammer` | Vue 3 + Hammer.js | 基于 Hammer.js，适合更复杂的手势识别 |
+| `vue3-hand-mobile` | Vue 2 / Vue 3 | 轻量，支持 `v-touch:*` 指令 |
+| `Hammer.js` | 通用 | 底层手势库，支持 `pan`、`swipe`、`pinch`、`rotate` |
+
+参考：
+
+- [vue3-touch-events](https://www.npmjs.com/package/vue3-touch-events)
+- [vue3-touch-hammer](https://github.com/maryasov/vue3-touch-hammer)
+- [vue3-hand-mobile](https://www.npmjs.com/package/vue3-hand-mobile)
+- [Hammer.js](https://hammerjs.github.io/)
+
+## 滚动与列表
+
+### `better-scroll`
+
+- 文档：[https://better-scroll.github.io/docs/zh-CN](https://better-scroll.github.io/docs/zh-CN)
+- 参考：[https://blog.csdn.net/weixin_43334673/article/details/110130720](https://blog.csdn.net/weixin_43334673/article/details/110130720)
+
+### 虚拟列表
+
+- [vue-virtual-scroller](https://www.npmjs.com/package/vue-virtual-scroller)
+- [vue-virtual-scroll-list](https://github.com/tangbc/vue-virtual-scroll-list)
+- [哔哩哔哩视频](https://www.bilibili.com/video/BV1ab4y127Hp)
+- [第三方教程](https://www.cnblogs.com/jiajia-hjj/p/15388319.html)
+- [scrollTop 实现思路](https://www.cnblogs.com/luckknock/p/14736542.html)
+
+## 复制与下载
+
+### 剪贴板
+
+- [教程](./vue-clipboard2)
+- [clipboard-polyfill](https://github.com/lgarron/clipboard-polyfill)
+
+### 文件下载
+
+- [Vue 文件下载实现指南](./dowload-file)
+
+## 阅读器与电子书
+
+### 翻页 / 小说阅读器资源
+
+- [vue-guapi](https://github.com/zgsnbtl/vue-guapi)
+- [vue-fiction](https://github.com/Tmfree/vue-fiction)
+- [zhixiao-vue-webapp](https://gitee.com/hc2000/zhixiao-vue-webapp?_from=gitee_search)
+- [相关思路文章 1](https://www.jianshu.com/p/c8e3527a5c46)
+- [相关思路文章 2](https://www.gushiciku.cn/pl/gH2G)
+- [Fakin-Reader](https://github.com/YIXINSHUWU/Fakin-Reader)
+- [lazybo-reader-book](https://github.com/lazybo-code/lazybo-reader-book)
+
+### 翻页动画资源
+
+- [Turn.js](http://turnjs.com/)
+- [vue-flip-page](https://github.com/harrietjia/vue-flip-page)
+- [StPageFlip](https://github.com/Nodlik/StPageFlip)
+- [CSS 翻页资源](http://www.bootstrapmb.com/tag/fanye)
+- [Vue 简单翻书动画](https://www.jb51.net/article/243711.htm)
+
+### `epub.js`
+
+- GitHub：[https://github.com/futurepress/epub.js](https://github.com/futurepress/epub.js)
+- 在线格式转换：[http://www.online-convert.com/](http://www.online-convert.com/)
+- 参考 1：[https://blog.csdn.net/weixin_30741653/article/details/96260965](https://blog.csdn.net/weixin_30741653/article/details/96260965)
+- 参考 2：[https://www.cnblogs.com/xiaozhaoqi/p/7819086.html](https://www.cnblogs.com/xiaozhaoqi/p/7819086.html)
+
+## 导航组件
+
+- [WebStackPage](https://github.com/WebStackPage/WebStackPage.github.io)

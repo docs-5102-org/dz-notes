@@ -1,0 +1,12 @@
+{
+  "title": "区块链",
+  "root": true,
+  "pages": [
+    "index",
+    "bitcoin",
+    "ethereum",
+    "ethereum_develop",
+    "appendix",
+    "reference-manual"
+  ]
+}

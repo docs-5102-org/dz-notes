@@ -1,0 +1,43 @@
+---
+title: Jacob语音合成指南
+description: Jacob 语音合成接入指南
+category:
+  - 语音技术
+tags:
+  - speech
+  - tts
+  - jacob
+---
+
+# Jacob语音合成指南
+
+## 简介
+
+Jacob 是 Java 与 Windows COM 组件交互的桥接库。结合 Windows SAPI，可以在 Java 程序中实现本地语音合成。
+
+## 适用场景
+
+- Windows 桌面应用
+- 本地离线语音播报
+- Java 语音助手
+- 不依赖云服务的朗读功能
+
+## 接入思路
+
+1. 引入 Jacob 相关 jar 和 dll
+2. 配置 Java 与系统位数一致的运行环境
+3. 调用 Windows SAPI 对象
+4. 传入文本并触发朗读
+
+## 注意事项
+
+- Jacob 依赖 Windows 环境
+- 32 位和 64 位版本必须匹配
+- 服务端部署通常不适合采用这种方案
+- 更适合本地桌面程序而不是 Web 服务
+
+## 常见问题
+
+- `UnsatisfiedLinkError`：检查 dll 位数和加载路径
+- 无法发声：确认系统已安装可用语音引擎
+- 中文发音异常：优先选择支持中文的系统语音包

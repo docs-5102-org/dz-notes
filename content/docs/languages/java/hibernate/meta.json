@@ -1,0 +1,8 @@
+{
+  "title": "Hibernate",
+  "pages": [
+    "index",
+    "hibernate-starter",
+    "hibernate-group-validator"
+  ]
+}

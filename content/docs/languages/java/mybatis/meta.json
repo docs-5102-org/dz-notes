@@ -1,0 +1,16 @@
+{
+  "title": "MyBatis",
+  "pages": [
+    "index",
+    "mybatis-starter",
+    "mybatis-config",
+    "mybatis-select",
+    "mybatis-where",
+    "mybatis-many-insert",
+    "mybatis-sharejdbc",
+    "mybatis-tkmapper",
+    "mybatisplus-starter",
+    "mybatisplus-querywrapper",
+    "mybatis-result"
+  ]
+}

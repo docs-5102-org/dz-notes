@@ -1,0 +1,4 @@
+{
+  "title": "用户管理",
+  "pages": ["index", "user-management", "adduser", "su", "sudo", "su-vs-sudo", "passwd-resume"]
+}

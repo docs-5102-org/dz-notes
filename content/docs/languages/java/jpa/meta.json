@@ -1,0 +1,15 @@
+{
+  "title": "JPA",
+  "pages": [
+    "index",
+    "jpa-starter",
+    "jpa-mapping",
+    "jpa-mapping-table",
+    "jpa-jpql",
+    "spring-data-jpa",
+    "java-bean-validation",
+    "java-bean-validation-list",
+    "validated-vs-valid",
+    "jbv-vs-hv"
+  ]
+}
