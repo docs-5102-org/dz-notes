@@ -1,0 +1,176 @@
+/*
+  macOS glass theme.
+  This file is standalone: it defines Fumadocs tokens and only the dz-* styles
+  that are still referenced by current app routes.
+*/
+
+@theme {
+  --color-fd-background:          transparent;
+  --color-fd-foreground:          rgba(255, 255, 255, 0.88);
+  --color-fd-card:                rgba(255, 255, 255, 0.08);
+  --color-fd-card-foreground:     rgba(255, 255, 255, 0.88);
+  --color-fd-popover:             rgba(255, 255, 255, 0.12);
+  --color-fd-popover-foreground:  rgba(255, 255, 255, 0.55);
+  --color-fd-muted:               rgba(255, 255, 255, 0.06);
+  --color-fd-muted-foreground:    rgba(255, 255, 255, 0.40);
+  --color-fd-border:              rgba(255, 255, 255, 0.14);
+  --color-fd-primary:             #32dca0;
+  --color-fd-primary-foreground:  #0a2e20;
+  --color-fd-secondary:           rgba(255, 255, 255, 0.07);
+  --color-fd-secondary-foreground:rgba(255, 255, 255, 0.80);
+  --color-fd-accent:              rgba(255, 255, 255, 0.10);
+  --color-fd-accent-foreground:   rgba(255, 255, 255, 0.85);
+  --color-fd-ring:                #32dca0;
+}
+
+:root {
+  --channel-notion: #c8c8c8;
+  --channel-web:    #32dca0;
+  --channel-coding: #64b4ff;
+}
+
+.dark {
+  --color-fd-background:          transparent;
+  --color-fd-foreground:          rgba(255, 255, 255, 0.88);
+  --color-fd-card:                rgba(255, 255, 255, 0.08);
+  --color-fd-card-foreground:     rgba(255, 255, 255, 0.88);
+  --color-fd-popover:             rgba(255, 255, 255, 0.12);
+  --color-fd-popover-foreground:  rgba(255, 255, 255, 0.55);
+  --color-fd-muted:               rgba(255, 255, 255, 0.06);
+  --color-fd-muted-foreground:    rgba(255, 255, 255, 0.40);
+  --color-fd-border:              rgba(255, 255, 255, 0.14);
+  --color-fd-primary:             #32dca0;
+  --color-fd-primary-foreground:  #0a2e20;
+  --color-fd-secondary:           rgba(255, 255, 255, 0.07);
+  --color-fd-secondary-foreground:rgba(255, 255, 255, 0.80);
+  --color-fd-accent:              rgba(255, 255, 255, 0.10);
+  --color-fd-accent-foreground:   rgba(255, 255, 255, 0.85);
+  --color-fd-ring:                #32dca0;
+}
+
+body.dz-body {
+  min-height: 100vh;
+  color: var(--color-fd-foreground);
+  background: linear-gradient(145deg, #1a1a2e 0%, #16213e 35%, #0f3460 70%, #1a1a3e 100%);
+  background-attachment: fixed;
+}
+
+.dz-main {
+  min-height: calc(100vh - 73px);
+}
+
+.dz-blog,
+.dz-blog-detail {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 2.5rem;
+}
+
+.dz-section-head__title,
+.dz-blog-card__title,
+.dz-blog-detail__title {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: clamp(1.8rem, 2.4vw, 2.6rem);
+  font-weight: 700;
+  margin-top: 0.3rem;
+}
+
+.dz-section-head__description,
+.dz-blog-card__excerpt,
+.dz-blog-detail__excerpt {
+  max-width: 42rem;
+  color: rgba(255, 255, 255, 0.48);
+  line-height: 1.8;
+  font-size: 1.05rem;
+}
+
+.dz-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.dz-tag,
+.dz-badge {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.dz-blog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.dz-blog-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1rem 1.1rem 1.15rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 2px 20px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+
+.dz-blog-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.13);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24), 0 8px 40px rgba(0, 0, 0, 0.28);
+}
+
+.dz-blog-card__top,
+.dz-blog-detail__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.dz-blog-card__date,
+.dz-blog-detail__meta {
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.dz-blog-detail__excerpt {
+  margin-bottom: 2rem;
+}
+
+.dz-badge-web {
+  background: rgba(50, 220, 160, 0.18);
+  border-color: rgba(50, 220, 160, 0.32);
+  color: #5debb5;
+}
+
+.dz-badge-notion {
+  background: rgba(200, 200, 200, 0.12);
+  border-color: rgba(200, 200, 200, 0.20);
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.dz-badge-coding {
+  background: rgba(100, 180, 255, 0.18);
+  border-color: rgba(100, 180, 255, 0.30);
+  color: #82c8ff;
+}
+
+.dz-prose {
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  padding-top: 1.5rem;
+  font-size: 1.05rem;
+  line-height: 1.8;
+}

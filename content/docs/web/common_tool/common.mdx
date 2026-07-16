@@ -1,0 +1,247 @@
+---
+title: 常用工具库
+category:
+  - 资源库
+  - 工具集
+date: "2025-05-30"
+---
+
+# 常用 JavaScript/Node.js 工具库总结
+
+## 📦 UUID/ID 生成库
+
+| 库名称 | 大小 | 周下载量 | 特点 | 使用场景 | 安装命令 |
+|--------|------|----------|------|----------|----------|
+| **uuid** | ~5KB | 50M+ | 标准 UUID 格式，支持 v1/v3/v4/v5 | 需要标准 UUID，兼容现有系统 | `npm install uuid` |
+| **nanoid** | ~130B | 20M+ | 超小体积，URL 友好，比 UUID 快 60% | 前端应用，短链接，体积敏感场景 | `npm install nanoid` |
+| **ulid** | ~2KB | 5M+ | 可按时间排序，26 字符固定长度 | 数据库主键，需要排序的场景 | `npm install ulid` |
+| **cuid2** | ~3KB | 1M+ | 防碰撞设计，可排序，分布式友好 | 高并发，分布式系统 | `npm install @paralleldrive/cuid2` |
+
+---
+
+## 🛠️ 工具函数库
+
+| 库名称 | 大小 | 周下载量 | 特点 | 优势 | 劣势 | 安装命令 |
+|--------|------|----------|------|------|------|----------|
+| **lodash** | ~24KB | 150M+ | 300+ 函数，成熟稳定 | 功能全面，文档完善，社区强大 | 体积较大，更新慢 | `npm install lodash` |
+| **lodash-es** | ~24KB | 40M+ | Lodash 的 ES Module 版本 | 支持 Tree-shaking | 同 lodash | `npm install lodash-es` |
+| **radash** | ~14KB | 2M+ | 70+ 函数，原生 TypeScript，函数式设计 | 体积小 40%，现代化，异步支持好 | 生态较新，函数较少 | `npm install radash` |
+| **ramda** | ~12KB | 5M+ | 纯函数式编程库 | 函数式编程友好，自动柯里化 | 学习曲线陡峭 | `npm install ramda` |
+
+---
+
+## 📝 Markdown 渲染库
+
+| 库名称 | 大小 | 周下载量 | 特点 | 适用场景 | 安装命令 |
+|--------|------|----------|------|----------|----------|
+| **react-markdown** | ~50KB | 10M+ | React 组件，可自定义渲染 | 需要深度定制，React 项目 | `npm install react-markdown` |
+| **@uiw/react-markdown-preview** | ~80KB | 500K+ | 开箱即用，样式优美 | 快速实现预览，零配置 | `npm install @uiw/react-markdown-preview` |
+| **marked** | ~25KB | 20M+ | 轻量快速，纯 JS | 简单场景，Node.js 项目 | `npm install marked` |
+| **markdown-it** | ~35KB | 15M+ | 可扩展插件系统 | 需要复杂扩展功能 | `npm install markdown-it` |
+| **remark** | ~10KB | 8M+ | 插件生态丰富，AST 处理 | 需要解析和转换 Markdown | `npm install remark` |
+
+---
+
+## 🎨 Markdown 增强插件
+
+| 插件名称 | 功能 | 配合库使用 | 安装命令 |
+|----------|------|------------|----------|
+| **remark-gfm** | 支持 GitHub Flavored Markdown（表格、删除线等） | react-markdown, remark | `npm install remark-gfm` |
+| **rehype-highlight** | 代码语法高亮 | react-markdown | `npm install rehype-highlight` |
+| **remark-math** | 数学公式支持 | react-markdown | `npm install remark-math` |
+| **rehype-katex** | 渲染 LaTeX 数学公式 | react-markdown | `npm install rehype-katex katex` |
+| **highlight.js** | 代码高亮样式 | 通用 | `npm install highlight.js` |
+
+---
+
+## 🔐 安全工具库
+
+| 库名称 | 功能 | 使用场景 | 安装命令 |
+|--------|------|----------|----------|
+| **dompurify** | HTML/XSS 过滤 | 渲染用户输入的 HTML | `npm install dompurify` |
+| **validator** | 字符串验证（邮箱、URL 等） | 表单验证 | `npm install validator` |
+| **bcrypt** | 密码哈希 | 用户密码加密 | `npm install bcrypt` |
+| **jsonwebtoken** | JWT 生成和验证 | 身份认证 | `npm install jsonwebtoken` |
+| **helmet** | HTTP 安全头设置 | Express 安全加固 | `npm install helmet` |
+
+---
+
+## 📅 日期时间库
+
+| 库名称 | 大小 | 特点 | 优势 | 安装命令 |
+|--------|------|------|------|----------|
+| **date-fns** | ~13KB | 模块化，Tree-shaking 友好 | 现代化，体积小 | `npm install date-fns` |
+| **dayjs** | ~2KB | 极小体积，API 类似 Moment.js | 轻量级，性能好 | `npm install dayjs` |
+| **luxon** | ~65KB | 功能强大，国际化支持好 | 功能全面，时区处理强 | `npm install luxon` |
+| **moment** | ~230KB | 老牌库（已停止维护） | ⚠️ 不推荐新项目使用 | `npm install moment` |
+
+---
+
+## 🎯 HTTP 请求库
+
+| 库名称 | 大小 | 特点 | 适用场景 | 安装命令 |
+|--------|------|------|----------|----------|
+| **axios** | ~14KB | 拦截器，自动转换 JSON | 浏览器和 Node.js 通用 | `npm install axios` |
+| **fetch (原生)** | 0KB | 原生浏览器 API | 现代浏览器 | 无需安装 |
+| **node-fetch** | ~1KB | Node.js 的 fetch 实现 | Node.js 环境 | `npm install node-fetch` |
+| **got** | ~50KB | 支持 HTTP/2，流式处理 | Node.js 复杂场景 | `npm install got` |
+| **ky** | ~3KB | 基于 fetch 的轻量封装 | 现代浏览器，体积敏感 | `npm install ky` |
+
+---
+
+## 🎨 UI 组件库
+
+| 库名称 | 适用框架 | 特点 | 企业级 | 安装命令 |
+|--------|----------|------|--------|----------|
+| **Ant Design** | React | 企业级，组件丰富 | ✅ | `npm install antd` |
+| **Material-UI (MUI)** | React | Material Design 风格 | ✅ | `npm install @mui/material` |
+| **Element Plus** | Vue 3 | 国内流行，文档中文 | ✅ | `npm install element-plus` |
+| **Naive UI** | Vue 3 | TypeScript 友好，现代化 | ✅ | `npm install naive-ui` |
+| **Chakra UI** | React | 可访问性强，定制灵活 | ⭐ | `npm install @chakra-ui/react` |
+| **shadcn/ui** | React | 无依赖，复制即用 | ⭐ | 访问 ui.shadcn.com |
+
+---
+
+## 🧪 测试工具库
+
+| 库名称 | 类型 | 特点 | 安装命令 |
+|--------|------|------|----------|
+| **Jest** | 测试框架 | 零配置，快照测试 | `npm install --save-dev jest` |
+| **Vitest** | 测试框架 | Vite 原生，速度快 | `npm install --save-dev vitest` |
+| **React Testing Library** | React 测试 | 关注用户行为 | `npm install --save-dev @testing-library/react` |
+| **Cypress** | E2E 测试 | 可视化界面，调试友好 | `npm install --save-dev cypress` |
+| **Playwright** | E2E 测试 | 多浏览器支持 | `npm install --save-dev @playwright/test` |
+
+---
+
+## 📊 数据可视化库
+
+| 库名称 | 大小 | 特点 | 适用场景 | 安装命令 |
+|--------|------|------|----------|----------|
+| **Chart.js** | ~60KB | 简单易用，8 种图表 | 基础图表需求 | `npm install chart.js` |
+| **ECharts** | ~300KB | 功能强大，中文文档 | 复杂数据可视化 | `npm install echarts` |
+| **D3.js** | ~250KB | 高度自定义，学习曲线陡 | 定制化图表 | `npm install d3` |
+| **Recharts** | ~100KB | React 专用，声明式 | React 项目图表 | `npm install recharts` |
+| **Victory** | ~80KB | React Native 友好 | 移动端图表 | `npm install victory` |
+
+---
+
+## 🔄 状态管理库
+
+| 库名称 | 适用框架 | 特点 | 学习曲线 | 安装命令 |
+|--------|----------|------|----------|----------|
+| **Redux** | React | 生态强大，调试工具好 | 陡峭 | `npm install redux react-redux` |
+| **Zustand** | React | 极简 API，零样板代码 | 平缓 | `npm install zustand` |
+| **Jotai** | React | 原子化状态，类似 Recoil | 中等 | `npm install jotai` |
+| **MobX** | React/Vue | 响应式，自动追踪依赖 | 平缓 | `npm install mobx mobx-react-lite` |
+| **Pinia** | Vue 3 | Vuex 继任者，TypeScript 友好 | 平缓 | `npm install pinia` |
+
+---
+
+## 🎭 表单处理库
+
+| 库名称 | 适用框架 | 特点 | 验证支持 | 安装命令 |
+|--------|----------|------|----------|----------|
+| **React Hook Form** | React | 性能优异，非受控组件 | 内置 + Yup/Zod | `npm install react-hook-form` |
+| **Formik** | React | 功能全面，社区成熟 | 内置 + Yup | `npm install formik` |
+| **VeeValidate** | Vue | Vue 3 官方推荐 | 内置规则丰富 | `npm install vee-validate` |
+| **Yup** | 通用 | Schema 验证库 | N/A | `npm install yup` |
+| **Zod** | 通用 | TypeScript 优先验证库 | N/A | `npm install zod` |
+
+---
+
+## 🌐 国际化 (i18n) 库
+
+| 库名称 | 适用框架 | 特点 | 安装命令 |
+|--------|----------|------|----------|
+| **react-i18next** | React | 功能完整，生态好 | `npm install react-i18next i18next` |
+| **vue-i18n** | Vue | Vue 官方推荐 | `npm install vue-i18n` |
+| **next-i18next** | Next.js | SSR 友好 | `npm install next-i18next` |
+| **FormatJS** | React | 基于标准 Intl API | `npm install react-intl` |
+
+---
+
+## 🚀 构建工具
+
+| 工具名称 | 类型 | 特点 | 适用场景 | 安装命令 |
+|----------|------|------|----------|----------|
+| **Vite** | 构建工具 | 极速 HMR，原生 ESM | 现代项目首选 | `npm create vite@latest` |
+| **Webpack** | 打包工具 | 生态成熟，插件丰富 | 复杂配置需求 | `npm install webpack webpack-cli` |
+| **esbuild** | 打包工具 | Go 编写，速度极快 | 简单项目，库打包 | `npm install esbuild` |
+| **Rollup** | 打包工具 | Tree-shaking 好 | 库开发 | `npm install rollup` |
+| **Turbopack** | 打包工具 | Rust 编写，Next.js 内置 | Next.js 13+ 项目 | 内置于 Next.js |
+
+---
+
+## 🎯 推荐组合方案
+
+### 🌟 现代前端项目标配
+
+```bash
+# 核心工具
+npm install nanoid date-fns axios
+
+# React 项目
+npm install react-hook-form zod zustand
+npm install @tanstack/react-query
+
+# TypeScript
+npm install -D typescript @types/node
+
+# 开发工具
+npm install -D vite vitest
+```
+
+### 🏢 企业级应用
+
+```bash
+# 工具库
+npm install lodash-es uuid dayjs
+
+# UI 框架
+npm install antd
+
+# 状态管理
+npm install redux @reduxjs/toolkit
+
+# HTTP 请求
+npm install axios
+
+# 表单处理
+npm install react-hook-form yup
+```
+
+### ⚡ 性能优先小型项目
+
+```bash
+# 最小工具集
+npm install nanoid dayjs ky
+
+# 无需大型 UI 框架
+npm install shadcn/ui  # 按需复制组件
+
+# 状态管理
+npm install zustand
+
+# 表单
+npm install react-hook-form zod
+```
+
+---
+
+## 📈 选择建议
+
+| 需求 | 推荐库 | 理由 |
+|------|--------|------|
+| **生成唯一 ID** | nanoid | 体积最小，性能最好 |
+| **工具函数** | radash (新项目) / lodash (老项目) | 现代化 vs 稳定性 |
+| **日期处理** | date-fns | 体积小，Tree-shaking 友好 |
+| **HTTP 请求** | axios | 功能完整，生态成熟 |
+| **状态管理** | zustand | 简单易用，零样板 |
+| **表单处理** | react-hook-form + zod | 性能好，类型安全 |
+| **UI 组件** | Ant Design (企业) / shadcn/ui (灵活) | 按需选择 |
+| **Markdown 渲染** | @uiw/react-markdown-preview | 开箱即用 |
+
+---
+
+希望这个总结对你有帮助！可以根据具体项目需求选择合适的工具库。

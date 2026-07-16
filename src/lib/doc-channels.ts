@@ -1,4 +1,7 @@
-import { source } from '@/lib/source';
+import fs from 'node:fs';
+import path from 'node:path';
+import { load } from 'js-yaml';
+import docsMeta from '../../content/docs/meta.json';
 
 const channelColorMap: Record<string, string> = {
   notion: 'var(--channel-notion)',
@@ -80,6 +83,13 @@ const channelOrderMap: Record<string, number> = {
   ai: 170,
 };
 
+// 从 content/docs/meta.json 的 pages 字段拿到真实一级频道。
+// 示例：["web", "languages", "..."] => ["web", "languages"]
+// 示例：["ai", { type: "separator" }, "..."] => ["ai"]
+const topLevelChannelSlugs = docsMeta.pages.filter(
+  (page): page is string => typeof page === 'string' && !page.startsWith('...'),
+);
+
 export type DocChannel = {
   slug: string;
   title: string;
@@ -89,33 +99,56 @@ export type DocChannel = {
   meta: string;
 };
 
+type ChannelFrontmatter = {
+  title?: string;
+  subTitle?: string;
+  description?: string;
+};
+
+function getFrontmatter(filePath: string): ChannelFrontmatter {
+  if (!fs.existsSync(filePath)) return {};
+
+  const content = fs.readFileSync(filePath, 'utf8');
+  const match = /^---\r?\n([\s\S]*?)\r?\n---/.exec(content);
+  if (!match) return {};
+
+  const data = load(match[1]);
+  return data && typeof data === 'object' ? data as ChannelFrontmatter : {};
+}
+
+function getChannelFrontmatter(slug: string) {
+  return getFrontmatter(path.join(process.cwd(), 'content', 'docs', slug, 'index.mdx'));
+}
+
 // 从页面 frontmatter 中解析频道标题；如果缺失，则按顶层 slug 使用稳定的兜底标题。
-function getChannelTitle(page: ReturnType<typeof source.getPages>[number]) {
-  if (page.data.subTitle?.trim()) return page.data.subTitle;
-  return channelTitleFallbackMap[page.slugs[0]] ?? page.data.title;
+function getChannelTitle(slug: string, frontmatter: ChannelFrontmatter) {
+  if (frontmatter.subTitle?.trim()) return frontmatter.subTitle;
+  return channelTitleFallbackMap[slug] ?? frontmatter.title ?? slug;
 }
 
 // 从页面 frontmatter 中解析频道描述；如果缺失，则回退到预设的频道描述文案。
-function getChannelDescription(page: ReturnType<typeof source.getPages>[number]) {
-  const description = page.data.description?.trim();
+function getChannelDescription(slug: string, frontmatter: ChannelFrontmatter) {
+  const description = frontmatter.description?.trim();
   if (description) return description;
-  return channelDescriptionFallbackMap[page.slugs[0]] ?? '';
+  return channelDescriptionFallbackMap[slug] ?? '';
 }
 
-// 基于 `/content/docs/*/index.mdx` 动态生成顶层频道列表，避免手动维护频道配置。
+// 只按 `content/docs/meta.json` 中声明的一级 `pages` 生成频道列表。
+// 不再使用 `source.getPages().filter(page => page.slugs.length === 1)`：
+// Fumadocs 的子目录 `meta.json` 如果配置了 `root: true`，会把二级目录提升成 root 页面，
+// 这会导致 `languages/java`、`languages/go` 等二级分类被误判成一级频道。
+// 这里先拿到真实的顶层 slug，再读取频道首页 frontmatter 补齐标题和描述。
 export function getDocChannels(): DocChannel[] {
-  return source
-    .getPages()
-    .filter((page) => page.slugs.length === 1)
-    .map((page) => {
-      const slug = page.slugs[0];
+  return topLevelChannelSlugs
+    .map((slug) => {
+      const frontmatter = getChannelFrontmatter(slug);
 
       return {
         slug,
-        title: getChannelTitle(page),
-        href: page.url,
+        title: getChannelTitle(slug, frontmatter),
+        href: `/docs/${slug}`,
         color: channelColorMap[slug] ?? 'var(--channel-coding)',
-        description: getChannelDescription(page),
+        description: getChannelDescription(slug, frontmatter),
         meta: '',
       };
     })

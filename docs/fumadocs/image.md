@@ -43,14 +43,52 @@ import { ImageZoom } from 'fumadocs-ui/components/image-zoom';
 import defaultComponents from 'fumadocs-ui/mdx';
 import type { MDXComponents } from 'mdx/types';
 
+function getImageSrc(src: unknown) {
+  if (typeof src === 'string') return src;
+
+  if (src && typeof src === 'object') {
+    if ('default' in src && src.default && typeof src.default === 'object' && 'src' in src.default) {
+      return String((src as { default: { src: unknown } }).default.src);
+    }
+
+    if ('src' in src) {
+      return String((src as { src: unknown }).src);
+    }
+  }
+
+  return '';
+}
+
 export function getMDXComponents(components?: MDXComponents) {
   return {
     ...defaultComponents,
-    img: (props) => <ImageZoom {...(props as any)} />,
+    img: ({ src, alt, width, height, ...props }) => {
+      const resolvedSrc = getImageSrc(src);
+
+      return (
+        <ImageZoom
+          src={resolvedSrc}
+          alt={alt}
+          width={width}
+          height={height}
+          zoomInProps={{ alt }}
+        >
+          <img src={resolvedSrc} alt={alt} width={width} height={height} {...props} />
+        </ImageZoom>
+      );
+    },
     ...components,
   } satisfies MDXComponents;
 }
 ```
+
+这里不要直接把 Markdown 图片的 props 全量透传给 `ImageZoom`。`ImageZoom` 内部会走 Fumadocs 的框架图片组件，在 Next.js 项目中最终会使用 `next/image`。对于远程图片，编译阶段通常无法稳定读取远程资源的真实尺寸；如果 MDX 中又没有显式提供 `width` / `height`，就会触发类似下面的编译错误：
+
+```txt
+Image with src "https://example.com/image.webp" is missing required "width" property.
+```
+
+因此当前项目的处理方式是：外层仍然使用 `ImageZoom` 提供点击放大能力，实际展示图像时使用原生 `<img>`。这样 Markdown 中的远程图片即使没有尺寸信息，也不会被 `next/image` 的尺寸校验卡住；如果图片本身提供了 `width` / `height`，也会继续透传给原生图片元素。
 
 配置完成后，文档内原有的 Markdown 图片语法不需要改动：
 

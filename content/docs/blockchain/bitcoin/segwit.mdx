@@ -2,30 +2,13 @@
 title: Segwit
 description: Segwit 相关笔记
 tags:
-  - blockchain
   - bitcoin
   - segwit
 category:
   - 区块链
-  - 比特币
 ---
 
 # SegWit地址详解
-
-## 📋 目录
-
-- [概述](#概述)
-- [什么是SegWit](#什么是segwit)
-- [SegWit地址格式](#segwit地址格式)
-- [技术优势](#技术优势)
-- [实际应用场景](#实际应用场景)
-- [钱包支持情况](#钱包支持情况)
-- [迁移指南](#迁移指南)
-- [常见问题](#常见问题)
-- [未来发展](#未来发展)
-- [总结](#总结)
-
----
 
 ## 概述
 
@@ -79,7 +62,7 @@ SegWit通过以下三个核心机制实现优化：
 | **🔄 Nested SegWit (P2SH-P2WPKH)** | `3` | `3QJmV3qfvL9SuYo34YihAf3sRCW3qSinyC` | **SegWit包装在P2SH中** |
 
 > **💡 提示**
-> 1. 传统比特币地址（`1`开头）使用计算带校验的[Base58编码](./p2p/public_key.md#4-地址)生成
+> 1. 传统比特币地址（`1`开头）使用计算带校验的[Base58编码](./p2p/public_key.mdx#4-地址)生成
 > 2. bc地址使用Bech32编码，而非Base58编码
 
 ### 🏗️ Bech32地址详解

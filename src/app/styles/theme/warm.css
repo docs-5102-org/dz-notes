@@ -1,6 +1,6 @@
-/* 
-  自定义主题色变量- 暖调米白色 / 象牙白 / 奶油白 
-  @import './styles/home.css'; ← 在 global.css 中引入，放到默认主题引入语句最后面，用于覆盖 Fumadocs 默认主题色
+/*
+  Warm Fumadocs theme tokens.
+  Keep project-specific dz-* styles only when they are still referenced by app routes.
 */
 
 @theme {
@@ -22,7 +22,6 @@
   --color-fd-ring:                #1d9e75;
 }
 
-/* 局部语义色（无主题变量对应，保留为独立 token） */
 :root {
   --channel-notion: #b4b2a9;
   --channel-web:    #1d9e75;
@@ -48,8 +47,6 @@
   --color-fd-ring:                hsl(0, 0%, 54.9%);
 }
 
-
-/* ── Body ── */
 body.dz-body {
   min-height: 100vh;
   color: var(--color-fd-foreground);
@@ -59,133 +56,30 @@ body.dz-body {
   min-height: calc(100vh - 73px);
 }
 
-
-/* ── Header ── */
-.dz-header {
-  position: sticky;
-  top: 0;
-  z-index: 40;
-  border-bottom: 1px solid var(--color-fd-border);
-  background: color-mix(in srgb, var(--color-fd-card) 88%, white 12%);
-  backdrop-filter: blur(14px);
-}
-
-.dz-header__inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 1rem 1.25rem;
-}
-
-
-/* ── Brand ── */
-.dz-brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 1.6rem;
-  font-weight: 700;
-  text-decoration: none;
-  color: var(--color-fd-foreground);
-}
-
-.dz-brand__dot {
-  width: 0.625rem;
-  height: 0.625rem;
-  border-radius: 999px;
-  background: var(--color-fd-primary);
-}
-
-
-/* ── Nav ── */
-.dz-nav {
-  display: inline-flex;
-  gap: 0.5rem;
-  padding: 0.25rem;
-}
-
-.dz-nav__link {
-  border: 1px solid var(--color-fd-border);
-  border-radius: 0.9rem;
-  padding: 0.7rem 1.1rem;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--color-fd-foreground);
-  text-decoration: none;
-  background: color-mix(in srgb, var(--color-fd-card) 82%, transparent);
-  transition: background-color 150ms ease, border-color 150ms ease;
-}
-
-.dz-nav__link:hover,
-.dz-nav__link.is-active {
-  background: white;
-  border-color: color-mix(in srgb, var(--color-fd-border) 72%, black 10%);
-}
-
-
-/* ── Search ── */
-.dz-search {
-  border: 1px solid var(--color-fd-border);
-  border-radius: 0.9rem;
-  background: var(--color-fd-muted);
-  padding: 0.75rem 1rem;
-  color: var(--color-fd-popover-foreground);
-  font-size: 0.95rem;
-}
-
-
-/* ── Page containers ── */
-.dz-home,
 .dz-blog,
-.dz-blog-detail,
-.dz-docs-shell {
+.dz-blog-detail {
   max-width: 1200px;
   margin: 0 auto;
   padding: 1.5rem 1.25rem 2.5rem;
 }
 
-
-/* ── Hero ── */
-.dz-hero {
-  background: color-mix(in srgb, var(--color-fd-card) 65%, transparent);
-  border: 1px solid var(--color-fd-border);
-  border-radius: 1.5rem 1.5rem 0 0;
-  padding: 2rem 1.75rem 2.25rem;
-}
-
-.dz-hero__avatar {
-  width: 3rem;
-  height: 3rem;
-  border-radius: 999px;
-  background: #e1f5ee;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.4rem;
-  margin-bottom: 1rem;
-}
-
-.dz-hero__title {
-  font-size: clamp(2rem, 3vw, 3rem);
+.dz-section-head__title,
+.dz-blog-card__title,
+.dz-blog-detail__title {
+  font-size: clamp(1.8rem, 2.4vw, 2.6rem);
   font-weight: 700;
-  margin-bottom: 0.75rem;
+  margin-top: 0.3rem;
 }
 
-.dz-hero__description,
 .dz-section-head__description,
 .dz-blog-card__excerpt,
-.dz-docs-portal__description {
+.dz-blog-detail__excerpt {
   max-width: 42rem;
   color: var(--color-fd-popover-foreground);
   line-height: 1.8;
   font-size: 1.05rem;
 }
 
-
-/* ── Tags / Badges ── */
 .dz-tags {
   display: flex;
   flex-wrap: wrap;
@@ -204,16 +98,13 @@ body.dz-body {
   font-weight: 600;
 }
 
-
-/* ── Grid & Cards ── */
-.dz-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+.dz-blog-list {
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
-  padding-top: 1.25rem;
+  margin-top: 1.25rem;
 }
 
-.dz-card,
 .dz-blog-card {
   display: block;
   text-decoration: none;
@@ -225,162 +116,10 @@ body.dz-body {
   transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
 }
 
-.dz-card:hover,
 .dz-blog-card:hover {
   transform: translateY(-2px);
   border-color: color-mix(in srgb, var(--color-fd-border) 68%, black 12%);
   box-shadow: 0 10px 30px rgba(33, 28, 19, 0.08);
-}
-
-.dz-card__bar {
-  display: block;
-  height: 0.25rem;
-  border-radius: 999px;
-  margin-bottom: 1rem;
-}
-
-.dz-card__title,
-.dz-blog-card__title,
-.dz-blog-detail__title {
-  font-size: 1.7rem;
-  font-weight: 700;
-  margin-bottom: 0.45rem;
-}
-
-.dz-card__description,
-.dz-card__meta,
-.dz-blog-card__date,
-.dz-blog-detail__meta,
-.dz-docs-shell__label,
-.dz-docs-portal__eyebrow {
-  color: var(--color-fd-muted-foreground);
-}
-
-.dz-card__meta {
-  margin-top: 0.9rem;
-  font-size: 0.92rem;
-}
-
-
-/* ── Docs shell ── */
-.dz-docs-shell__intro {
-  margin-bottom: 1rem;
-}
-
-.dz-docs-shell__label,
-.dz-docs-portal__eyebrow {
-  font-size: 0.82rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 700;
-}
-
-.dz-docs-shell__title,
-.dz-docs-portal__title,
-.dz-section-head__title {
-  font-size: clamp(1.8rem, 2.4vw, 2.6rem);
-  font-weight: 700;
-  margin-top: 0.3rem;
-}
-
-
-/* ── Docs layout ── */
-.dz-docs-layout {
-  border: 1px solid var(--color-fd-border);
-  border-radius: 1.4rem;
-  overflow: hidden;
-  background: color-mix(in srgb, white 88%, var(--color-fd-card) 12%);
-}
-
-.dz-docs-layout #nd-sidebar {
-  background: color-mix(in srgb, white 72%, var(--color-fd-card) 28%);
-  border-color: var(--color-fd-border);
-}
-
-.dz-docs-layout #nd-sidebar a,
-.dz-docs-layout #nd-sidebar button {
-  border-radius: 0.9rem;
-}
-
-.dz-docs-layout #nd-sidebar [data-active='true'] {
-  background: color-mix(in srgb, var(--color-fd-muted) 82%, white 18%);
-  color: var(--color-fd-foreground);
-}
-
-.dz-docs-layout #nd-sidebar [data-state='open'] > button,
-.dz-docs-layout #nd-sidebar [data-active='true'] > a {
-  font-weight: 600;
-}
-
-.dz-docs-layout #nd-subnav {
-  border-color: var(--color-fd-border);
-  background: color-mix(in srgb, white 80%, var(--color-fd-card) 20%);
-}
-
-.dz-docs-layout [data-sidebar-panel] {
-  border-color: var(--color-fd-border);
-}
-
-.dz-docs-layout > .z-10 {
-  border-color: var(--color-fd-border);
-  background: color-mix(in srgb, white 84%, var(--color-fd-card) 16%);
-}
-
-.dz-docs-layout > .z-10 a {
-  position: relative;
-  padding-bottom: 0.85rem;
-  color: var(--color-fd-muted-foreground);
-}
-
-.dz-docs-layout > .z-10 a[data-active='true'],
-.dz-docs-layout > .z-10 a[aria-current='page'] {
-  color: var(--color-fd-primary);
-}
-
-.dz-docs-layout #nd-page {
-  max-width: 860px;
-  padding-top: 2rem;
-  padding-bottom: 3rem;
-}
-
-.dz-docs-layout #nd-page h1 {
-  font-size: clamp(2rem, 2.8vw, 2.7rem);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-.dz-docs-layout #nd-page .prose {
-  font-size: 1.05rem;
-  line-height: 1.85;
-}
-
-.dz-docs-layout #nd-page .prose p {
-  color: var(--color-fd-popover-foreground);
-}
-
-.dz-docs-layout #nd-page .border-b {
-  border-color: var(--color-fd-border);
-}
-
-.dz-docs-layout #nd-toc {
-  border-left: 1px solid color-mix(in srgb, var(--color-fd-border) 75%, transparent);
-}
-
-.dz-docs-layout #nd-toc h3 {
-  color: var(--color-fd-muted-foreground);
-}
-
-.dz-docs-portal {
-  padding: 1rem;
-}
-
-
-/* ── Blog ── */
-.dz-blog-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin-top: 1.25rem;
 }
 
 .dz-blog-card__top,
@@ -392,14 +131,15 @@ body.dz-body {
   margin-bottom: 0.9rem;
 }
 
-.dz-blog-detail__excerpt {
-  margin-bottom: 2rem;
-  color: var(--color-fd-popover-foreground);
-  font-size: 1.05rem;
+.dz-blog-card__date,
+.dz-blog-detail__meta {
+  color: var(--color-fd-muted-foreground);
 }
 
+.dz-blog-detail__excerpt {
+  margin-bottom: 2rem;
+}
 
-/* ── Channel badges ── */
 .dz-badge-web {
   background: #e1f5ee;
   color: #0f6e56;
@@ -415,40 +155,9 @@ body.dz-body {
   color: #185fa5;
 }
 
-
-/* ── Prose ── */
 .dz-prose {
   border-top: 1px solid var(--color-fd-border);
   padding-top: 1.5rem;
   font-size: 1.05rem;
   line-height: 1.8;
-}
-
-
-/* ── Responsive ── */
-@media (max-width: 900px) {
-  .dz-header__inner {
-    flex-wrap: wrap;
-  }
-
-  .dz-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 640px) {
-  .dz-nav {
-    width: 100%;
-    order: 3;
-    justify-content: space-between;
-  }
-
-  .dz-nav__link {
-    flex: 1;
-    text-align: center;
-  }
-
-  .dz-search {
-    width: 100%;
-  }
 }

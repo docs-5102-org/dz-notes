@@ -2,14 +2,10 @@
 title: vscode 配置 solidity 开发环境
 description: Solidity 开发环境配置笔记
 tags:
-  - blockchain
-  - ethereum-develop
-  - solidity
-  - vscode
+  - Solidity
 category:
   - 区块链
   - 以太坊
-  - Solidity
 ---
 
 # vscode 配置 solidity 开发环境
@@ -63,7 +59,7 @@ git --version
 ### 创建工作区设置
 在项目根目录创建 `.vscode/settings.json`：
 
-```json
+```jsonc
 {
     // Solidity 编译器设置
     "solidity.compileUsingRemoteVersion": "0.8.19",
@@ -111,7 +107,7 @@ git --version
 ### 全局用户设置
 打开 VSCode 设置 (Ctrl/Cmd + ,)，添加：
 
-```json
+```jsonc
 {
     // Solidity 全局设置
     "solidity.compileUsingRemoteVersion": "latest",
@@ -362,7 +358,8 @@ Thumbs.db
 ## 🧪 示例合约
 
 创建 `contracts/MyToken.sol`:
-```solidity
+
+```
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 

@@ -1,0 +1,50 @@
+---
+title: 微信进程查看指南
+date: "2026-05-30"
+category: 随笔
+---
+
+# 微信进程查看指南
+
+## 列出所有微信相关进程
+
+以 **管理员身份** 打开 PowerShell，执行：
+
+```powershell
+Get-Process | Where-Object { $_.Name -like "*Wechat*" -or $_.Name -like "*Weixin*" }
+```
+
+## 输出结果说明
+
+执行后可以看到以下进程：
+
+| 进程名 | 说明 |
+|---|---|
+| `WeChatAppEx` | 多个子进程（小程序 / 渲染进程） |
+| `Weixin` | 主进程，通常有多个实例，内存占用最大的为主进程 |
+
+## 查找指定 PID 的模块信息
+
+找到主进程 PID 后（以 `18132` 为例），查看其加载的 DLL 模块：
+
+```powershell
+$proc = Get-Process -Id 18132
+$proc.Modules | Select-Object ModuleName, @{N='BaseAddress';E={[string]::Format('0x{0:X}', [int64]$_.BaseAddress)}} | Format-Table -AutoSize
+```
+
+或筛选含特定关键词的模块：
+
+```powershell
+Get-Process -Id 18132 | ForEach-Object {
+    $_.Modules | Where-Object {
+        $_.ModuleName -like "*Win*" -or
+        $_.ModuleName -like "*wx*"  -or
+        $_.ModuleName -like "*Weixin*"
+    } | Select-Object ModuleName, @{N='BaseAddress';E={[string]::Format('0x{0:X}', [int64]$_.BaseAddress)}}
+}
+```
+
+## 注意事项
+
+- 以上命令需要 **管理员权限** 才能读取其他进程的模块信息
+- PID 每次启动微信后会变化，需重新查询

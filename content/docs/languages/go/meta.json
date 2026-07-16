@@ -1,6 +1,5 @@
 {
   "title": "Go",
-  "root": true,
   "pages": [
     "index",
     "setup",

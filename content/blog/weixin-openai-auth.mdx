@@ -1,0 +1,34 @@
+---
+title: 微信开发平台认证与小程序跳转
+date: "2026-05-31"
+category: 随笔
+---
+
+
+## 一、问题的解决思路
+
+这个很关键：
+
+另按照最新平台文档（https://developers.weixin.qq.com/doc/oplatform/Mobile_App/Launching_a_Mini_Program/Launching_a_Mini_Program.html）：
+跳转规则
+对于已通过认证的开放平台账号，其移动应用可以跳转至任何合法的小程序，且不限制跳转的小程序数量。
+对于未通过认证的开放平台账号，其移动应用仅可以跳转至同一开放平台账号下小程序。（注意：未认证账号，未交钱，没有跳转小程序的权限）
+注意：若移动应用未上架，则最多只能跳转小程序100次/天，用于满足调试需求。
+
+移动应用应当无需绑定到同一开放平台账号下也可呼起小程序？
+
+参考
+
+
+https://developers.weixin.qq.com/community/develop/doc/000e2c281acd3870afb44bce661c00?highLine=%25E5%25BC%2580%25E5%258F%2591%25E8%2580%2585%25E8%25B5%2584%25E8%25B4%25A8%25E8%25AE%25A4%25E8%25AF%2581%25E6%259C%2589%25E5%2595%25A5%25E7%2594%25A8%25E5%2591%25A2%25EF%25BC%259F
+
+## 二、微信开放平台如何绑定小程序？
+
+https://developers.weixin.qq.com/community/develop/doc/00066c1bda4dc86de7e1f96d961009?highLine=%25E5%25BE%25AE%25E4%25BF%25A1%25E5%25BC%2580%25E6%2594%25BE%25E5%25B9%25B3%25E5%258F%25B0%25E5%25A6%2582%25E4%25BD%2595%25E7%25BB%2591%25E5%25AE%259A%25E5%25B0%258F%25E7%25A8%258B%25E5%25BA%258F
+
+
+三、微信开放平台将APP和小程序都关联了吗
+
+不关联，是无法进行跳转的
+
+https://developers.weixin.qq.com/community/develop/doc/000a0e6607c0b8c644157bf7466000

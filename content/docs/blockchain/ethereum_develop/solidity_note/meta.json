@@ -10,8 +10,6 @@
     "control-structures",
     "contracts",
     "mapping-types",
-    "mapping-example1",
-    "mapping-example2",
     "iterator-mapping",
     "dangling-reference",
     "units-and-global-variables"

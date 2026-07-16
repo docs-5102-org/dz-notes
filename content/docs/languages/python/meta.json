@@ -1,6 +1,5 @@
 {
   "title": "Python",
-  "root": true,
   "pages": [
     "index",
     "intro",
@@ -9,6 +8,7 @@
     "qt",
     "pyinstaller",
     "podt",
-    "problem"
+    "problem",
+    "bypasses-sliding-captcha"
   ]
 }

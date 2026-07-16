@@ -268,3 +268,13 @@ export default withMDX(nextConfig);
 ## 备注
 
 如果后续频道继续扩展，建议同步维护本 README 的“内容频道”和“项目结构”部分，避免入口信息滞后。
+
+codex resume 019dfdc8-d3c4-7c50-90b1-2a476437e79b
+
+// "dev": "cross-env NODE_OPTIONS=--max-old-space-size=4096 next dev",
+
+
+频道分类 编程语言应该显示的是正确的，Java 不应该作为单独的频道分类
+
+已完成 
+ai、bigdata、blockchain、storage、game-development、mobile_native、cross_platform

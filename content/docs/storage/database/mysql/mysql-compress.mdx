@@ -8,10 +8,6 @@ tag:
 
 # MySQL大字段存储优化与压缩存储
 
-## 目录
-
-[[toc]]
-
 ## 前言
 
 在开发大型系统时，我们经常会遇到需要在MySQL中存储大量文本数据的场景，比如JSON配置、任务详情、日志信息等。当这些字段的大小超过TEXT类型的限制（65KB）时，就需要使用MEDIUMTEXT（16MB）甚至LONGTEXT（4GB），这会显著影响数据库的查询和更新性能。
@@ -369,7 +365,7 @@ ORDER BY ratio DESC;
 
 ## 字段类型JAVA与Mysql对应关系
 
-![图片](./file/20180102140923442.png)
+![图片](/assets/images/storage/mysql/20180102140923442.png)
 
 ## 注意事项和限制
 

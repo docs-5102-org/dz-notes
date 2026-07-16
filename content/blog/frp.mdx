@@ -1,0 +1,135 @@
+---
+title: frp内网穿透教程
+category: 网络工具
+date: "2026-05-30"
+---
+
+# frp内网穿透教程
+
+内网穿透可以让你的本地开发环境通过外网云服务器暴露到公网,方便API调试。以下是几种实现方案:
+
+## 方案一：使用 frp (推荐)
+
+frp 是最流行的内网穿透工具,配置简单且功能强大。
+
+**服务器端配置:**
+
+1. 在云服务器下载 frp:
+```bash
+wget https://github.com/fatedier/frp/releases/download/v0.52.0/frp_0.52.0_linux_amd64.tar.gz
+tar -xzf frp_0.52.0_linux_amd64.tar.gz
+cd frp_0.52.0_linux_amd64
+```
+
+2. 编辑 `frps.ini`:
+```ini
+[common]
+bind_port = 7000
+dashboard_port = 7500
+dashboard_user = admin
+dashboard_pwd = your_password
+token = your_secret_token
+```
+
+3. 启动服务端:
+```bash
+./frps -c frps.ini
+```
+
+**本地客户端配置:**
+
+1. 下载对应系统的 frp 客户端
+
+2. 编辑 `frpc.ini`:
+```ini
+[common]
+server_addr = your_server_ip
+server_port = 7000
+token = your_secret_token
+
+[web]
+type = http
+local_ip = 127.0.0.1
+local_port = 3000
+custom_domains = api.yourdomain.com
+
+[api]
+type = tcp
+local_ip = 127.0.0.1
+local_port = 8080
+remote_port = 8080
+```
+
+3. 启动客户端:
+```bash
+./frpc -c frpc.ini
+```
+
+## 方案二：使用 SSH 反向隧道
+
+如果只是临时使用,SSH 隧道最简单:
+
+```bash
+# 将本地 8080 端口映射到服务器的 8080 端口
+ssh -R 8080:localhost:8080 user@your_server_ip
+
+# 或者后台运行
+ssh -fN -R 8080:localhost:8080 user@your_server_ip
+```
+
+在服务器上需要配置 `/etc/ssh/sshd_config`:
+```
+GatewayPorts yes
+```
+
+## 方案三：使用 Nginx 反向代理 + Websocket
+
+适合需要域名访问的场景:
+
+**服务器端 Nginx 配置:**
+```nginx
+server {
+    listen 80;
+    server_name api.yourdomain.com;
+    
+    location / {
+        proxy_pass http://localhost:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
+```
+
+配合 frp 使用,将本地服务映射到服务器的 8080 端口。
+
+## 方案四：使用 Cloudflare Tunnel
+
+如果使用 Cloudflare 托管域名:
+
+```bash
+# 安装 cloudflared
+wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+chmod +x cloudflared-linux-amd64
+
+# 登录认证
+./cloudflared-linux-amd64 tunnel login
+
+# 创建隧道
+./cloudflared-linux-amd64 tunnel create my-tunnel
+
+# 运行隧道
+./cloudflared-linux-amd64 tunnel --url http://localhost:3000
+```
+
+## 安全建议
+
+1. **使用强密码/Token** - 防止未授权访问
+2. **启用 HTTPS** - 使用 Let's Encrypt 或其他 SSL 证书
+3. **IP 白名单** - 限制访问来源
+4. **临时使用** - 调试完成后及时关闭
+5. **监控日志** - 定期检查访问日志
+
+对于临时 API 调试,我推荐使用 **frp + Nginx**,配置一次后续使用很方便。如果只是偶尔用一次,**SSH 反向隧道**最简单快捷。
+
+你的本地 API 运行在哪个端口?我可以帮你写具体的配置文件。

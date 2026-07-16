@@ -1,0 +1,111 @@
+---
+title: Continue 插件配置指南
+date: "2026-05-30"
+category: 随笔
+---
+
+
+## 一、安装 Continue 插件
+
+1. 打开 IntelliJ IDEA → `Settings/Preferences`（`Ctrl+Alt+S`）
+2. 进入 `Plugins` → `Marketplace`
+3. 搜索 **Continue** → 点击 `Install`
+4. 重启 IDE
+
+---
+
+## 二、打开 `config.yaml`
+
+在右侧 Continue 侧边栏中，点击右上角的配置下拉菜单，找到 **Local Config** 选项，点击旁边的 **齿轮图标**，即可打开本地 `config.yaml` 文件。
+
+文件路径一般在：
+- macOS/Linux：`~/.continue/config.yaml`
+- Windows：`C:\Users\<用户名>\.continue\config.yaml`
+
+---
+
+## 三、配置本地统一 API（OpenAI 兼容格式）
+
+对于兼容 OpenAI 接口的本地服务，可以将 `provider` 设为 `openai`，并通过 `apiBase` 指定本地服务地址，例如 `http://localhost:8000/v1`。
+
+以下是一个完整示例配置：
+
+```yaml
+name: Local Config
+version: 1.0.0
+schema: v1
+
+models:
+  # 聊天 / Agent 模型
+  - name: 本地聊天模型
+    provider: openai
+    model: your-model-name        # 例如：qwen2.5-coder、deepseek-coder 等
+    apiBase: http://localhost:11434/v1   # 替换为你的本地 API 地址
+    apiKey: ollama                       # 无需验证时可随便填，或留空
+
+  # 自动补全模型（可选）
+  - name: 本地补全模型
+    provider: openai
+    model: your-autocomplete-model
+    apiBase: http://localhost:11434/v1
+    apiKey: ollama
+    roles:
+      - autocomplete
+
+  # Embedding 模型（可选，用于代码上下文检索）
+  - name: 本地 Embedding 模型
+    provider: openai
+    model: your-embedding-model
+    apiBase: http://localhost:11434/v1
+    apiKey: ollama
+    roles:
+      - embed
+```
+
+---
+
+## 四、常见本地服务对应的 `apiBase`
+
+| 本地服务 | apiBase 地址 |
+|---|---|
+| **Ollama** | `http://localhost:11434/v1` |
+| **LM Studio** | `http://localhost:1234/v1` |
+| **vLLM** | `http://localhost:8000/v1` |
+| **LocalAI** | `http://localhost:8080/v1` |
+| **Jan** | `http://localhost:1337/v1` |
+
+---
+
+## 五、保存并生效
+
+在 IDE 中保存 `config.yaml` 后，Continue 会自动刷新配置，无需重启。
+
+---
+
+## 六、验证配置
+
+1. 按 `Ctrl+Shift+J`（JetBrains 默认）打开 Continue 侧边栏
+2. 在模型选择下拉框中找到你配置的本地模型
+3. 输入一段提示词测试是否正常响应
+
+---
+
+## 七、VSCODE+ CLIProxyAPI 实战配置
+
+
+```
+name: Local Config
+version: 1.0.0
+schema: v1
+
+models:
+  # 聊天 / Agent 模型
+  - name: gq
+    provider: openai
+    model: groq/llama-3.3-70b             # groq配置的是模型前缀，“/”后面是模型的别名，有别名，必须用别名，否则访问不了
+    apiBase: http://localhost:8317/v1   # 替换为你的本地 CLIProxyAPI API 地址
+    apiKey: sk-eLVEccnt3cBxLccCx
+
+```
+
+如果您有更具体的本地服务（如某个特定的统一 API 网关），请告诉我，我可以提供更精准的配置示例！

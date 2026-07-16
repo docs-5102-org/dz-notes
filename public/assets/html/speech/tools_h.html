@@ -92,6 +92,26 @@
         .type-opensource { background-color: #e8f5e8; color: #388e3c; }
         .type-browser { background-color: #fff3e0; color: #f57c00; }
         .type-api { background-color: #fce4ec; color: #c2185b; }
+
+        *::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        *::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        *::-webkit-scrollbar-thumb {
+            background-color: rgba(99, 102, 241, 0.3);
+            border-radius: 9999px;
+            border: 3px solid transparent;
+            background-clip: padding-box;
+        }
+        *::-webkit-scrollbar-thumb:hover {
+            background-color: #52525b;
+        }
+        *::-webkit-scrollbar-corner {
+            background: transparent;
+        }
         
         @media (max-width: 768px) {
             table {

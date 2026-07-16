@@ -4,6 +4,9 @@
 /* @import 'fumadocs-ui/css/neutral.css'; */
 @import 'fumadocs-ui/css/preset.css';   /* ← 基础样式，必须在主题后面 */
 @import './styles/theme/warm.css';
+/* @import './styles/theme/macos-glass-theme.css'; */
+/* @import './styles/theme/dracula-soft.css'; */
+/* @import './styles/theme/aurora-glass-theme.css'; */
 @import './styles/scrollbar.css';
 
 html {

@@ -1,12 +1,10 @@
 ---
 title: 共识协议
 description: 共识协议相关笔记
-tags:
-  - blockchain
-  - bitcoin
-  - agreement
 category:
   - 区块链
+tags:
+  - bitcoin
   - 共识协议
 order: 3
 ---
@@ -39,7 +37,9 @@ order: 3
 
 比特币交易流程：（红色线条表示转出，绿色线表示比特币的来源）
 
-![比特币交易流程](../file/agreement1.png)
+![比特币交易流程](/assets/images/blockchain/agreement1.png)
+
+![比特币交易流程](/assets/images/blockchain/agreement2.png)
 
 A给B转账，除了A要知道B的公钥来进行转账外，其他所有电脑节点还需要知道A的公钥。因为A给B转账这个交易会需要加上A的签名，其他每个节点都需要通过A的公钥来验证这个签名的有效性，因为可能存在恶意节点，所以不能依赖其他节点的验证结果，每个节点都必须独立验证，即使这个节点本身不是交易的双方，也需要获取A的公钥进行验证该笔交易。
 

@@ -1,0 +1,87 @@
+---
+title: Linux环境下调用Java jar中的main方法
+date: "2026-05-31"
+category: 随笔
+---
+
+
+```bash
+#!/bin/bash
+# =====================================================
+# 功能：调用 Java Main 方法，支持定时任务，日志按日期滚动
+# 用法：./run.sh
+# =====================================================
+
+# ---------- 1. Java 环境配置（定时任务必须，手动执行可省略）----------
+export JAVA_HOME=/usr/local/java
+export JRE_HOME=${JAVA_HOME}/jre
+export PATH=${JAVA_HOME}/bin:$PATH
+export CLASSPATH=${JAVA_HOME}/lib:${JRE_HOME}/lib:$CLASSPATH
+
+# ---------- 2. 应用路径配置 ----------
+APP_HOME=/opt/hosts/one-junit
+LIB_DIR=${APP_HOME}/WEB-INF/lib
+
+# 日志输出到脚本所在目录，按日期滚动
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+LOG_FILE=${SCRIPT_DIR}/log_$(date +"%Y%m%d").out
+
+# 要执行的 Java 主类
+MAIN_CLASS=com.CInterface
+
+# ---------- 3. 校验关键路径 ----------
+if [ ! -d "${APP_HOME}" ]; then
+    echo "[ERROR] APP_HOME 不存在: ${APP_HOME}" | tee -a "${LOG_FILE}"
+    exit 1
+fi
+
+if [ ! -d "${LIB_DIR}" ]; then
+    echo "[ERROR] LIB_DIR 不存在: ${LIB_DIR}" | tee -a "${LOG_FILE}"
+    exit 1
+fi
+
+# ---------- 4. 动态加载所有 Jar 包 ----------
+for file in "${LIB_DIR}"/*.jar; do
+    [ -f "$file" ] && CLASSPATH=${CLASSPATH}:${file}
+done
+
+export CLASSPATH
+
+# ---------- 5. 打印启动信息 ----------
+echo "====================================================" >> "${LOG_FILE}"
+echo "启动时间: $(date '+%Y-%m-%d %H:%M:%S')"               >> "${LOG_FILE}"
+echo "JAVA_HOME: ${JAVA_HOME}"                              >> "${LOG_FILE}"
+echo "MAIN_CLASS: ${MAIN_CLASS}"                            >> "${LOG_FILE}"
+echo "====================================================" >> "${LOG_FILE}"
+
+# ---------- 6. 执行 Java 程序（stdout + stderr 均写入日志）----------
+"${JAVA_HOME}/bin/java" \
+    -cp "${CLASSPATH}" \
+    "${MAIN_CLASS}" >> "${LOG_FILE}" 2>&1
+
+# ---------- 7. 执行结果判断 ----------
+EXIT_CODE=$?
+if [ ${EXIT_CODE} -eq 0 ]; then
+    echo "[SUCCESS] 执行完成: $(date '+%Y-%m-%d %H:%M:%S')" >> "${LOG_FILE}"
+else
+    echo "[ERROR] 执行失败，退出码: ${EXIT_CODE}, 时间: $(date '+%Y-%m-%d %H:%M:%S')" >> "${LOG_FILE}"
+fi
+
+exit ${EXIT_CODE}
+```
+
+---
+
+**主要优化点说明：**
+
+| 优化项             | 原脚本               | 优化后                                            |
+| ------------------ | -------------------- | ------------------------------------------------- |
+| 日志路径           | 无 / 控制台打印      | 脚本目录下按日期滚动 `log_20260519.out`           |
+| Jar 加载           | 手动列举 + 循环混合  | 统一用 `*.jar` 通配符循环，去掉重复手写           |
+| 路径健壮性         | 路径硬编码，不校验   | `cd dirname` 获取绝对路径，启动前校验目录存在     |
+| Java 调用          | 直接 `java` 命令     | 用 `${JAVA_HOME}/bin/java` 避免环境变量未生效问题 |
+| 错误处理           | 无                   | `$?` 捕获退出码，记录 SUCCESS / ERROR             |
+| 日志输出           | `2>&1` 缺失或不统一  | stdout + stderr 全部写入同一日志文件              |
+| `#!/bin/bash` 位置 | 在注释之后（无效！） | 移到第一行（必须是文件首行才生效）                |
+
+> **注意**：原脚本中 `#!/bin/bash` 写在注释后面是个常见错误，Shebang 必须是文件的**第一行**才能生效。

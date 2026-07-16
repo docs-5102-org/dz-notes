@@ -9,9 +9,11 @@ const nextConfig = {
   images: {
     remotePatterns: [
       new URL('https://picsum.photos/**'),
-      //  {
+      new URL('https://p26-dreamina-sign.byteimg.com/**'),
+      new URL('https://p3-dreamina-sign.byteimg.com/**'),
+      // {
       //   protocol: 'https',
-      //   hostname: 'picsum.photos',
+      //   hostname: 'p26-dreamina-sign.byteimg.com/**',
       // },
       // 其他外部图片域名也在这里加
       // { hostname: 'images.unsplash.com' },

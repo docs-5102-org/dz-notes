@@ -1,0 +1,29 @@
+---
+title: claudecli使用问题解决
+date: "2026-05-30"
+category: 随笔
+---
+
+claude There's an issue with the selected model (claude-kimi-k2.6). It may not exist or you may not have access to it. Run /model to pick a different model.
+
+
+解决方式：
+
+https://github.com/anthropics/claude-code/issues/26408
+
+
+```
+可能对你们中的一些人适用：请确保你的域名ANTHROPIC_BASE_URL不包含后缀/v1。
+
+Claude Code（至少从 v2.1.109 版本开始）会在向模型服务器发送请求之前，将 `<base_url>` 附加/v1/messages到您的URL 后。因此，如果您的基本 URL 已经以 `<base_url>` 结尾，它将被连接到 `<base_url>` 中，从而触发上述错误。ANTHROPIC_BASE_URL/v1/v1/v1/messages
+
+我通过使用该标志启动 Claude Code ，然后在最新生成的日志文件中--debug搜索标记为“:”的行来确认这一点。[ERROR]C:\Users\MY_USER_NAME\.claude\debug
+
+2026-04-15T09:33:01.204Z [ERROR] API error (attempt 1/11): 404 404 {"error":{"message":"Invalid URL (POST /v1/v1/messages)","type":"invalid_request_error","param":"","code":""}}
+无论你的实际问题最终是什么，你都可以尝试这样做。
+
+```
+
+另请参阅：
+
+https://help.apiyi.com/en/claude-code-third-party-api-base-url-setup-guide-en.html

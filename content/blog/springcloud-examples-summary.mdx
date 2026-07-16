@@ -1,0 +1,528 @@
+---
+title: Spring Cloud 入门教程代码示例汇总
+category: Java
+date: "2026-05-30"
+---
+
+# Spring Cloud 入门教程代码示例汇总
+
+> 整理自 4 个优质开源仓库与博客，涵盖从传统 Spring Cloud 组件到 Spring Cloud Alibaba 生态的完整入门路径。
+
+---
+
+## 目录
+
+1. [资源总览](#一资源总览)
+2. [newbee-mall-cloud — 微服务电商实战项目](#二newbee-mall-cloud--微服务电商实战项目)
+3. [spring-cloud-demo — 尚硅谷速通示例（新版）](#三spring-cloud-demo--尚硅谷速通示例新版)
+4. [cloud2020 — 尚硅谷周阳老师学习笔记（经典版）](#四cloud2020--尚硅谷周阳老师学习笔记经典版)
+5. [CSDN 博客笔记 — SpringCloud 详细学习笔记](#五csdn-博客笔记--springcloud-详细学习笔记)
+6. [核心组件对比速查](#六核心组件对比速查)
+7. [学习路径建议](#七学习路径建议)
+
+---
+
+## 一、资源总览
+
+| # | 资源名称 | 类型 | 技术栈 | 适合人群 | 链接 |
+|---|---------|------|--------|---------|------|
+| 1 | newbee-mall-cloud | 完整项目 | Spring Cloud Alibaba + Nacos + Sentinel + Seata + Gateway + OpenFeign | 进阶学习者 | [GitHub](https://github.com/newbee-ltd/newbee-mall-cloud) |
+| 2 | spring-cloud-demo | 速通示例 | Nacos + OpenFeign + Sentinel + Gateway + Seata（JDK 21） | 快速入门 | [GitHub](https://github.com/mofan212/spring-cloud-demo) |
+| 3 | cloud2020 | 学习笔记代码 | Eureka + Ribbon + Feign + Hystrix + Gateway + Config + Stream + Nacos | 系统学习 | [GitHub](https://github.com/Jiaru0314/cloud2020) |
+| 4 | CSDN 博客 | 图文笔记 | 与 cloud2020 配套 | 入门阶段 | [博客](https://blog.csdn.net/qq_42107430/article/details/104683947) |
+
+---
+
+## 二、newbee-mall-cloud — 微服务电商实战项目
+
+### 项目简介
+
+基于新蜂商城（newbee-mall）单体项目演进而来的微服务版本，是一个贴近真实业务场景的大型实战项目。从 2019 年开源至今持续迭代，完整演示了电商系统的微服务拆分与落地过程。
+
+### 版本信息
+
+| 分支 | Spring Boot | Spring Cloud | Spring Cloud Alibaba |
+|------|-------------|--------------|----------------------|
+| main | 2.6.3 | 2021.0.1 | 2021.0.1.0 |
+| 2022.x | 3.0.2 | 2022.0.0 | 2022.0.0.0 |
+
+### 技术组件选型
+
+| 功能 | 组件 | 版本 |
+|------|------|------|
+| 服务注册与发现 | Nacos | 1.4.2 |
+| 配置中心 | Nacos | 1.4.2 |
+| 服务通信 | OpenFeign | 3.1.1 |
+| 负载均衡 | Spring Cloud Loadbalancer | 3.1.1 |
+| 服务网关 | Spring Cloud Gateway | 3.1.1 |
+| 限流熔断 | Sentinel | 1.8.4 |
+| 链路追踪 | Sleuth + Zipkin | 3.1.1 |
+| 分布式事务 | Seata | 1.4.2 |
+| 日志中心 | ELK（ES + Logstash + Kibana） | 7.17.8 |
+| ORM | MyBatis | 3.5.9 |
+| 接口文档 | Swagger | 3.0.0 |
+
+### 微服务模块结构
+
+```
+newbee-mall-cloud
+├── newbee-mall-cloud-common          # 公共模块（实体、工具类）
+├── newbee-mall-cloud-gateway-admin   # 管理端网关
+├── newbee-mall-cloud-gateway-mall    # 商城端网关
+├── newbee-mall-cloud-goods-service   # 商品服务
+├── newbee-mall-cloud-order-service   # 订单服务
+├── newbee-mall-cloud-recommend-service # 推荐服务
+├── newbee-mall-cloud-shop-cart-service # 购物车服务
+└── newbee-mall-cloud-user-service    # 用户服务
+```
+
+### 学习重点
+
+- Spring Cloud Alibaba 全家桶综合运用
+- 微服务按业务域拆分的设计思路
+- Seata 分布式事务在真实场景中的接入
+- Sentinel 流控 + 熔断的生产级配置
+- ELK 日志中心与 Sleuth/Zipkin 链路追踪的整合
+
+### 配套教程
+
+完整开发与部署文档共 58 节，发布于掘金小册：[Spring Cloud Alibaba 项目实战](https://juejin.cn/book/7085254558678515742)
+
+---
+
+## 三、spring-cloud-demo — 尚硅谷速通示例（新版）
+
+### 项目简介
+
+配套 B 站视频《[Spring Cloud 快速通关](https://www.bilibili.com/video/BV1UJc2ezEFU/)》的示例代码与学习笔记，采用 JDK 21 实现（兼容 JDK 17），是学习 Spring Cloud Alibaba 现代生态的速通首选。
+
+### 模块结构
+
+```
+spring-cloud-demo
+├── ATT/          # 配套学习笔记与架构图（SVG）
+├── gateway/      # 网关模块
+├── model/        # 公共实体
+└── services/     # 各业务微服务
+```
+
+### 核心知识点详解
+
+#### 1. Nacos
+
+**服务注册**
+
+```yaml
+spring:
+  cloud:
+    nacos:
+      server-addr: 127.0.0.1:8848
+```
+
+启动后访问 `http://localhost:8848/nacos/` 查看注册效果。通过修改端口（如 `--server.port=8001`）模拟集群。
+
+**服务发现**
+
+在主启动类添加 `@EnableDiscoveryClient`，支持两种 API：
+- `DiscoveryClient`：Spring 标准接口
+- `NacosServiceDiscovery`：Nacos 原生接口
+
+**配置中心动态刷新**
+
+| 方式 | 注解/类 | 说明 |
+|------|---------|------|
+| 手动刷新 | `@Value` + `@RefreshScope` | 需搭配刷新触发 |
+| 自动刷新 | `@ConfigurationProperties` | 无感知自动更新 |
+| 监听变化 | `NacosConfigManager` | 编程式监听 |
+
+**数据隔离方案**
+
+| 维度 | Nacos 概念 | 作用 |
+|------|-----------|------|
+| 多套环境 | Namespace（命名空间） | dev / test / prod |
+| 多种微服务 | Group | 区分不同服务 |
+| 多种配置 | Data-id | 区分不同配置文件 |
+
+**经典面试题：注册中心宕机后远程调用能否成功？**
+
+- 从未调用过 → 立即失败
+- 调用过，注册中心宕机 → 因本地有缓存，调用成功
+- 调用过，注册中心和目标服务都宕机 → 阻塞后失败（Connection Refused）
+
+---
+
+#### 2. OpenFeign
+
+**引入依赖**
+
+```xml
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-openfeign</artifactId>
+</dependency>
+```
+
+主启动类添加 `@EnableFeignClients`。
+
+**进阶配置**
+
+```yaml
+spring:
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connect-timeout: 1000
+            read-timeout: 2000
+          service-product:
+            connect-timeout: 3000
+            read-timeout: 5000
+            request-interceptors:
+              - com.example.XTokenRequestInterceptor
+```
+
+**重试机制**
+
+```java
+@Bean
+public Retryer retryer() {
+    // 重试间隔 100ms，最大 1s，最多重试 5 次
+    return new Retryer.Default();
+}
+```
+
+**请求拦截器示例**
+
+```java
+public class XTokenRequestInterceptor implements RequestInterceptor {
+    @Override
+    public void apply(RequestTemplate template) {
+        template.header("X-Token", UUID.randomUUID().toString());
+    }
+}
+```
+
+**Fallback（需整合 Sentinel）**
+
+```yaml
+feign:
+  sentinel:
+    enabled: true
+```
+
+```java
+@FeignClient(value = "service-product", fallback = ProductFeignClientFallback.class)
+public interface ProductFeignClient {
+    @GetMapping("/product/{id}")
+    Product getProductById(@PathVariable("id") Long id);
+}
+```
+
+---
+
+#### 3. Sentinel
+
+**整合配置**
+
+```yaml
+spring:
+  cloud:
+    sentinel:
+      transport:
+        dashboard: localhost:8080
+      eager: true
+```
+
+**流控规则三要素**
+
+| 维度 | 说明 |
+|------|------|
+| 阈值类型 | QPS（每秒请求数）或 并发线程数 |
+| 流控模式 | 直接 / 关联 / 链路 |
+| 流控效果 | 快速失败 / Warm Up / 排队等待 |
+
+**熔断策略**
+
+| 策略 | 触发条件 |
+|------|---------|
+| 慢调用比例 | 慢请求占比超过阈值 |
+| 异常比例 | 异常请求占比超过阈值 |
+| 异常数 | 统计窗口内异常数超过阈值 |
+
+**热点参数限流**
+
+```java
+@SentinelResource(value = "seckill-order", fallback = "seckillFallback")
+public Order seckill(@RequestParam Long userId, @RequestParam Long productId) { ... }
+```
+
+可对指定参数索引设置不同限流阈值，支持为特定参数值配置例外（如 VIP 用户不限流、下架商品 QPS=0）。
+
+---
+
+#### 4. Spring Cloud Gateway
+
+**路由配置**
+
+```yaml
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: order-route
+          uri: lb://service-order          # lb:// 前缀启用负载均衡
+          predicates:
+            - Path=/api/order/**
+          filters:
+            - RewritePath=/api/order/?(?<segment>.*), /$\{segment}
+          order: 1
+```
+
+**内置断言类型**
+
+| 断言 | 作用 |
+|------|------|
+| Path | 路径匹配 |
+| Header | 请求头匹配 |
+| Query | 请求参数匹配 |
+| Method | 请求方式匹配 |
+| After/Before/Between | 时间范围匹配 |
+| Weight | 按权重负载均衡 |
+
+**全局过滤器示例**
+
+```java
+@Component
+public class RtGlobalFilter implements GlobalFilter, Ordered {
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        long start = System.currentTimeMillis();
+        return chain.filter(exchange).doFinally(res -> {
+            log.info("耗时：{}ms", System.currentTimeMillis() - start);
+        });
+    }
+    @Override
+    public int getOrder() { return 0; }
+}
+```
+
+**全局跨域配置**
+
+```yaml
+spring:
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origin-patterns: '*'
+            allowed-headers: '*'
+            allowedMethods: '*'
+```
+
+---
+
+#### 5. Seata（分布式事务）
+
+**三大核心角色**
+
+| 角色 | 名称 | 职责 |
+|------|------|------|
+| TC | Transaction Coordinator | 维护全局/分支事务状态，驱动提交或回滚 |
+| TM | Transaction Manager | 定义全局事务范围，发起/提交/回滚 |
+| RM | Resource Manager | 管理分支事务资源，与 TC 交互 |
+
+**接入步骤**
+
+```xml
+<dependency>
+    <groupId>com.alibaba.cloud</groupId>
+    <artifactId>spring-cloud-starter-alibaba-seata</artifactId>
+</dependency>
+```
+
+在事务发起方方法入口添加 `@GlobalTransactional` 注解，即可开启全局事务，实现跨服务的统一提交与回滚。
+
+---
+
+## 四、cloud2020 — 尚硅谷周阳老师学习笔记（经典版）
+
+### 项目简介
+
+配套尚硅谷周阳老师《Spring Cloud 第二版》课程的学习代码与笔记，是国内最经典的 Spring Cloud 入门教程代码仓库之一。覆盖 Netflix 组件体系与 Alibaba 体系两套技术栈，适合系统学习。
+
+### 模块结构（按技术分类）
+
+#### 注册中心
+
+| 模块 | 说明 |
+|------|------|
+| cloud-eureka-server7001/7002 | Eureka 注册中心（双节点高可用） |
+| cloud-comsumerzk-order80 | ZooKeeper 作为注册中心的消费者示例 |
+| cloud-consumerconsul-order80 | Consul 作为注册中心的消费者示例 |
+| cloud-providerconsul-payment8006 | Consul 作为注册中心的提供者示例 |
+
+#### 服务提供者 / 消费者
+
+| 模块 | 说明 |
+|------|------|
+| cloud-provider-payment8001/8002 | Eureka 注册的支付服务（模拟集群） |
+| cloud-provider-payment8004 | ZooKeeper 注册的支付服务 |
+| cloud-consumer-order80 | 使用 Ribbon + RestTemplate 的消费者 |
+| cloud-consumer-feign-order80 | 使用 OpenFeign 的消费者 |
+
+#### 熔断降级（Hystrix）
+
+| 模块 | 说明 |
+|------|------|
+| cloud-provider-hystrix-payment8001 | 提供者侧 Hystrix 示例 |
+| cloud-consumer-feign-hystrix-order80 | 消费者侧 Hystrix + Feign 整合 |
+| cloud-consumer-hystrix-dashboard9001 | Hystrix Dashboard 监控面板 |
+
+#### 网关
+
+| 模块 | 说明 |
+|------|------|
+| cloud-gateway-gateway9527 | Spring Cloud Gateway 网关示例 |
+
+#### 配置中心
+
+| 模块 | 说明 |
+|------|------|
+| cloud-config-center3344 | Spring Cloud Config Server |
+| cloud-config-client3355/3366 | Config Client（含动态刷新 Bus） |
+
+#### 消息驱动
+
+| 模块 | 说明 |
+|------|------|
+| cloud-stream-rabbitmq-provider8801 | Stream 消息生产者 |
+| cloud-stream-rabbitmq-consumer8802/8803 | Stream 消息消费者 |
+
+#### Spring Cloud Alibaba
+
+| 模块 | 说明 |
+|------|------|
+| cloudalibaba-provider-payment9001/9002 | Nacos 注册的支付服务 |
+| cloudalibaba-consumer-nacos-order83 | Nacos 注册的订单消费者 |
+| cloudalibaba-config-nacos-client3377 | Nacos 配置中心客户端 |
+
+#### 公共模块
+
+| 模块 | 说明 |
+|------|------|
+| cloud-api-commons | 公共实体类与工具 |
+
+### 覆盖的 Spring Cloud 组件
+
+- **服务注册发现**：Eureka、ZooKeeper、Consul、Nacos
+- **负载均衡**：Ribbon（客户端）
+- **服务调用**：OpenFeign、RestTemplate
+- **熔断降级**：Hystrix + Dashboard
+- **服务网关**：Spring Cloud Gateway
+- **配置管理**：Spring Cloud Config + Bus（RabbitMQ）
+- **消息驱动**：Spring Cloud Stream + RabbitMQ
+- **注册/配置一体**：Nacos
+
+---
+
+## 五、CSDN 博客笔记 — SpringCloud 详细学习笔记
+
+### 博客简介
+
+- 地址：[https://blog.csdn.net/qq_42107430/article/details/104683947](https://blog.csdn.net/qq_42107430/article/details/104683947)
+- 作者：Jiaru0314（即 cloud2020 仓库作者）
+- 性质：cloud2020 项目的配套图文笔记，边学边整理，内容翔实
+
+### 笔记涵盖内容
+
+与 cloud2020 代码一一对应，详细记录了：
+
+- 各组件的概念说明与对比（为什么选它）
+- 每个模块的 pom 依赖、配置文件、核心代码
+- 踩坑记录与注意事项
+- 脑图风格的知识梳理
+
+### 阅读建议
+
+配合 cloud2020 仓库代码对照阅读，效果最佳。CSDN 偶有访问限制，建议收藏备用。
+
+---
+
+## 六、核心组件对比速查
+
+### 注册中心对比
+
+| 特性 | Eureka | Consul | ZooKeeper | Nacos |
+|------|--------|--------|-----------|-------|
+| 语言 | Java | Go | Java | Java |
+| CAP | AP | CP | CP | AP/CP 可切换 |
+| 健康检查 | 心跳 | TCP/HTTP/gRPC | Keep Alive | TCP/HTTP |
+| 配置中心 | ✗ | ✓ | ✗ | ✓ |
+| 维护状态 | 进入维护 | 活跃 | 活跃 | 活跃 |
+| 推荐程度 | 旧项目 | 可选 | 旧项目 | **推荐** |
+
+### 服务调用对比
+
+| 特性 | RestTemplate + Ribbon | OpenFeign |
+|------|----------------------|-----------|
+| 编程风格 | 编程式 | 声明式（注解驱动） |
+| 代码量 | 较多 | 少，类似写 Controller |
+| 负载均衡 | `@LoadBalanced` 注解 | 内置，自动 |
+| 超时控制 | 手动配置 | 配置文件统一管理 |
+| 推荐程度 | 基础理解用 | **推荐** |
+
+### 熔断限流对比
+
+| 特性 | Hystrix | Sentinel |
+|------|---------|----------|
+| 维护状态 | 停止维护 | 活跃 |
+| 限流规则 | 简单 | 丰富（QPS/线程/热点/链路）|
+| 熔断策略 | 错误率 | 慢调用/异常比例/异常数 |
+| 实时监控 | Hystrix Dashboard | Sentinel Dashboard |
+| 推荐程度 | 了解即可 | **推荐** |
+
+### 配置中心对比
+
+| 特性 | Spring Cloud Config | Nacos Config |
+|------|---------------------|--------------|
+| 依赖 | 需要 Git 仓库 | 内置存储，开箱即用 |
+| 动态刷新 | 需配合 Bus（MQ）| 原生支持 |
+| 命名空间 | 无 | 支持（多环境隔离）|
+| 推荐程度 | 旧项目 | **推荐** |
+
+---
+
+## 七、学习路径建议
+
+```
+入门阶段
+  └─ cloud2020 + CSDN博客笔记
+       理解 Eureka、Ribbon、Feign、Hystrix 等传统组件
+       掌握微服务的基本通信与注册模式
+
+进阶阶段
+  └─ spring-cloud-demo（尚硅谷新版速通）
+       切换到 Spring Cloud Alibaba 体系
+       重点掌握 Nacos / OpenFeign / Sentinel / Gateway / Seata
+       结合 B 站视频快速建立体系认知
+
+实战阶段
+  └─ newbee-mall-cloud（完整电商项目）
+       理解业务微服务拆分设计思路
+       学习生产级配置（ELK / 链路追踪 / 分布式事务）
+       参考掘金小册 58 节完整部署文档
+```
+
+### 关键提示
+
+- 优先学习 **Spring Cloud Alibaba** 生态（Nacos + Sentinel + Seata），这是当前主流
+- Eureka / Hystrix 已停止维护，了解原理即可，不必深入
+- Gateway 是网关的首选，掌握断言 + 过滤器两大核心机制
+- Seata `@GlobalTransactional` 是分布式事务最简便的接入方式
+- 开发环境推荐 **JDK 17+**，新版示例已验证 JDK 21 可用
+
+---
+
+*整理时间：2026 年 5 月 | 如有组件版本更新，请以各仓库最新文档为准*

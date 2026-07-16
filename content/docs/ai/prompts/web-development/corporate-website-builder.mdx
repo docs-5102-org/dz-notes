@@ -1,0 +1,190 @@
+---
+title: corporate-website-builder
+description: 企业官网一键生成技能。当用户提供公司名称、备案信息、公司行业等基本信息，希望生成企业官网、公司网站、建站代码、落地页时，必须使用此技能。输出符合技术栈规范的单文件 HTML（React 18 + Tailwind CSS），可直接在浏览器运行，无需构建工具。触发关键词：企业官网、公司网站、建站、官网代码、落地页、公司主页。
+date: "2025-04-28"
+order: 1
+tags:
+  - web-development
+  - prompts
+---
+
+# 企业官网建站技能
+
+根据用户输入的 **公司名称**、**备案信息**、**公司行业**，生成一套完整的企业官网单文件 HTML。
+
+---
+
+## 第一步：信息收集
+
+若用户未提供完整信息，先询问以下三项（可一次性询问）：
+
+| 字段 | 示例 | 说明 |
+|------|------|------|
+| 公司名称 | 深圳市星辰科技有限公司 | 用于 Logo、页眉、版权信息 |
+| 备案信息 | 粤ICP备2024012345号 | 用于页脚备案展示，可含公安备案 |
+| 公司行业 | 人工智能 / 软件开发 / 制造业… | 决定配色、内容、行业关键词 |
+
+收到信息后直接生成，无需二次确认。
+
+---
+
+## 第二步：根据行业匹配设计风格
+
+| 行业类型 | 主色调 | 设计风格 | 强调卖点 |
+|----------|--------|----------|----------|
+| 科技 / AI / 软件 | 蓝色 / 深色 | 现代极简、渐变科技感 | 技术创新、数字化转型 |
+| 制造 / 工业 | 深蓝 / 钢灰 | 稳重厚重、工业质感 | 品质可靠、生产实力 |
+| 金融 / 投资 | 深蓝 / 金色 | 专业严谨、信赖感 | 安全合规、资质权威 |
+| 医疗 / 健康 | 绿色 / 白色 | 洁净温和、专业权威 | 资质认证、专业团队 |
+| 教育 / 培训 | 橙色 / 蓝色 | 活泼积极、亲和友好 | 师资力量、课程体系 |
+| 电商 / 零售 | 红色 / 橙色 | 热烈促销、吸引眼球 | 品类丰富、价格优势 |
+| 建筑 / 地产 | 深棕 / 金色 | 高端大气、品质感 | 工程案例、实力展示 |
+| 餐饮 / 食品 | 橙色 / 红色 | 温暖食欲、亲切自然 | 食材新鲜、口感保证 |
+| 通用 / 其他 | 深蓝 / 白色 | 专业中性、简洁大方 | 服务专业、口碑良好 |
+
+---
+
+## 第三步：页面结构规范
+
+官网必须包含以下六大板块，按顺序组装：
+
+### 1. 导航栏 `<Header>`
+- 左侧：公司 Logo（图标 + 公司名称）
+- 右侧：导航菜单（首页、关于我们、产品服务、新闻资讯、联系我们）
+- 滚动后添加阴影效果（`useEffect` + `scroll` 事件）
+- 移动端：汉堡菜单 `useState` 控制展开/收起
+
+### 2. 首屏 Banner `<HeroBanner>`
+- 全屏高度（`min-h-screen`）
+- 大标题：公司名称 + 行业 Slogan（根据行业生成）
+- 副标题：一句话描述公司价值主张
+- 两个 CTA 按钮：「了解更多」「联系我们」
+- 背景：行业匹配的渐变色或几何图案
+
+### 3. 关于我们 `<AboutSection>`
+- 左侧：文字介绍（公司简介、成立背景、企业使命）
+- 右侧：4 个数字统计（成立年限、服务客户数、团队规模、覆盖城市）
+- 数字用 `useEffect` 做计数动画
+
+### 4. 产品/服务展示 `<ServicesSection>`
+- 根据行业生成 6 个对应的产品/服务卡片
+- 每张卡片：Font Awesome 图标 + 标题 + 描述
+- 悬停效果：上移 + 阴影加深
+
+### 5. 新闻动态 `<NewsSection>`
+- 3 篇新闻卡片（模拟内容，与行业相关）
+- 每篇包含：日期、标签、标题、摘要、「阅读更多」链接
+
+### 6. 页脚 `<Footer>`
+- 公司名称 + 简介
+- 快速链接 / 联系方式（模拟电话、邮箱、地址）
+- **备案信息**（必须完整显示，格式见下方）
+- 版权年份动态读取 `new Date().getFullYear()`
+
+---
+
+## 第四步：备案信息显示规范
+
+页脚备案区域模板：
+```
+Copyright © {年份} {公司名称} 版权所有
+{ICP备案号}  |  {公安备案号（若有）}
+```
+
+备案号必须加链接：
+- ICP 备案：`https://beian.miit.gov.cn/`
+- 公安备案：`https://www.beian.gov.cn/`
+
+---
+
+## 第五步：技术栈规范（严格遵守）
+
+### 依赖引入（固定，不可更改）
+```html
+<script src="https://unpkg.com/react@18.0.0/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18.0.0/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+```
+
+### 代码规范
+- 单文件 HTML，所有组件写在 `<script type="text/babel">` 内
+- 函数式组件 + Hooks，禁止 class 组件
+- 图片统一使用 `https://placehold.co/宽x高`，alt 写语义描述
+- 禁止使用 Markdown 代码块包裹输出
+- 禁止用注释代替真实内容（如 `{/* 更多卡片 */}`）
+- 主入口为 `App` 组件，`ReactDOM.createRoot` 挂载
+
+### 文件结构
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{公司名称} - 官方网站</title>
+  <!-- 依赖 -->
+</head>
+<body class="font-sans">
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    function Header() { ... }
+    function HeroBanner() { ... }
+    function AboutSection() { ... }
+    function ServicesSection() { ... }
+    function NewsSection() { ... }
+    function Footer() { ... }
+
+    function App() {
+      return (
+        <div>
+          <Header />
+          <HeroBanner />
+          <AboutSection />
+          <ServicesSection />
+          <NewsSection />
+          <Footer />
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
+```
+
+---
+
+## 第六步：生成行业对应内容示例
+
+### 科技/AI 行业 Slogan 参考
+- 「以技术驱动未来，以创新引领变革」
+- 「智能科技，赋能数字新时代」
+
+### 服务卡片示例（科技行业）
+1. 🤖 AI 解决方案 — 深度学习与自然语言处理
+2. ☁️ 云计算服务 — 弹性可扩展的云基础设施
+3. 🔒 网络安全 — 全方位数据安全防护
+4. 📊 数据分析 — 商业智能与数据可视化
+5. 🚀 产品研发 — 敏捷开发与快速迭代
+6. 🛠️ 技术支持 — 7×24 专业运维保障
+
+---
+
+## 输出要求
+
+1. **直接输出完整 HTML**，不加任何 Markdown 代码块标记
+2. 代码可直接保存为 `.html` 文件，浏览器打开即运行
+3. 内容与公司行业强相关，不使用 lorem ipsum
+4. 配色、排版与行业风格匹配
+5. 响应式布局，移动端友好
+6. 交互效果流畅（导航滚动、卡片悬停、计数动画）
+
+
+使用示例：
+
+安装后，你只需说「帮我生成 XXX 公司的官网，行业是 YYY，备案号 ZZZ」，即可直接得到可运行的 HTML 文件。

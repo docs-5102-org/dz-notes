@@ -2,13 +2,9 @@
 title: 智能合约
 description: 以太坊智能合约相关笔记
 tags:
-  - blockchain
-  - ethereum
-  - smart-contracts
-category:
-  - 区块链
-  - 以太坊
   - 智能合约
+category:
+  - 以太坊
 ---
 
 # 智能合约
@@ -229,13 +225,13 @@ contract MyContract {
 }
 ```
 
-:::tip
-注意事项
+<Callout>
 
 1. Gas限制：通过 send() 或 transfer() 调用fallback时，Gas限制为2300，应避免复杂操作
 2. 可选性：如您所说，fallback函数不是必需的，没有定义时相关操作会revert
 3. 与receive函数的区别：Solidity 0.6.0后引入了专门的 receive() 函数处理纯以太币转账
-:::
+
+</Callout>
 
 #### 重要链接
 
@@ -316,7 +312,9 @@ contract MyContract {
   "internalTransactions": []
 }
 ```
-> 来源： https://www.blockchain.com/explorer/transactions/eth/0x1eb39b814df220a6b382c5945c7fc20a418602ab1c124c36a3df2537ede4d506
+
+> [来源](https://www.blockchain.com/explorer/transactions/eth/0x1eb39b814df220a6b382c5945c7fc20a418602ab1c124c36a3df2537ede4d506)
+
 
 #### 调用示例
 
@@ -491,7 +489,8 @@ contract TransactionReplicator {
     }
 }
 ```
-:::tip
+
+<Callout>
 
 **交易分析**
 
@@ -535,7 +534,7 @@ libraryAddr.delegatecall(abi.encodeWithSignature("setApproval(address,uint256)",
 - **存储**: call修改目标合约存储，delegatecall修改当前合约存储
 - **msg.sender**: call中是直接调用者，delegatecall中保持原始调用者
 - **异常处理**: 直接调用异常会回滚，call/delegatecall返回false但不回滚
-:::
+</Callout>
 
 ## 智能合约的开发
 

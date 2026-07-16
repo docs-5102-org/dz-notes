@@ -1,0 +1,185 @@
+---
+title: Java `Collectors.toMap()` 重复 Key 处理指南
+date: "2026-05-30"
+category: Java
+---
+
+# Java `Collectors.toMap()` 重复 Key 处理指南
+
+## 一、问题背景
+
+使用 `Stream.collect(Collectors.toMap(...))` 时，若流中存在两个元素映射到**相同的 key**，默认行为会直接抛出异常：
+
+```
+java.lang.IllegalStateException: Duplicate key xxx
+```
+
+```java
+// ❌ 两参数写法：不处理重复 key，遇到冲突直接报错
+map.collect(Collectors.toMap(
+    Entity::getId,
+    vo -> vo
+));
+```
+
+---
+
+## 二、toMap() 的三种重载签名
+
+```java
+// 签名一：2 个参数 —— 不处理重复 key，冲突时抛异常
+Collectors.toMap(keyMapper, valueMapper)
+
+// 签名二：3 个参数 —— 提供 mergeFunction 处理冲突
+Collectors.toMap(keyMapper, valueMapper, mergeFunction)
+
+// 签名三：4 个参数 —— 额外指定 Map 的具体实现类
+Collectors.toMap(keyMapper, valueMapper, mergeFunction, mapSupplier)
+```
+
+---
+
+## 三、mergeFunction 的常见策略
+
+`mergeFunction` 是一个 `BinaryOperator<V>`，接收冲突的两个值 `(existing, replacement)`，返回最终保留的值。
+
+### 策略一：保留后者（覆盖）
+
+```java
+.collect(Collectors.toMap(
+    Entity::getKey,
+    vo -> vo,
+    (existing, replacement) -> replacement  // 后来的覆盖前面的
+));
+```
+
+适用场景：数据按时间顺序排列，新数据优先。
+
+---
+
+### 策略二：保留前者（忽略重复）
+
+```java
+.collect(Collectors.toMap(
+    Entity::getKey,
+    vo -> vo,
+    (existing, replacement) -> existing  // 保留第一条，忽略后续重复
+));
+```
+
+适用场景：以第一条记录为准，后续重复数据视为脏数据。
+
+---
+
+### 策略三：按字段比较，保留最新记录
+
+```java
+.collect(Collectors.toMap(
+    Entity::getKey,
+    vo -> vo,
+    (v1, v2) -> v1.getLastModified().isAfter(v2.getLastModified()) ? v1 : v2
+));
+```
+
+适用场景：数据乱序，需根据时间戳或版本号决定保留哪条。
+
+---
+
+### 策略四：合并值（聚合场景）
+
+```java
+// 示例：相同 key 的数值累加
+.collect(Collectors.toMap(
+    Entity::getKey,
+    Entity::getCount,
+    Integer::sum  // 冲突时将两个 count 相加
+));
+```
+
+适用场景：统计、计数类场景，需要对重复 key 的值进行聚合。
+
+---
+
+### 策略五：收集为列表（groupingBy 替代写法）
+
+```java
+// 相同 key 的值合并成列表
+.collect(Collectors.toMap(
+    Entity::getKey,
+    vo -> new ArrayList<>(List.of(vo)),
+    (list1, list2) -> { list1.addAll(list2); return list1; }
+));
+```
+
+> 注意：此场景通常直接用 `Collectors.groupingBy()` 更简洁。
+
+```java
+// 等价的 groupingBy 写法
+.collect(Collectors.groupingBy(Entity::getKey));
+```
+
+---
+
+## 四、指定 Map 实现类（第四个参数）
+
+默认返回 `HashMap`，如需有序或线程安全，可用第四个参数指定：
+
+```java
+// 保持插入顺序：LinkedHashMap
+.collect(Collectors.toMap(
+    Entity::getKey,
+    vo -> vo,
+    (existing, replacement) -> replacement,
+    LinkedHashMap::new
+));
+
+// 按 key 排序：TreeMap
+.collect(Collectors.toMap(
+    Entity::getKey,
+    vo -> vo,
+    (existing, replacement) -> replacement,
+    TreeMap::new
+));
+```
+
+---
+
+## 五、注意事项
+
+### value 不能为 null
+
+`Collectors.toMap()` 不允许 value 为 `null`，否则抛 `NullPointerException`：
+
+```java
+// ❌ value 为 null 时报错
+.collect(Collectors.toMap(Entity::getKey, e -> e.getValue()));  // getValue() 可能返回 null
+```
+
+解决方式：使用 `forEach` + 手动 `put`，或在映射前过滤掉 null：
+
+```java
+// ✅ 方式一：过滤掉 value 为 null 的元素
+.filter(e -> e.getValue() != null)
+.collect(Collectors.toMap(Entity::getKey, Entity::getValue));
+
+// ✅ 方式二：手动构建 Map
+Map<String, Object> map = new HashMap<>();
+list.forEach(e -> map.put(e.getKey(), e.getValue()));  // put 允许 null value
+```
+
+---
+
+## 六、策略选择速查表
+
+| 场景 | 推荐策略 |
+|------|----------|
+| 数据唯一，不期望重复 | 默认 2 参数（报错暴露问题） |
+| 新数据覆盖旧数据 | `(existing, replacement) -> replacement` |
+| 保留第一条，忽略重复 | `(existing, replacement) -> existing` |
+| 按时间/版本保留最新 | 比较字段后返回较新的值 |
+| 数值累加/聚合 | `Integer::sum` 或自定义聚合逻辑 |
+| 一个 key 对应多个值 | `Collectors.groupingBy()` |
+
+---
+
+> **最佳实践：** 生产代码中使用 `toMap()` 时，建议始终显式提供 `mergeFunction`，避免因意外脏数据导致运行时异常。

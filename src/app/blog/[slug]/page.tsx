@@ -10,7 +10,7 @@ export default async function BlogDetailPage(props: PageProps<'/blog/[slug]'>) {
 
   if (!post) notFound();
 
-  const MDX = post.body;
+  const { body: MDX } = await post.load();
 
   return (
     <article className="dz-blog-detail">
