@@ -158,6 +158,13 @@ class EnvLocalConfig {
 ## 图标资源
 
 - **Flutter Icon（国内镜像）**：https://www.fluttericon.cn/
+- **将IconFont转换为Dart的JS方法**：
+
+```
+javascript:function%C2%A0download(filename,%C2%A0text)%C2%A0{%C2%A0%C2%A0var%C2%A0element%C2%A0=%C2%A0document.createElement('a');%C2%A0%C2%A0element.setAttribute('href',%C2%A0'data:text/plain;charset=utf-8,'%C2%A0+%C2%A0encodeURIComponent(text));%C2%A0%C2%A0element.setAttribute('download',%C2%A0filename);%C2%A0%C2%A0element.style.display%C2%A0=%C2%A0'none';%C2%A0%C2%A0document.body.appendChild(element);%C2%A0%C2%A0element.click();%C2%A0%C2%A0document.body.removeChild(element);}function%C2%A0toHump(name)%C2%A0{name%C2%A0=%C2%A0name.replace(/\s+/g,"-");%C2%A0%C2%A0%C2%A0%C2%A0return%C2%A0name.replace(/\-(\w)/g,%C2%A0function(all,%C2%A0letter){%C2%A0%C2%A0%C2%A0%C2%A0%C2%A0%C2%A0%C2%A0%C2%A0return%C2%A0letter.toUpperCase();%C2%A0%C2%A0%C2%A0%C2%A0});}function%C2%A0getFlutterClass(){var%C2%A0str%C2%A0=%C2%A0"import%C2%A0'package:flutter/widgets.dart';\r\n\r\n";str%C2%A0+=%C2%A0"class%C2%A0IconFontIcons%C2%A0{\r\n";var%C2%A0arr%C2%A0=%C2%A0document.querySelectorAll(".icon-item");for%C2%A0(var%C2%A0i%C2%A0=%C2%A0arr.length%C2%A0-%C2%A01;%C2%A0i%C2%A0>=%C2%A00;%C2%A0i--)%C2%A0{var%C2%A0item%C2%A0=%C2%A0arr[i];var%C2%A0item_name%C2%A0=%C2%A0toHump(item.querySelectorAll(".icon-code")[1].textContent);var%C2%A0item_code%C2%A0=%C2%A0item.querySelectorAll(".icon-code")[0].textContent.replace(/\&\#/g,%220%22);item_code%C2%A0=%C2%A0item_code.replace(/\;/g,%22%22);str%C2%A0+=%C2%A0%22%C2%A0%C2%A0%C2%A0%C2%A0static%C2%A0const%C2%A0IconData%C2%A0%22+item_name+%22%C2%A0=%C2%A0IconData(%22+item_code+%22,fontFamily:'IconFontIcons');%22;str%C2%A0+=%C2%A0%22\r\n%22;}str%C2%A0+=%C2%A0%22}%22;return%C2%A0str;}%C2%A0%C2%A0download(%22IconFontIcons.dart%22,getFlutterClass());
+```
+使用方法，在浏览器中新建一个标签页，将上面的内容替换掉网址的内容，点击即可使用
+
 - **Material Icons（官方）**：https://fonts.google.com/icons
 
 ## 实用技巧

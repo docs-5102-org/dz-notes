@@ -1,0 +1,21 @@
+{
+  "title": "Java 8",
+  "pages": [
+    "index",
+    "introduction",
+    "functional-interface",
+    "lambda",
+    "stream",
+    "stream-list",
+    "stream-sorted",
+    "optional",
+    "localdate",
+    "file",
+    "string",
+    "math",
+    "base64",
+    "nashorn",
+    "atomic-integer",
+    "default-methods"
+  ]
+}

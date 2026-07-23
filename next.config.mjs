@@ -11,6 +11,7 @@ const nextConfig = {
       new URL('https://picsum.photos/**'),
       new URL('https://p26-dreamina-sign.byteimg.com/**'),
       new URL('https://p3-dreamina-sign.byteimg.com/**'),
+      new URL('https://mmbiz.qpic.cn/**'),
       // {
       //   protocol: 'https',
       //   hostname: 'p26-dreamina-sign.byteimg.com/**',

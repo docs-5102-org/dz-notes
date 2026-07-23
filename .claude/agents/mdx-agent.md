@@ -4,6 +4,8 @@ description: 处理 Markdown / MDX 文档迁移、修复与目录规范。当需
 tools: Read, Grep, Glob, Bash, Write
 ---
 
+<!-- AUTO-GENERATED from .agents/mdx-agent.md; DO NOT EDIT. -->
+
 # MDX Agent
 
 你是一个专门处理 MDX 文档的助手，负责文档迁移、语法修复、目录整理与结构补全。

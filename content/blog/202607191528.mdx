@@ -1,0 +1,150 @@
+---
+title: CF大善人开源工具合集
+date: "2026-07-19"
+category: 随笔
+---
+
+# Awesome Cloudflare
+
+> 精选的 Cloudflare 工具、开源项目、指南、博客和其他资源列表。
+> 来源：[zhuima/awesome-cloudflare](https://github.com/zhuima/awesome-cloudflare)（GitHub 仓库）
+> 帖子出处：[榨干CF大善人的每一滴，包含图床、邮箱、博客、短链、网站分析、隧道、加速、文件分享等](https://linux.do/t/topic/53944) — LINUX DO
+
+被称为"赛博菩萨"的 Cloudflare 提供内容交付网络（CDN）服务、DDoS 缓解、互联网安全和分布式域名服务器（DNS）服务，位于访问者和 Cloudflare 用户的托管提供商之间，充当网站的反向代理。
+
+本仓库只收录基于 Cloudflare 的开源工具，为独立开发者早期摸索期提供一个省心省时的工具集，持续整理中……
+
+**收录标准：**
+- 帮助但不限于独立开发者提升开发效率
+- 帮助但不限于独立开发者降低成本
+- 足够简单便捷
+
+欢迎提 PR 和 issues 更新。部署或操作过程中有任何问题可以提 issue 或私信咨询。
+
+## 目录
+
+- [图床](#图床)
+- [邮箱](#邮箱)
+- [博客](#博客)
+- [短链](#短链)
+- [网站分析](#网站分析)
+- [隧道](#隧道)
+- [加速](#加速)
+- [文件分享](#文件分享)
+- [测速](#测速)
+- [文章](#文章)
+- [其他](#其他)
+
+---
+
+## 图床
+
+| 名称 | 特性 | 在线地址 | 状态 |
+| --- | --- | --- | --- |
+| [Telegraph-Image-Hosting](https://github.com/missuo/Telegraph-Image-Hosting) | 使用 Telegraph 构建免费图像托管 | — | 不再维护 |
+| [cf-image-hosting](https://github.com/ifyour/cf-image-hosting) | 在 Telegraph 上免费无限制地托管图像，部署在 Cloudflare 上 | https://images.mingming.dev | 维护中 |
+| [img-mom](https://github.com/beilunyang/img-mom) | 基于 Cloudflare Workers 运行时构建，轻量使用完全免费，支持多种图床（Telegram / Cloudflare R2 / Backblaze B2，更多图床正在支持中），快速部署。使用 Wrangler 可快速实现自部署 | — | 维护中 |
+| [workers-image-hosting](https://github.com/iiop123/workers-image-hosting) | 基于 Cloudflare Workers，数据存储于 KV 的图床 | — | 维护中 |
+| [Telegraph-Image](https://github.com/cf-pages/Telegraph-Image) | 免费图片托管解决方案，Flickr / imgur 替代品。使用 Cloudflare Pages 和 Telegraph | https://im.gurl.eu.org | 维护中 |
+| [cloudflare-worker-image](https://github.com/ccbikai/cloudflare-worker-image) | 使用 Cloudflare Worker 处理图片，依赖 Photon，支持缩放、剪裁、水印、滤镜等功能 | — | 维护中 |
+| [tgState](https://github.com/csznet/tgState) | 使用 Telegram 作为存储的文件外链系统，不限制文件大小和格式 | https://tgstate.vercel.app | 维护中 |
+
+## 邮箱
+
+| 名称 | 特性 | 在线地址 | 状态 |
+| --- | --- | --- | --- |
+| [vmail](https://github.com/oiov/vmail) | 开源临时邮箱工具，支持收发邮件 | https://vmail.dev | 维护中 |
+| [smail](https://github.com/akazwz/smail) | 临时邮箱服务 | https://smail.pw | 维护中 |
+| [Email.ML](https://email.ml/) | 一个运行在 Cloudflare 网络中的临时邮箱 | — | 未开源 |
+| [cloudflare_temp_email](https://github.com/dreamhunter2333/cloudflare_temp_email) | 使用 Cloudflare 免费服务，搭建临时邮箱 | https://temp-email.dreamhunter2333.xyz | 维护中 |
+| [mail2telegram](https://github.com/TBXark/mail2telegram) | 基于 Cloudflare Email Routing Worker 的 Telegram Bot，可将电子邮件转换为 Telegram 消息；可将任意前缀的收件邮箱转发到 Bot，创建具有无限地址的临时邮箱 Bot | — | 维护中 |
+
+## 博客
+
+| 名称 | 特性 | 在线地址 | 状态 |
+| --- | --- | --- | --- |
+| [cloudflare-workers-blog](https://github.com/gdtool/cloudflare-workers-blog) | 运行在 Cloudflare Workers 上的博客程序，使用 Cloudflare KV 作为数据库，无其他依赖，兼容静态博客的速度与动态博客的灵活性 | https://blog.gezhong.vip | 维护中 |
+| [cloudflare-workers-blog](https://github.com/kasuganosoras/cloudflare-worker-blog) | Cloudflare Workers + GitHub 实现的动态博客系统，使用边缘计算，无需服务器 | — | 好像是不维护了 |
+| [microfeed](https://github.com/microfeed/microfeed) | 在 Cloudflare 上自托管的轻量级内容管理系统（CMS）。可将各种内容（音频、视频、照片、文档、博客文章和外部 URL）以 Web、RSS、JSON 形式发布到 feed，适合想自行托管 CMS 而无需运维服务器的技术人员 | https://www.microfeed.org | 维护中 |
+| [emaction.frontend](https://github.com/emaction/emaction.frontend) | 基于 Cloudflare D1 实现的 GitHub 风格 Reactions 点赞功能（前端） | https://emaction.cool | 维护中 |
+| [emaction.backend](https://github.com/emaction/emaction.backend) | 基于 Cloudflare D1 实现的 GitHub 风格 Reactions 点赞功能（后端） | https://emaction.cool | 维护中 |
+
+## 短链
+
+| 名称 | 特性 | 在线地址 | 状态 |
+| --- | --- | --- | --- |
+| [short](https://github.com/igengdu/short/) | 使用 Cloudflare Pages 创建的 URL 缩短器 | https://d.igdu.xyz | 维护中 |
+| [short](https://github.com/x-dr/short) | 使用 Cloudflare Pages 创建的 URL 缩短器 | https://d.131213.xyz | 维护中 |
+| [linklet](https://github.com/harrisonwang/linklet) | 使用 Cloudflare Pages 创建的 URL 缩短器，基于 API 模式实现，使用场景更多 | https://wss.so | 维护中 |
+| [Url-Shorten-Worker](https://github.com/crazypeace/Url-Shorten-Worker) | 使用秘密路径访问操作页面；支持自定义短链；API 不公开服务；页面缓存已设置的短链；长链接文本框预搜索 localStorage；支持删除短链、读取 KV；可变身网络记事本（Pastebin）或图床。基于 Cloudflare Worker 和 KV 的 URL Shortener | [Shorter URL](https://urlsrv.crazypeace.workers.dev/bodongshouqulveweifengci) | 维护中 |
+| [duanwangzhi](https://github.com/Closty/duanwangzhi) | 无需服务即可缩短链接，基于 Cloudflare Workers 功能，极简风格 | — | 好像是不维护了 |
+| [Url-Shorten-Worker](https://github.com/horsemail/Url-Shorten-Worker) | Fork 自 crazypeace 的 Url-Shorten-Worker，功能同上（秘密路径访问、自定义短链、API 不公开、页面缓存、localStorage 预搜索、删除功能、读取 KV、变身 Pastebin / 图床） | [Shorter URL](https://1way.eu.org/bodongshouqulveweifengci) | 维护中 |
+
+## 网站分析
+
+| 名称 | 特性 | 在线地址 | 状态 |
+| --- | --- | --- | --- |
+| [analytics_with_cloudflare](https://github.com/yestool/analytics_with_cloudflare) | 免费开源网页访客计数器 Webviso，基于 Cloudflare Worker + Cloudflare D1 数据库实现的完全免费在线 Web 访客统计服务，功能类似"不蒜子"极简网页计数器，完全开源可自定义，基于 Cloudflare 微服务架构可快速自行部署上线 | https://webviso.yestool.org | 维护中 |
+| [counterscale](https://github.com/benvinegar/counterscale) | 简单的 Web 分析跟踪器和仪表板，效果类似 umami，可在 Cloudflare 上自行托管，易部署维护，即使高流量下操作成本也接近零（Cloudflare 免费套餐假设可支持每天高达 10 万次点击） | https://counterscale.dev | 维护中 |
+
+## 隧道
+
+| 名称 | 特性 | 在线地址 | 状态 |
+| --- | --- | --- | --- |
+| [Cloudflared-web](https://github.com/WisdomSky/Cloudflared-web) | 一个 Docker 镜像，打包了 cloudflared CLI 和简单的 Web UI，便于轻松启动/停止 Cloudflare 隧道 | — | 维护中 |
+
+## 加速
+
+| 名称 | 特性 | 在线地址 | 状态 |
+| --- | --- | --- | --- |
+| [gh-proxy](https://github.com/hunshcn/gh-proxy) | GitHub release、archive 以及项目文件的加速项目，支持 clone，有 Cloudflare Workers 无服务器版本以及 Python 版本 | https://gh.api.99988866.xyz | 维护中 |
+
+## 文件分享
+
+| 名称 | 特性 | 在线地址 | 状态 |
+| --- | --- | --- | --- |
+| [pastebin-worker](https://github.com/SharzyL/pastebin-worker) | 部署在 Cloudflare Workers 上的开源 Pastebin，通过 URL 分享"文本"或"文件"。CF 免费套餐下每天允许 10 万次读取、1000 次写入和删除操作，大小限制 25 MB 以下，轻量使用足够。支持"删除时间设置"和"密码"功能，可设置一段时间后自动删除；适合用于 Twitter 分享文件和文本 | https://shz.al | 维护中 |
+| [FileWorker](https://github.com/yllhwa/FileWorker) | 运行在 Cloudflare Worker 上的在线剪贴板/文件共享 | — | 维护中 |
+| [dingding](https://github.com/iiop123/dingding) | 基于 Cloudflare Workers 的文件传输工具，文件存储在 Cloudflare KV 中 | — | 好像不维护了 |
+
+## 测速
+
+| 名称 | 特性 | 在线地址 | 状态 |
+| --- | --- | --- | --- |
+| [CloudflareSpeedTest](https://github.com/XIU2/CloudflareSpeedTest) | 国外很多网站使用 Cloudflare CDN，但分配给中国内地访客的 IP 并不友好（延迟高、丢包多、速度慢）。虽然 Cloudflare 公开了所有 IP 段，但想从中找到适合自己的 IP 很费时间，因此有了这个工具 | — | 维护中 |
+| [SpeedTest](https://speed.cloudflare.com/) | 官方 SpeedTest 工具 | — | 运行中 |
+
+## 文章
+
+| 名称 | 特性 | 在线地址 | 状态 |
+| --- | --- | --- | --- |
+| [workers](https://igdux.com/workers) | Cloudflare Workers 优秀项目收集 | — | 有效中 |
+| [accelerate-and-secure-with-cloudflared](https://nova.moe/accelerate-and-secure-with-cloudflared/) | 教你使用 Cloudflare Argo Tunnel（cloudflared）来加速和保护你的网站 | — | 有效中 |
+| [jsonbin](https://www.owenyoung.com/blog/jsonbin/) | 在 Cloudflare Workers 部署一个 JSON as a Storage 服务 | — | 有效中 |
+| [cronbin](https://www.owenyoung.com/blog/cronbin/) | 在 Cloudflare Workers 部署一个带有 Dashboard 的 Cron 服务 | — | 有效中 |
+| [using-cloudflare-worker-proxy-google](https://xiaowangye.org/posts/using-cloudflare-worker-proxy-google/) | 使用 Cloudflare Worker 代理 Google 站点 | — | 有效中 |
+| [Use-Cloudflare-Zero-Trust-protect-your-web-applications](https://jiapan.me/2023/Use-Cloudflare-Zero-Trust-protect-your-web-applications/) | 使用 Cloudflare Zero Trust 保护你的 Web 应用 | — | 有效中 |
+| [Nextjs-app-router-with-cloudflare-r2](https://juejin.cn/post/7306723921717166131) | 如何在 Next.js 13 的 app/ 目录中使用 Cloudflare R2 存储 | — | 有效中 |
+| [cloudflare-webssh-zerotrust](https://josephcz.xyz/technology/network/cloudflare-webssh-zerotrust/) | 使用 Cloudflare ZeroTrust 搭建 WebSSH | — | 有效中 |
+
+## 其他
+
+| 名称 | 特性 | 在线地址 | 状态 |
+| --- | --- | --- | --- |
+| [silk-privacy-pass-client](https://chromewebstore.google.com/detail/silk-privacy-pass-client/ajhmfdgkijocedmfjonnpjfojldioehi) | 频繁出现 Cloudflare 人机验证，可用这个 Cloudflare 官方插件解决，装了之后就不会动不动跳出人机验证 | — | 维护中 |
+| [WARP-Clash-API](https://github.com/vvbbnn00/WARP-Clash-API) | 通过订阅方式使用 WARP+，支持 Clash、Shadowrocket 等客户端；内置刷取 WARP+ 流量功能（每 18 秒可获得 1GB 流量），配备 IP 选优功能，支持 Docker Compose 一键部署 | — | 维护中 |
+| [ip-api](https://github.com/ccbikai/ip-api) | 利用 Cloudflare Workers / Vercel Edge / Netlify Edge 快速搭建获取 IP 地址和地理位置信息的接口 | [本机 IP 查询 \| HTML.ZONE](https://html.zone/ip) | 维护中 |
+| [ChatGPT-Telegram-Workers](https://github.com/TBXark/ChatGPT-Telegram-Workers) | 轻松在 Cloudflare Workers 上部署自己的 Telegram ChatGPT 机器人，有详细的视频和图文教程，搭建过程不复杂，小白也能上手 | — | 维护中 |
+| [RSSWorker](https://github.com/yllhwa/RSSWorker) | 轻量级的 RSS 订阅工具，可部署在 Cloudflare Worker 上 | — | 维护中 |
+| [deeplx-for-cloudflare](https://github.com/ifyour/deeplx-for-cloudflare) | Deploy DeepLX on Cloudflare | https://deeplx.mingming.dev | 维护中 |
+| [sub_converter_convert](https://github.com/zzNeutrino/sub_converter_convert) | 转换 ssr/v2ray 订阅链接转换的工具 | — | 好像不维护了 |
+| [telegram-counter](https://github.com/iamshaynez/telegram-counter) | 用纯粹的 Cloudflare Worker 和 D1 数据库写的 Telegram 后端，方便随时随地做打卡记录 | — | 好像不维护了 |
+| [Cloudflare-No-Tracked](https://github.com/fwqaaq/Cloudflare-No-Tracked) | 用于去除 B 站以及小红书的跟踪链接，同时也有 TG 的 bot 版本 | https://notracked.fwqaq.us | 维护中 |
+
+---
+
+## 备注
+
+- 原贴发布于 2024-04-11，楼主 [ljnchn](https://linux.do/u/ljnchn)（祖龙）指出论坛渲染表格格式有异常，本文档已按 Markdown 表格重新整理。
+- 部分工具在原帖跟帖中被提及"好像不维护了"，仅为跟帖用户的观察，未必是官方状态，使用前建议自行确认仓库最新活跃度。
+- 原始 GitHub 仓库：[zhuima/awesome-cloudflare](https://github.com/zhuima/awesome-cloudflare)

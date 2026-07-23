@@ -10,11 +10,11 @@ The search remains a local keyword search. It does not call `/api/chat` or an ex
 
 The current Fumadocs advanced index uses each page URL as its internal document ID. It generates child document IDs by appending `-0`, `-1`, and so on. Therefore the child ID generated for:
 
-`/docs/languages/java/spring-boot/spring-boot-multiple-datasource`
+`/docs/languages/java/web-frameworks/spring-boot/spring-boot-multiple-datasource`
 
 can collide with the real page ID:
 
-`/docs/languages/java/spring-boot/spring-boot-multiple-datasource-2`
+`/docs/languages/java/web-frameworks/spring-boot/spring-boot-multiple-datasource-2`
 
 Orama rejects the index with `DOCUMENT_ALREADY_EXISTS`, `/api/search` returns HTTP 500, and the search dialog displays no results. URL-level page deduplication cannot prevent this collision because the two source page URLs are distinct.
 

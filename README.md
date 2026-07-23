@@ -43,7 +43,7 @@ dz-notes/
 - `src/app`：页面路由与布局入口。
 - `src/components/docs`：文档首页、专题广场、文章卡片等文档相关 UI 组件。
 - `src/lib`：站点频道、内容源、导航配置等核心逻辑。
-- `.claude/agents`：内容迁移、MDX 规范、文档改造规则。
+- `.agents`：共享 Agent 的唯一源文件；`.claude` 与 `.codex` 配置由同步脚本生成。
 
 ### 关键配置文件说明
 
@@ -222,6 +222,89 @@ export default withMDX(nextConfig);
 
 如果后续文档中继续引入外部图片，比如 Unsplash、CDN 或其他图床，需要继续在 `remotePatterns` 里追加对应域名。
 
+## 脚本使用说明
+
+项目辅助脚本统一放在 `scripts/` 目录。执行会修改文件的脚本前，建议先确认 Git 工作区状态，以便检查和恢复变更。
+
+### `sync-agents.mjs`
+
+以 `.agents/mdx-agent.md` 为唯一源，生成 Claude 和 Codex 使用的 Agent 配置。不要直接修改生成文件：
+
+- `.claude/agents/mdx-agent.md`
+- `.codex/agents/mdx-agent.toml`
+
+修改唯一源后执行：
+
+```bash
+pnpm agents:sync
+```
+
+提交前检查生成文件是否与唯一源一致：
+
+```bash
+pnpm agents:check
+```
+
+`agents:check` 只检查、不写文件；目标文件缺失或内容不一致时会以非零状态退出。也可以直接执行 `node scripts/sync-agents.mjs`，并通过 `--check` 参数启用检查模式。
+
+### `convert-grammar.mjs`
+
+将 TextMate YAML grammar 转换成 Shiki 可加载的 JSON grammar。脚本依赖项目已有的 `js-yaml`，使用前需要先安装项目依赖。
+
+```bash
+node scripts/convert-grammar.mjs <本地文件或远程 URL> [输出文件]
+```
+
+本地文件示例：
+
+```bash
+node scripts/convert-grammar.mjs plantuml.tmLanguage grammars/plantuml.tmLanguage.json
+```
+
+远程文件示例：
+
+```bash
+node scripts/convert-grammar.mjs https://raw.githubusercontent.com/qjebbs/vscode-plantuml/master/syntaxes/plantuml.yaml-tmLanguage grammars/plantuml.tmLanguage.json
+```
+
+未指定输出文件时，脚本会在当前工作目录生成同名的 `.json` 文件。远程输入应使用可直接返回原始内容的 URL，例如 GitHub Raw 地址。
+
+### `normalize-devops-ci-cd-tags.js`
+
+扫描 `content/docs/devops/ci-cd` 中除 `index.mdx` 以外的 MDX 文件，根据 `src/lib/doc-tags.ts` 和脚本内置别名，把 `tag` 列表原地规范化为标签 slug。
+
+```bash
+node scripts/normalize-devops-ci-cd-tags.js
+```
+
+脚本不接收参数，会直接写回匹配的文档。遇到无法映射的中文标签时，会列出文件和标签并以非零状态退出；执行后应通过 Git diff 检查变更。
+
+### `normalize-devops-linux-tags.js`
+
+扫描 `content/docs/devops/linux` 中除 `index.mdx` 以外的 MDX 文件，根据 `src/lib/doc-tags.ts` 和脚本内置别名，把 `tag` 列表原地规范化为标签 slug。
+
+```bash
+node scripts/normalize-devops-linux-tags.js
+```
+
+该脚本同样不接收参数并会直接写回文档。遇到无法映射的中文标签时，会列出文件和标签并以非零状态退出；执行后应通过 Git diff 检查变更。
+
+### `rename_md_to_mdx.sh`
+
+递归扫描指定目录，把所有 `.md` 文件重命名为 `.mdx`。脚本需要 Bash，可在 Linux、macOS、WSL 或 Git Bash 中执行。
+
+```bash
+bash scripts/rename_md_to_mdx.sh [目标目录]
+```
+
+例如：
+
+```bash
+bash scripts/rename_md_to_mdx.sh ./content/docs/web/style_lang
+```
+
+未指定目标目录时默认处理当前目录。该脚本会直接移动文件，且不会自动修正文档之间指向 `.md` 的链接；执行前应仔细确认目标目录，执行后还需检查并修复相关链接。
+
 ---
 
 ## Docs 快捷导航
@@ -251,30 +334,18 @@ export default withMDX(nextConfig);
 
 ### 规则与配置
 
-- [MDX Agent 规则](.claude/agents/mdx-agent.md)
+- [MDX Agent 规则](.agents/mdx-agent.md)
 - [Fumadocs 内容源配置](source.config.ts)
 - [站点配置](src/lib/site.ts)
+
+修改共享 Agent 后，按照上方“脚本使用说明”运行 `pnpm agents:sync`；提交前使用 `pnpm agents:check` 检查生成文件是否一致。
 
 ---
 
 ## 开发建议
 
 - 新增频道时，优先补齐 `index.mdx`、`meta.json` 和必要的描述信息。
-- 文档迁移到 MDX 时，优先遵循 `.claude/agents/mdx-agent.md` 中的规则。
+- 文档迁移到 MDX 时，优先遵循 `.agents/mdx-agent.md` 中的规则。
 - 代码块语言标记、图片标签、自定义链接语法等内容，尽量统一后再批量处理。
 
 ---
-
-## 备注
-
-如果后续频道继续扩展，建议同步维护本 README 的“内容频道”和“项目结构”部分，避免入口信息滞后。
-
-codex resume 019dfdc8-d3c4-7c50-90b1-2a476437e79b
-
-// "dev": "cross-env NODE_OPTIONS=--max-old-space-size=4096 next dev",
-
-
-频道分类 编程语言应该显示的是正确的，Java 不应该作为单独的频道分类
-
-已完成 
-ai、bigdata、blockchain、storage、game-development、mobile_native、cross_platform

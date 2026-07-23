@@ -1,0 +1,24 @@
+{
+  "title": "Maven",
+  "pages": [
+    "index",
+    "starter",
+    "settings-xml",
+    "command",
+    "scope",
+    "version",
+    "build",
+    "module-build",
+    "profile",
+    "package",
+    "install",
+    "repository",
+    "nexus",
+    "publish-flow",
+    "make-plugin",
+    "manifest",
+    "scm",
+    "config-old-tomcat",
+    "problem"
+  ]
+}

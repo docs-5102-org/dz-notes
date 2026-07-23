@@ -9,6 +9,7 @@
     "pyinstaller",
     "podt",
     "problem",
-    "bypasses-sliding-captcha"
+    "bypasses-sliding-captcha",
+    "interview"
   ]
 }

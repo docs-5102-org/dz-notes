@@ -1,4 +1,4 @@
 {
   "title": "文件与目录管理",
-  "pages": ["index", "ls", "mkdir", "cp", "mv", "file", "find", "tail", "dd", "zip[unzip]"]
+  "pages": ["index", "ls", "mkdir", "cp", "mv", "file", "find", "tail", "dd", "zip-unzip"]
 }

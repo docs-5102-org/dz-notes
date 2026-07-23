@@ -1,0 +1,8 @@
+{
+  "title": "依赖包管理",
+  "pages": [
+    "index",
+    "maven",
+    "gradle"
+  ]
+}

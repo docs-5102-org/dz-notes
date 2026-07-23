@@ -1,0 +1,12 @@
+{
+  "title": "正则表达式",
+  "pages": [
+    "index",
+    "starter",
+    "common-regex",
+    "capture-group",
+    "datetime-regex",
+    "foreign-phone",
+    "notepad-regex"
+  ]
+}

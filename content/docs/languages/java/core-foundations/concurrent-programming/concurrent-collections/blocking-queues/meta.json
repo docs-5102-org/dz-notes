@@ -1,0 +1,9 @@
+{
+  "title": "阻塞队列",
+  "pages": [
+    "index",
+    "intro",
+    "principle",
+    "application"
+  ]
+}
