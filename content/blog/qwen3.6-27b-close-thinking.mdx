@@ -1,0 +1,204 @@
+---
+title: Qwen3.6-27B 思维链（Thinking Mode）关闭配置指南
+date: "2026-07-25"
+category: AI
+---
+
+# Qwen3.6-27B 思维链（Thinking Mode）关闭配置指南
+
+## 背景
+
+Qwen3.6-27B 的思考模式通过模型内部特殊 token（如 `<think>...</think>`）控制。仅在 UI 或请求体顶层设置 `enable_thinking=false` 往往不生效——部分推理引擎（vLLM、SGLang、LMDeploy）不会直接拦截这些 token，而是依赖 **Chat Template** 来决定是否输出思考内容。
+
+JSON Mode 之所以看似"能关闭"，是因为结构化输出约束会抑制所有非 JSON 内容（包括 `<think>` 标签），本质是"格式压制"而非真正关闭思考模式，一旦脱离 JSON Mode，思考内容会重新出现。
+
+真正生效的关键在于：`enable_thinking` 必须放在 **`chat_template_kwargs`** 内部传递，而不是作为请求体顶层参数。
+
+---
+
+## 通用排查三步（适用于任意语言 / 框架）
+
+### 1. 确认聊天模板路径正确
+
+推理引擎必须加载包含 `enable_thinking` 控制逻辑的模板文件，避免使用默认或缓存模板。
+
+- LMDeploy：
+  ```python
+  chat_template_config = ChatTemplateConfig(
+      chat_template_path='/path/to/local/model/chat_template.json'
+  )
+  ```
+- vLLM / SGLang：启动命令显式传 `--chat-template <完整路径>`
+
+### 2. 参数必须包在 `chat_template_kwargs` 里传递
+
+```python
+extra_body={"chat_template_kwargs": {"enable_thinking": False}}
+```
+
+### 3. 检查推理引擎版本
+
+- vLLM ≥ 0.6.0（支持 `--reasoning-parser qwen3`）
+- SGLang ≥ 0.3.0（支持 `--json-model-override-args`）
+
+### 验证方法
+
+发送简单问题（如"你好"），观察返回内容是否仍包含 `<think>` 标签；同时在日志中确认 `enable_thinking` 被正确解析为 `false`。
+
+---
+
+## Java（Spring AI）落地方案
+
+NTD AI 服务基于 **Spring AI Alibaba 1.1.6**，通过自部署 vLLM（`172.16.0.235:8001`，OpenAI 兼容接口）调用 Qwen3.6-27B。以下是经过验证可关闭思维链的配置。
+
+### 核心代码：`ChatClientConfig`
+
+```java
+package com.ntd.ai.core.config;
+
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
+import org.springframework.http.client.reactive.JdkClientHttpConnector;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import java.net.http.HttpClient;
+import java.util.Map;
+
+/**
+ * DashScope / Qwen3.6-27B ChatClient 配置
+ *
+ * 提供两个 ChatClient：
+ * ┌─────────────────────────────────────────────────────┐
+ * │  chatClient（@Primary）                              │
+ * │  强制 HTTP/1.1，解决 vLLM 流式 HTTP/2 升级 400 问题  │
+ * │  适合：自部署 vLLM（172.16.0.235:8001）              │
+ * ├─────────────────────────────────────────────────────┤
+ * │  defaultChatClient                                   │
+ * │  Spring AI 默认 HTTP 构建方式                        │
+ * │  适合：DashScope 云端 API / 支持 HTTP/2 的服务       │
+ * └─────────────────────────────────────────────────────┘
+ */
+@Configuration
+public class ChatClientConfig {
+
+    // ── 自部署 vLLM 配置 ──────────────────────────────────
+    /** ⚠️ 不要加 /v1，Spring AI 会自动追加 */
+    private static final String VLLM_BASE_URL = "http://172.16.0.235:8001";
+    /** vLLM 不验证 key，填任意非空字符串即可 */
+    private static final String VLLM_API_KEY  = "nopassw0rd";
+    /** 与 Python 版本 MODEL 一致 */
+    private static final String MODEL         = "Qwen3.6-27B";
+
+    // ── 公共 ChatOptions（两个 ChatClient 共用）───────────
+    private static OpenAiChatOptions buildDefaultOptions() {
+        return OpenAiChatOptions.builder()
+                .model(MODEL)
+                // 关闭思维链，判断类 Agent 直接输出 JSON，减少延迟
+                .extraBody(Map.of(
+                        "chat_template_kwargs", Map.of("enable_thinking", false)
+                ))
+                .streamUsage(false)
+                .build();
+    }
+
+    // ════════════════════════════════════════════════════════
+    // Bean 1：强制 HTTP/1.1 的 ChatClient（@Primary，默认注入）
+    // 解决 vLLM 流式 HTTP/2 升级导致 body 为空 → 400 的问题
+    // @see https://github.com/spring-projects/spring-ai/issues/3775
+    // ════════════════════════════════════════════════════════
+
+    private static HttpClient http11Client() {
+        return HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .build();
+    }
+
+    private static OpenAiApi buildHttp11Api() {
+        HttpClient httpClient = http11Client();
+        return OpenAiApi.builder()
+                .baseUrl(VLLM_BASE_URL)
+                .apiKey(VLLM_API_KEY)
+                .restClientBuilder(
+                        RestClient.builder()
+                                .requestFactory(new JdkClientHttpRequestFactory(httpClient))
+                )
+                .webClientBuilder(
+                        WebClient.builder()
+                                .clientConnector(new JdkClientHttpConnector(httpClient))
+                )
+                .build();
+    }
+
+    @Primary
+    @Bean("chatClient")
+    public ChatClient chatClient() {
+        ChatModel model = OpenAiChatModel.builder()
+                .openAiApi(buildHttp11Api())
+                .defaultOptions(buildDefaultOptions())
+                .build();
+
+        return ChatClient.builder(model)
+                .defaultAdvisors(new SimpleLoggerAdvisor())
+                .build();
+    }
+
+    // ════════════════════════════════════════════════════════
+    // Bean 2：默认 HTTP 构建方式的 ChatClient
+    // 适合 DashScope 云端 API 或支持 HTTP/2 的推理服务
+    // ════════════════════════════════════════════════════════
+
+    private static OpenAiApi buildDefaultApi() {
+        return OpenAiApi.builder()
+                .baseUrl(VLLM_BASE_URL)
+                .apiKey(VLLM_API_KEY)
+                .build();
+    }
+
+    @Bean("defaultChatClient")
+    public ChatClient defaultChatClient() {
+        ChatModel model = OpenAiChatModel.builder()
+                .openAiApi(buildDefaultApi())
+                .defaultOptions(buildDefaultOptions())
+                .build();
+
+        return ChatClient.builder(model)
+                .defaultAdvisors(new SimpleLoggerAdvisor())
+                .build();
+    }
+}
+```
+
+### 关键点说明
+
+| 要点 | 说明 |
+|---|---|
+| **正确的参数位置** | `enable_thinking` 必须嵌套在 `chat_template_kwargs` 内，通过 `OpenAiChatOptions.extraBody(Map.of("chat_template_kwargs", Map.of("enable_thinking", false)))` 传递。若直接传 `extraBody(Map.of("enable_thinking", false))`（顶层），vLLM 的 chat_template 解析不到该字段，思维链不会关闭。 |
+| **HTTP/1.1 强制** | vLLM 流式响应在 HTTP/2 升级时会出现 body 为空导致 400（[spring-ai#3775](https://github.com/spring-projects/spring-ai/issues/3775)），因此 `@Primary` 的 `chatClient` 显式构造 `HttpClient.Version.HTTP_1_1` 并同时应用于 `RestClient`（非流式）与 `WebClient`（流式），保证两条链路行为一致。 |
+| **baseUrl 不加 `/v1`** | Spring AI 的 `OpenAiApi` 会自动在 baseUrl 后追加 `/v1`，重复添加会导致请求路径错误。 |
+| **双 ChatClient 设计** | `chatClient`（HTTP/1.1，@Primary）用于自部署 vLLM；`defaultChatClient`（框架默认 HTTP 客户端）用于 DashScope 云端或原生支持 HTTP/2 的服务，按需通过 `@Qualifier("defaultChatClient")` 指定注入。 |
+
+### 验证方式
+
+调用任意 Agent 后检查返回内容：
+
+- 正常：直接输出目标内容（如分类结果 JSON），无 `<think>...</think>` 片段。
+- 异常：仍出现思考过程 → 检查 `extraBody` 的 key 是否嵌套正确（必须是 `chat_template_kwargs` 而非顶层 `enable_thinking`），并结合 vLLM 端日志确认该字段被正确解析。
+
+---
+
+## 小结
+
+| 场景 | 正确做法 |
+|---|---|
+| Python / OpenAI SDK | `extra_body={"chat_template_kwargs": {"enable_thinking": False}}` |
+| Java / Spring AI | `OpenAiChatOptions.extraBody(Map.of("chat_template_kwargs", Map.of("enable_thinking", false)))` |
+| 通用注意事项 | 顶层传参无效；必须嵌套在 `chat_template_kwargs` 下；同时确认 chat_template 文件路径与推理引擎版本 |

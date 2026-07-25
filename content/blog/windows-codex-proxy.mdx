@@ -1,0 +1,73 @@
+---
+title: Windows 上 Codex 代理的配置
+date: "2026-07-25"
+category: "AI, codex"
+---
+
+## Windows 上 Codex 代理的配置
+
+Codex 是 Electron/Node 应用，**不会读取 Windows 系统代理**，所以在"设置 → 网络和 Internet → 代理"里开代理对它无效。必须用环境变量的方式注入。
+
+---
+
+## 三种方案对比
+
+### 方案一：`~/.codex/.env` 文件（最推荐）
+
+Codex CLI 支持读取 `~/.codex/.env` 文件，在启动时自动加载，不依赖调用方 shell 的环境变量状态。相比在 `.bashrc` 里全局 `export`，这种方式更干净——代理范围精确限定在 Codex 进程内，不影响同一 shell 里的其他工具。
+
+```ini
+# ~/.codex/.env  （注意：不要加 export）
+http_proxy="http://127.0.0.1:7890"
+https_proxy="http://127.0.0.1:7890"
+all_proxy="socks5://127.0.0.1:7890"
+```
+
+✅ 只影响 Codex 进程，不污染全局，**这是最干净的方案**。
+
+---
+
+### 方案二：Windows 系统环境变量 + 批处理切换脚本
+
+社区验证的方案是用 `setx` 写入系统环境变量，并用批处理脚本实现一键开关，可以确保 Codex、Cursor、VSCode 等开发工具正常联网，同时避免全局代理影响国内软件。
+
+```bat
+@echo off
+chcp 65001 >nul
+if "%HTTP_PROXY%"=="" (
+    setx HTTP_PROXY http://127.0.0.1:7890 >nul
+    setx HTTPS_PROXY http://127.0.0.1:7890 >nul
+    echo 代理已开启
+) else (
+    setx HTTP_PROXY "" >nul
+    setx HTTPS_PROXY "" >nul
+    echo 代理已关闭
+)
+```
+
+⚠️ `setx` 写的是**用户级系统环境变量**，会影响所有用该用户启动的应用，不如方案一干净。
+
+---
+
+### 方案三：PowerShell 脚本注入启动（进程级）
+
+只在启动 Codex 那一刻注入，其他进程完全不受影响：
+
+```powershell
+$env:HTTP_PROXY  = "http://127.0.0.1:7890"
+$env:HTTPS_PROXY = "http://127.0.0.1:7890"
+$env:ALL_PROXY   = "socks5://127.0.0.1:7890"
+codex
+```
+
+---
+
+## 总结建议
+
+| 方案 | 作用范围 | 推荐度 |
+|---|---|---|
+| `~/.codex/.env` | 仅 Codex 进程 | ⭐⭐⭐ 最优 |
+| PowerShell 注入启动 | 仅当前终端会话 | ⭐⭐ 灵活 |
+| `setx` 系统环境变量 | 用户下所有应用 | ⭐ 有副作用 |
+
+你是用 **Codex CLI** 还是 **Codex Desktop**？CLI 的话直接用 `~/.codex/.env` 就搞定了，写完不用再管。

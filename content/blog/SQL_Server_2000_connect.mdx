@@ -1,0 +1,232 @@
+---
+title: 连接 SQL Server 2000 数据库操作指南
+category: "Java, SQL Server 2000"
+date: "2026-07-25"
+---
+
+# 连接 SQL Server 2000 数据库操作指南
+
+## 背景
+
+该数据库使用年代较久（疑似 SQL Server 2000 或相近版本）。微软近年发布的 ODBC Driver 17 / 18 均已不再支持此类老版本：
+
+- **ODBC Driver 18**：明确拒绝连接 SQL Server 2000 或更早版本
+- **ODBC Driver 17**：官方最低支持版本为 SQL Server 2012
+
+因此需要借助 Windows 系统自带的旧版驱动，或第三方兼容驱动来连接。
+
+**连接信息：**
+
+| 项目 | 值 |
+|---|---|
+| 主机 IP | `172.16.0.34` |
+| 用户名 | `gw02` |
+| 密码 | `xxxx` |
+
+---
+
+## 方法一：通过 Windows 32 位 ODBC 数据源管理器连接
+
+### 1. 打开 32 位 ODBC 管理器
+
+按 `Win + R`，输入以下路径并回车：
+
+```
+C:\Windows\SysWOW64\odbcad32.exe
+```
+
+> ⚠️ 必须是 `SysWOW64` 路径下的 **32 位版本**，而不是 `System32` 下的 64 位版本。系统自带的老版 "SQL Server" 驱动只存在于 32 位环境中。
+
+### 2. 添加新数据源
+
+1. 切换到「**用户 DSN**」标签页
+2. 点击「**添加**」
+3. 在驱动列表中找到并选中「**SQL Server**」这一项（注意：不是 "SQL Server Native Client"，也不是带版本号的 "ODBC Driver 17/18"，就是最原始、没有版本号的这四个字）
+4. 点击「**完成**」
+
+### 3. 填写连接信息
+
+1. **名称**：自定义，例如 `ntd-172.16.0.34`
+2. **描述**：可留空
+3. **服务器**：填入 `172.16.0.34`
+4. 点击「下一步」
+
+### 4. 选择验证方式
+
+1. 选择「**使用用户输入登录 ID 和密码的 SQL Server 验证**」
+2. 登录 ID：`gw02`
+3. 密码：`xxx`
+4. 后续步骤保持默认，一路点击「下一步」
+
+### 5. 测试连接
+
+在向导最后一步，点击「**测试数据源**」按钮。成功后会弹出提示，并显示数据库版本信息，可借此确认服务器真实版本号。
+
+### 6.（可选）供 Navicat 等工具使用
+
+DSN 创建并测试成功后，回到 Navicat 连接设置的「**高级**」标签页，「**Native Client 驱动程序**」下拉框中应能选中同一个「**SQL Server**」驱动，从而完成连接。
+
+> ⚠️ 如果使用的是 **64 位版本**的 Navicat，下拉框中可能看不到该驱动（因为它只存在于 32 位环境），需要改用 32 位版本的 Navicat。
+
+---
+
+## 方法二：通过 IntelliJ IDEA + jTDS 驱动连接
+
+IDEA 内置数据库工具支持切换为开源的 **jTDS** 驱动，该驱动对老版本 SQL Server（包括 2000 及更早）兼容性较好，是目前几种方案里成功率最高的一种。
+
+### 1. 新建数据源
+
+1. 打开 IDEA，展开右侧「**Database**」工具窗口
+2. 点击「**+**」→「**Data Source**」→「**Microsoft SQL Server**」
+
+### 2. 切换驱动为 jTDS
+
+1. 在弹出的连接配置对话框中，找到「**Driver**」下拉框
+2. 选择「**Microsoft SQL Server (jTds)**」（不是默认的第一项）
+3. 如提示缺少驱动文件（missing driver files），点击下载即可
+
+### 3. 填写连接信息
+
+- **Host**：`172.16.0.34`
+- **Port**：`1433`（默认端口，如实际端口不同需与管理员确认）
+- **Authentication**：User & Password
+- **User**：`gw02`
+- **Password**：`ntd02`
+
+如自动生成的连接 URL 有问题，可手动改写为：
+
+```
+jdbc:jtds:sqlserver://172.16.0.34:1433
+```
+
+### 4. 测试连接
+
+点击右下角「**Test Connection**」，成功后保存即可。
+
+### 5. 加载表结构
+
+连接成功后，部分数据库可能会显示「**No schemas selected**」，此时表列表不会自动加载：
+
+1. 点击对应数据库右侧的「**...**」按钮
+2. 勾选需要查看的 schema（一般勾选 `dbo` 即可）
+3. 确定后，工具会开始加载该 schema 下的表结构
+
+如果展开后仍为空，可在顶层连接节点上右键选择「**Refresh**」强制刷新元数据缓存。
+
+> 💡 说明：`master`、`Northwind`、`pubs` 等是系统库或微软自带的示例库，本身不含业务数据表属正常现象；
+
+## SpringBoot 2.7.18 + Druid数据源配置SQL Server 2000
+
+### 添加依赖包
+
+```xml
+<!--SQL Server 2000 驱动包，微软新版本的 com.microsoft.sqlserver:mssql-jdbc 不支持 -->
+<dependency>
+    <groupId>net.sourceforge.jtds</groupId>
+    <artifactId>jtds</artifactId>
+    <version>${jtds.version}</version>
+</dependency>
+<dependency>
+    <groupId>com.alibaba</groupId>
+    <artifactId>druid-spring-boot-starter</artifactId>
+    <version>${druid.version}</version>
+</dependency>
+```
+
+### application.yml 配置
+
+```yml
+spring:
+  datasource:
+    dynamic:
+      primary: master # 设置默认数据源为 master
+      strict: false   # 严格匹配数据源,默认false. true未匹配到指定数据源时抛异常,false使用默认数据源
+      datasource:
+        master: #主数据
+          # 配置 hikari数据源的属性值
+          url: jdbc:mysql://localhost:3306/xxx1?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8&useSSL=false&allowMultiQueries=true
+          username: root
+          password: root
+          pool-name: MasterHikariPool #连接池名称，默认HikariPool-1
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          hikari:
+            maximum-pool-size: 10
+            idle-timeout: 600000   # 连接空闲超时（默认 10 分钟）
+            max-lifetime: 1800000  # 连接最大存活时间（默认 30 分钟）
+            connection-timeout: 30000  # 连接获取超时时间（默认 30 秒）
+            validation-timeout: 5000   # 连接验证超时时间（默认 5 秒）
+            leak-detection-threshold: 0  # 连接泄漏检测（默认 0，禁用）
+        local: # 本地开发库用于测试
+          # 配置 hikari数据源的属性值
+          url: jdbc:mysql://localhost:3306/xxx2?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8&useSSL=false&allowMultiQueries=true
+          username: root
+          password: root
+          pool-name: LocalHikariPool
+          hikari:
+            maximum-pool-size: 10
+            idle-timeout: 600000   # 连接空闲超时（默认 10 分钟）
+            max-lifetime: 1800000  # 连接最大存活时间（默认 30 分钟）
+            connection-timeout: 30000  # 连接获取超时时间（默认 30 秒）
+            validation-timeout: 5000   # 连接验证超时时间（默认 5 秒）
+            leak-detection-threshold: 0  # 连接泄漏检测（默认 0，禁用）
+        # ↓ 新增的 SQL Server 2000 数据源 ,旧的 2000 不支持 hikari，需要额外配置druid数据源
+        caseHK:
+          url: jdbc:jtds:sqlserver://172.16.0.34:1433/caseHK;charset=GBK
+          username: gw02
+          password: ntd02
+          pool-name: CaseHKDruidPool
+          driver-class-name: net.sourceforge.jtds.jdbc.Driver
+          type: com.alibaba.druid.pool.DruidDataSource   # ← 关键：指定连接池类型
+          druid:
+            initial-size: 3
+            min-idle: 3
+            max-active: 10
+            max-wait: 30000
+            validation-query: SELECT 1
+            test-on-borrow: false
+            test-while-idle: true
+            time-between-eviction-runs-millis: 60000
+        casePct:
+          url: jdbc:jtds:sqlserver://172.16.0.34:1433/casePct;charset=GBK
+          username: gw02
+          password: ntd02
+          pool-name: CasePctHikariPool
+          driver-class-name: net.sourceforge.jtds.jdbc.Driver
+          type: com.alibaba.druid.pool.DruidDataSource   # ← 关键：指定连接池类型
+          druid:
+            initial-size: 3
+            min-idle: 3
+            max-active: 10
+            max-wait: 30000
+            validation-query: SELECT 1
+            test-on-borrow: false
+            test-while-idle: true
+            time-between-eviction-runs-millis: 60000
+        caseYXTC:
+          url: jdbc:jtds:sqlserver://172.16.0.34:1433/caseYXTC;charset=GBK
+          username: gw02
+          password: ntd02
+          pool-name: CaseYXTCHikariPool
+          driver-class-name: net.sourceforge.jtds.jdbc.Driver
+          type: com.alibaba.druid.pool.DruidDataSource   # ← 关键：指定连接池类型
+          druid:
+            initial-size: 3
+            min-idle: 3
+            max-active: 10
+            max-wait: 30000
+            validation-query: SELECT 1
+            test-on-borrow: false
+            test-while-idle: true
+            time-between-eviction-runs-millis: 60000
+```
+
+> 新增的 SQL Server 2000 数据源 ,旧的 2000 不支持 hikari，需要额外配置druid数据源
+
+---
+
+## 两种方法对比
+
+| 方式 | 适用场景 | 优点 |
+|---|---|---|
+| 32 位 ODBC 管理器 | 需要给 Navicat 等依赖系统 ODBC 驱动的工具提供连接 | 系统自带，无需额外下载 |
+| IDEA + jTDS | 日常开发中查询、浏览数据 | 跨平台，纯 Java 驱动，兼容性好，不依赖系统级驱动安装 |
