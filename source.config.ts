@@ -98,7 +98,9 @@ export default defineConfig({
           name: 'plantuml',
           aliases: ['puml', 'pu', 'wsd'], // 文件里 fileTypes 里的扩展名都可以作别名
         },
-
+        'js',
+        'yml',
+        'yaml',
       ],
       langAlias: {
         // 非 Shiki 内置的别名才需要声明
