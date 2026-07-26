@@ -10,6 +10,9 @@ export const docs = defineDocs({
   dir: 'content/docs',
   docs: {
     async: true,
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
     schema: pageSchema.extend({
       subTitle: z.string().optional(), // 扩展二级标题, 可选 
       // 分类（多值），空数组容错处理，参考 tags 的写法

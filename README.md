@@ -12,6 +12,18 @@ pnpm dev
 
 ---
 
+## 构建与部署注意事项
+
+Vercel 等部署环境运行在 Linux 中，MDX 内引用 `public/` 静态资源时必须使用站点根路径和正斜杠。例如：
+
+```mdx
+![](/assets/images/blog/example.png)
+```
+
+不要写成相对文件路径（如 `../../public/assets/images/...`），也不要使用 Windows 反斜杠（如 `/assets/images\\blog\\example.png`）。MDX 会将这类写法编译为模块导入，而 Linux 构建无法解析包含反斜杠的路径，最终会报 `Module not found`。
+
+---
+
 ## 项目结构
 
 下面是当前仓库的主要目录分层，便于快速定位内容、页面和脚本入口：
