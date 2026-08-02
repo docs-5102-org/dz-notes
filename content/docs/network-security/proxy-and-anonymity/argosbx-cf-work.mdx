@@ -1,0 +1,573 @@
+﻿---
+title: Argosbx Cloudflare 隧道工作原理
+subTitle: cloudflared、临时隧道与请求转发
+description: 分析 Argosbx 脚本如何通过 Cloudflare Tunnel 转发本地代理服务请求，并整理固定隧道、临时隧道和故障排查方法。
+category:
+  - 网络安全
+tags:
+  - Cloudflare Tunnel
+  - cloudflared
+  - 代理
+---
+
+# Argosbx Cloudflare 隧道工作原理
+
+本文用于理解 Argosbx 与 Cloudflare Tunnel 的连接流程和配置要点。示例仅适用于已获授权的服务器与网络环境，请不要将隧道 Token、UUID 或订阅信息提交到公开仓库。
+
+## 概述
+
+Argosbx 是一个自动化部署脚本，用于在 VPS 上搭建多协议代理服务，并通过 Cloudflare Argo 隧道提供安全的外部访问。本文档详细讲解其如何接受和处理 Cloudflare 隧道请求。
+
+脚本地址：
+[https://github.com/tuonioooo/argosbx/blob/main/argosbx.sh](https://github.com/tuonioooo/argosbx/blob/main/argosbx.sh)
+隧道项目：
+[https://github.com/cloudflare/cloudflared](https://github.com/cloudflare/cloudflared)
+官网隧道文档：
+[https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/)
+## 核心组件
+
+### 1. Cloudflared 客户端
+
+脚本使用 `cloudflared` 作为 Cloudflare 隧道的客户端程序：
+
+```bash
+# 下载 cloudflared
+url="https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$cpu"
+out="$HOME/agsbx/cloudflared"
+curl -Lo "$out" -# --retry 2 "$url"
+chmod +x "$HOME/agsbx/cloudflared"
+```
+
+### 2. 两种隧道模式
+
+#### 模式一：固定隧道（Token 模式）
+
+当提供了 `ARGO_DOMAIN` 和 `ARGO_AUTH` 时，使用固定隧道：
+
+```bash
+if [ -n "${ARGO_DOMAIN}" ] && [ -n "${ARGO_AUTH}" ]; then
+    argoname='固定'
+    nohup "$HOME/agsbx/cloudflared" tunnel \
+        --no-autoupdate \
+        --edge-ip-version auto \
+        --protocol http2 \
+        run --token "${ARGO_AUTH}" \
+        >/dev/null 2>&1 &
+    
+    echo "${ARGO_DOMAIN}" > "$HOME/agsbx/sbargoym.log"
+    echo "${ARGO_AUTH}" > "$HOME/agsbx/sbargotoken.log"
+fi
+```
+
+**特点：**
+
+- 使用预先配置的域名和认证 Token
+- 域名固定不变
+- 需要在 Cloudflare 后台提前创建隧道
+
+#### 模式二：临时隧道（Quick Tunnel）
+
+未提供固定隧道配置时，使用临时隧道：
+
+```bash
+else
+    argoname='临时'
+    nohup "$HOME/agsbx/cloudflared" tunnel \
+        --url http://localhost:"${port_vm_ws}" \
+        --edge-ip-version auto \
+        --no-autoupdate \
+        --protocol http2 \
+        > "$HOME/agsbx/argo.log" 2>&1 &
+fi
+```
+
+**特点：**
+
+- 自动生成临时域名（*.trycloudflare.com）
+- 无需预先配置
+- 每次启动域名可能变化
+
+## 隧道工作流程
+
+### 流程图
+
+```
+外部请求 → Cloudflare CDN → Argo 隧道 → cloudflared 客户端 → 本地代理服务
+```
+
+### 详细步骤
+
+1. **启动本地代理服务**
+    
+    - 脚本先启动 Xray 或 Sing-box 代理服务
+    - 监听本地端口（如 vmess-ws 监听的端口）
+2. **启动 cloudflared 隧道**
+    
+    ```bash
+    # 隧道连接到本地服务
+    cloudflared tunnel --url http://localhost:${port_vm_ws}
+    ```
+    
+3. **获取隧道域名**
+    
+    ```bash
+    # 从日志中提取域名
+    argodomain=$(grep -a trycloudflare.com "$HOME/agsbx/argo.log" 2>/dev/null | \
+                 awk 'NR==2{print}' | awk -F// '{print $2}' | awk '{print $1}')
+    ```
+    
+4. **生成节点配置**
+    
+    - 使用获取的域名生成客户端连接配置
+    - 支持多个 Cloudflare 端口（443, 8443, 2053, 2083, 2087, 2096, 80, 8080, 8880, 2052, 2082, 2086, 2095）
+
+## 请求处理流程
+
+### 1. 外部客户端连接
+
+客户端使用生成的 vmess 链接连接：
+
+```bash
+# TLS 端口示例（443）
+vmess://encoded_config_with_argodomain_port_443
+
+# 非 TLS 端口示例（80）
+vmess://encoded_config_with_argodomain_port_80
+```
+
+### 2. Cloudflare 接收请求
+
+- 请求首先到达 Cloudflare CDN
+- 支持的端口：
+    - **TLS 端口**：443, 8443, 2053, 2083, 2087, 2096
+    - **非 TLS 端口**：80, 8080, 8880, 2052, 2082, 2086, 2095
+
+### 3. 隧道转发
+
+Cloudflare 通过 Argo 隧道将请求转发到：
+
+```
+https://[argo-domain] → cloudflared 客户端 → http://localhost:[port]
+```
+
+### 4. 本地服务处理
+
+```bash
+# Xray 配置示例
+{
+    "tag": "vmess-xr",
+    "listen": "::",
+    "port": ${port_vm_ws},
+    "protocol": "vmess",
+    "settings": {
+        "clients": [{"id": "${uuid}"}]
+    },
+    "streamSettings": {
+        "network": "ws",
+        "wsSettings": {
+            "path": "${uuid}-vm"
+        }
+    }
+}
+```
+
+## 自动重启机制
+
+### 系统级自动启动
+
+脚本使用 crontab 实现开机自启：
+
+```bash
+# 固定隧道自启
+@reboot nohup $HOME/agsbx/cloudflared tunnel \
+    --no-autoupdate --edge-ip-version auto --protocol http2 \
+    run --token $(cat $HOME/agsbx/sbargotoken.log) \
+    >/dev/null 2>&1 &
+
+# 临时隧道自启
+@reboot nohup $HOME/agsbx/cloudflared tunnel \
+    --url http://localhost:$(grep -A2 vmess-xr $HOME/agsbx/xr.json | tail -1 | tr -cd 0-9) \
+    --edge-ip-version auto --no-autoupdate --protocol http2 \
+    > $HOME/agsbx/argo.log 2>&1 &
+```
+
+### 会话级自动恢复
+
+通过 `.bashrc` 实现断连自动恢复：
+
+```bash
+# 检测进程是否运行
+if ! find /proc/*/exe -type l 2>/dev/null | grep -Eq 'agsbx/(s|x)'; then
+    # 自动执行恢复脚本
+    bash "$HOME/bin/agsbx"
+fi
+```
+
+## 关键参数说明
+
+### Cloudflared 参数
+
+|参数|说明|
+|---|---|
+|`--no-autoupdate`|禁用自动更新|
+|`--edge-ip-version auto`|自动选择 IPv4/IPv6|
+|`--protocol http2`|使用 HTTP/2 协议|
+|`--url`|指定本地服务地址|
+|`--token`|固定隧道认证令牌|
+
+### 端口优先级
+
+脚本为不同的 Cloudflare IP 段分配不同的端口，实现负载分散：
+
+```bash
+# TLS 端口配置
+"add": "104.16.0.0", "port": "443"   # 默认 HTTPS
+"add": "104.17.0.0", "port": "8443"  # 备用 HTTPS
+"add": "104.18.0.0", "port": "2053"  # 备用端口
+"add": "104.19.0.0", "port": "2083"  # 备用端口
+"add": "104.20.0.0", "port": "2087"  # 备用端口
+"add": "[2606:4700::0]", "port": "2096"  # IPv6
+
+# 非 TLS 端口配置
+"add": "104.21.0.0", "port": "80"    # 默认 HTTP
+"add": "104.22.0.0", "port": "8080"  # 备用 HTTP
+"add": "104.24.0.0", "port": "8880"  # 备用端口
+"add": "104.25.0.0", "port": "2052"  # 备用端口
+"add": "104.26.0.0", "port": "2082"  # 备用端口
+"add": "104.27.0.0", "port": "2086"  # 备用端口
+"add": "[2400:cb00:2049::0]", "port": "2095"  # IPv6
+```
+
+## 安全特性
+
+1. **加密传输**
+    
+    - 使用 TLS 加密隧道通信
+    - WebSocket 路径包含 UUID 增加安全性
+2. **Cloudflare 保护**
+    
+    - 隐藏真实服务器 IP
+    - 利用 Cloudflare 的 DDoS 防护
+3. **多端口支持**
+    
+    - 避免单点故障
+    - 绕过某些网络限制
+
+## 故障排查
+
+### 查看隧道状态
+
+```bash
+# 检查进程
+pgrep -f 'agsbx/c'
+
+# 查看日志
+cat $HOME/agsbx/argo.log
+
+# 查看域名
+cat $HOME/agsbx/sbargoym.log
+```
+
+### 手动重启隧道
+
+```bash
+# 使用快捷命令
+agsbx res
+
+# 或使用完整脚本
+bash <(curl -Ls https://raw.githubusercontent.com/yonggekkk/argosbx/main/argosbx.sh) res
+```
+
+## Cloudflare 临时隧道详解
+
+### 官方文档
+
+[https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/#how-it-works](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/#how-it-works)
+![](https://developers.cloudflare.com/_astro/handshake.eh3a-Ml1_1IcAgC.webp)
+
+
+### 临时隧道注册过程
+
+当执行临时隧道命令时：
+
+```bash
+nohup "$HOME/agsbx/cloudflared" tunnel \
+    --url http://localhost:"${port_vm_ws}" \
+    --edge-ip-version auto \
+    --no-autoupdate \
+    --protocol http2 \
+    > "$HOME/agsbx/argo.log" 2>&1 &
+```
+
+**自动注册流程：**
+
+1. **cloudflared 启动并连接到 Cloudflare**
+    
+    ```
+    cloudflared 客户端 → Cloudflare API 服务器
+    ```
+    
+2. **在 Cloudflare 注册的信息**
+    
+    - **临时隧道 ID**：自动生成的唯一标识符
+    - **随机子域名**：格式为 `xxxxx-xxxx-xxxx.trycloudflare.com`
+    - **隧道协议**：HTTP/2（QUIC）
+    - **连接状态**：活跃/断开
+    - **目标地址**：`http://localhost:${port_vm_ws}`（仅客户端知道，不传输到 CF）
+3. **建立持久连接**
+    
+    ```
+    VPS 服务器 ←→ WebSocket/HTTP2 持久连接 ←→ Cloudflare Edge 服务器
+    ```
+    
+
+### 请求转发机制
+
+#### 第一步：用户请求到达 Cloudflare
+
+```
+用户客户端 → https://xxxxx-xxxx-xxxx.trycloudflare.com
+           → Cloudflare CDN 节点
+```
+
+**Cloudflare 收到的信息：**
+
+- 请求的域名（子域名）
+- HTTP 请求头、body
+- 客户端 IP（会被 CF 处理）
+
+#### 第二步：Cloudflare 查找对应的隧道连接
+
+```python
+# Cloudflare 内部逻辑（伪代码）
+def route_request(domain):
+    # 1. 解析域名获取隧道 ID
+    tunnel_id = parse_domain(domain)  # 从 xxxxx-xxxx-xxxx.trycloudflare.com 提取
+    
+    # 2. 查找已建立的持久连接
+    tunnel_connection = active_tunnels.get(tunnel_id)
+    
+    # 3. 检查连接是否活跃
+    if tunnel_connection and tunnel_connection.is_alive():
+        # 4. 通过持久连接转发请求
+        return tunnel_connection.forward_request(request)
+    else:
+        return "502 Bad Gateway - Tunnel not connected"
+```
+
+#### 第三步：通过持久连接发送请求
+
+```
+Cloudflare Edge 服务器
+    ↓（通过已建立的 HTTP/2 连接）
+    ↓（发送请求数据包）
+    ↓
+cloudflared 客户端（VPS 上）
+```
+
+**传输的数据：**
+
+- 完整的 HTTP 请求（方法、路径、头、body）
+- 原始客户端信息（通过 CF 头部传递）
+- WebSocket 升级请求（如果需要）
+
+#### 第四步：cloudflared 转发到本地服务
+
+```bash
+cloudflared 客户端接收到请求
+    ↓
+解析目标 URL：http://localhost:${port_vm_ws}
+    ↓
+建立本地 HTTP 连接
+    ↓
+转发请求到本地端口（如 http://localhost:12345）
+    ↓
+Xray/Sing-box 处理请求
+```
+
+#### 第五步：响应返回
+
+```
+Xray/Sing-box 响应
+    ↓
+cloudflared 客户端
+    ↓（通过持久连接）
+Cloudflare Edge 服务器
+    ↓
+用户客户端
+```
+
+### 持久连接技术细节
+
+#### 连接建立过程
+
+```javascript
+// cloudflared 启动时的连接建立（简化逻辑）
+
+1. DNS 查询 Cloudflare Edge 服务器
+   cloudflared → 查询最近的 CF 节点 → 获取 IP 地址
+
+2. 建立 TLS 连接
+   cloudflared → TLS Handshake → Cloudflare Edge
+
+3. 协议协商（HTTP/2 或 QUIC）
+   cloudflared ←→ HTTP/2 SETTINGS 帧 ←→ Cloudflare
+
+4. 注册隧道
+   cloudflared → 发送隧道注册请求 {
+       protocol: "http2",
+       target: "http://localhost:12345",
+       request_tunnel: true
+   } → Cloudflare
+
+5. 接收隧道信息
+   Cloudflare → 响应 {
+       tunnel_id: "xxxxx-xxxx-xxxx",
+       domain: "xxxxx-xxxx-xxxx.trycloudflare.com",
+       status: "connected"
+   } → cloudflared
+
+6. 保持心跳
+   cloudflared ←→ PING/PONG 帧 ←→ Cloudflare（每 30 秒）
+```
+
+#### 日志分析
+
+查看 `$HOME/agsbx/argo.log` 可以看到：
+
+```log
+2024-01-01T12:00:00Z INF Thank you for trying Cloudflare Tunnel. 
+2024-01-01T12:00:01Z INF Registered tunnel connection connIndex=0 
+2024-01-01T12:00:01Z INF HTTPS://xxxxx-xxxx-xxxx.trycloudflare.com
+2024-01-01T12:00:02Z INF Registered tunnel connection connIndex=1
+2024-01-01T12:00:02Z INF Registered tunnel connection connIndex=2
+2024-01-01T12:00:03Z INF Registered tunnel connection connIndex=3
+```
+
+**关键信息：**
+
+- **connIndex**: 并行连接数（通常 4 个）
+- **域名**: 分配的临时域名
+- **连接状态**: Registered 表示成功注册
+
+### 与固定隧道的对比
+
+|特性|临时隧道|固定隧道|
+|---|---|---|
+|**注册方式**|自动注册，无需登录|需要 CF 账号，手动创建|
+|**域名**|随机生成 `*.trycloudflare.com`|自定义域名|
+|**持久性**|重启后域名改变|域名永久固定|
+|**配置**|无需 Token|需要 Token 认证|
+|**连接数**|4 个并行连接|4 个并行连接|
+|**管理**|无法在 CF 面板查看|可在 CF 面板管理|
+|**安全性**|较低（域名可猜测）|较高（需要 Token）|
+
+### 请求路由的完整时序图
+
+```
+时间线：
+t0: 用户发起请求
+    │
+    ├─> GET https://xxxxx-xxxx-xxxx.trycloudflare.com/path
+    │
+t1: DNS 解析（已缓存 CF CDN IP）
+    │
+    ├─> 104.16.0.0 (Cloudflare Anycast IP)
+    │
+t2: 到达 Cloudflare Edge 节点
+    │
+    ├─> [CF Edge] 查询隧道映射表
+    │   tunnel_id: xxxxx-xxxx-xxxx
+    │   status: connected
+    │   connections: [conn1✓, conn2✓, conn3✓, conn4✓]
+    │
+t3: 选择最优连接
+    │
+    ├─> 选择 conn2（负载最低）
+    │
+t4: 通过持久连接发送
+    │
+    ├─> [HTTP/2 Stream ID: 42]
+    │   :method: GET
+    │   :path: /path
+    │   :authority: xxxxx-xxxx-xxxx.trycloudflare.com
+    │   cf-connecting-ip: [原始用户IP]
+    │   [... 其他请求头 ...]
+    │
+t5: cloudflared 接收（VPS 上）
+    │
+    ├─> 解析 HTTP/2 帧
+    ├─> 提取目标: http://localhost:12345
+    │
+t6: 转发到本地服务
+    │
+    ├─> GET http://localhost:12345/path
+    │   Host: localhost:12345
+    │   [... 原始请求头 ...]
+    │
+t7: Xray/Sing-box 处理
+    │
+    ├─> 验证 UUID
+    ├─> 解密 VMess/VLESS 数据
+    ├─> 建立外部连接
+    │
+t8: 响应返回
+    │
+    ├─> 200 OK (通过相同的 HTTP/2 Stream)
+    │
+t9: CF 转发响应给用户
+    │
+    └─> 用户收到响应
+```
+
+### 安全考虑
+
+#### 临时隧道的安全机制
+
+1. **TLS 加密**
+    
+    - cloudflared ↔ Cloudflare: 强制 TLS 1.3
+    - 用户 ↔ Cloudflare: HTTPS（TLS）
+2. **隧道隔离**
+    
+    - 每个隧道有独立的 tunnel_id
+    - 不同隧道之间完全隔离
+3. **无直接暴露**
+    
+    - VPS 真实 IP 不暴露
+    - 本地端口不直接可访问
+
+#### 潜在风险
+
+1. **域名可枚举**
+    
+    - trycloudflare.com 域名可被扫描
+    - 建议在应用层增加认证（如 UUID 路径）
+2. **无访问控制**
+    
+    - 任何人知道域名即可访问
+    - 需要在代理协议层验证（UUID、密码）
+3. **连接稳定性**
+    
+    - 网络中断会导致域名变更
+    - 需要自动更新机制
+
+## 总结
+
+### Cloudflare 临时隧道工作原理：
+
+1. **cloudflared 主动连接** - 客户端主动连到 CF，无需开放入站端口
+2. **自动注册** - CF 自动分配 tunnel_id 和域名
+3. **持久连接** - 维持 4 个并行 HTTP/2 连接
+4. **请求路由** - CF 通过持久连接实时转发请求
+5. **双向加密** - 用户→CF→VPS 全程 TLS 加密
+
+### 关键优势：
+
+- **无需公网 IP** - 仅需出站连接
+- **自动 HTTPS** - CF 自动提供 SSL 证书
+- **全球加速** - 利用 CF 的 Anycast 网络
+- **隐藏源站** - 真实服务器 IP 完全隐藏
+
+这种架构既保证了安全性（隐藏真实 IP），又提供了灵活性（多端口、自动恢复），是一个设计精巧的代理部署方案。
+

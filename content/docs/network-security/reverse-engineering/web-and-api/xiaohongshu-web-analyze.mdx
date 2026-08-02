@@ -1,0 +1,1213 @@
+---
+title: 小红书 Web 逆向分析
+description: 小红书 Web 端逆向分析，包含签名与认证参数分析
+category:
+  - 网络
+  - 逆向工程
+---
+
+# 小红书 Web 逆向分析
+
+## 介绍
+
+本文主要讲解了小红书Web端逆向的过程，包含Java逆向和JS逆向，JAva逆向主要是在JS逆向基础上转换的，逆向分析的必要内容如下：
+
+1.Auth
+2.X-S、X-T
+3.X-sign
+4.X-Cos-Security-Token
+5.videoId
+
+## js逆向分析
+
+### 一、Authorization 分析流程
+
+#### 分析debug位置
+
+1.debug文件：
+https://fe-static.xhscdn.com/formula-static/ugc/public/js/main.dff1f26.js
+2.debug点1：
+
+```javascript
+getAuth: function(e) {...}
+```
+
+3.debug点2：
+
+```javascript
+var v, y = function() {
+var t = "";
+f.StartTime && e.Expires ? t = f.StartTime + ";" + (f.StartTime + 1 \* e.Expires) : f.StartTime && f.ExpiredTime && (t = f.StartTime + ";" + f.ExpiredTime);
+var n = {
+Authorization: o.getAuth({
+SecretId: f.TmpSecretId,
+SecretKey: f.TmpSecretKey,
+Method: e.Method,
+Pathname: p,
+Query: e.Query,
+Headers: r,
+Expires: e.Expires,
+UseRawKey: u.options.UseRawKey,
+SystemClockOffset: u.options.SystemClockOffset,
+KeyTime: t,
+ForceSignHost: i
+}),
+SecurityToken: f.SecurityToken || f.XCosSecurityToken || "",
+Token: f.Token || "",
+ClientIP: f.ClientIP || "",
+ClientUA: f.ClientUA || ""
+};
+s(null, n)
+
+#### 代码如下：
+
+    import CryptoJS from 'crypto-js';
+    
+    function obj2str(e, t) {
+      var r, n, o, i = [], a = l(e);
+      for (r = 0; r < a.length; r++)
+        o = void 0 === e[n = a[r]] || null === e[n] ? "" : "" + e[n],
+          n = t ? c(n).toLowerCase() : c(n),
+          o = c(o) || "",
+          i.push(n + "=" + o);
+      return i.join("&")
+    }
+    
+    function hmacSHA256(message, key) {
+      return CryptoJS.HmacSHA256(message, key).toString();
+    }
+    
+    /**
+     * 将字符串的特定字符串转换成十六进制
+     * @param e
+     * @returns {string}
+     */
+    function c(e) {
+      return encodeURIComponent(e).replace(/!/g, "%21").replace(/'/g, "%27").replace(/\(/g, "%28").replace(/\)/g, "%29").replace(/\*/g, "%2A")
+    }
+    
+    
+    /**
+    这个函数的作用是将给定对象的属性名（或键名）提取出来，并根据需要进行转换和排序后返回结果。具体来说，这个函数会遍历给定的对象 e，将里面的属性名提取出来，并根据 t 参数是否为 true 进行大小写转换。然后，将提取出来的属性名进行排序后返回结果数组。
+    举个例子，假设有一个对象 obj：
+    
+     const obj = {
+       Name: "John",
+       Age: 30,
+       Country: "USA"
+     };
+     如果调用这个函数 l(obj, true)，将返回一个数组 ["age", "country", "name"]，其中属性名会被转换为小写，并按字母顺序排序。
+     
+    */
+    function l(e, t) {
+      var r = [];
+      for (var n in e)
+        e.hasOwnProperty(n) && r.push(t ? c(n).toLowerCase() : n);
+      return r.sort((function (e, t) {
+          return (e = e.toLowerCase()) === (t = t.toLowerCase()) ? 0 : e > t ? 1 : -1
+        }
+      ))
+    }
+    
+    
+    let pathname="/spectrum/f2RK_yF8TC6Num5DtvUiB9v6I87nGDkm1BO3X2bfHQVqiQI"
+    
+    let a = "put"
+    let t = pathname
+    let s = {}
+    let u = {"Content-Length": 2110223}
+    let S = [a, t, obj2str(s, !0), obj2str(u, !0), ""].join("\n")
+    console.log("S: " + S + "\n=============")
+    //// 计算SHA-1散列值
+    let m = "1709523720;1709530870"
+    let E = ["sha1", m, CryptoJS.SHA1(S).toString(), ""].join("\n");
+    console.log("计算SHA-1散列值: " + E + "\n=============")
+    // 计算 HMAC-SHA1 签名
+    let v = "1709523720;1709530870"
+    let n = "null"
+    let T = CryptoJS.HmacSHA1(v, n).toString()
+    console.log("计算 HMAC-SHA1 签名: " + T + "\n=============")
+    
+    
+    function now_default() {
+      return function() {
+        return Date.now();
+      };
+    }
+    
+    const getTime = now_default(); // 获取函数
+    const timestamp = getTime(); // 调用函数以获取时间戳
+    
+    console.log(timestamp)
+    
+    function test(){
+    
+      let p=["cache-control",
+        "content-disposition","content-encoding","content-md5","expect","expires","host",
+        "if-match","if-modified-since","if-none-match","if-unmodified-since","origin","range","transfer-encoding","content-length"]
+    
+      function w(e) {
+        return e instanceof Array
+      }
+      function n(value) {
+        var type = Object.prototype.toString.call(value);
+        type = type.slice(8, -1);
+        return value === null ? 'null' : type;
+      }
+      function S(e, t) {
+        var r = w(e) ? [] : {};
+        for (var n in e)
+          e.hasOwnProperty(n) && (r[n] = t(e[n], n));
+        return r
+      }
+    
+      function y(e) {
+        return S(e, (function(e) {
+            return "object" === typeof e && null !== e ? y(e) : e
+          }
+        ))
+      }
+      function x(e) {
+        return Date.now() + (e || 0)
+      }
+    
+      function getAuth(e) {
+        var t, r = (e = e || {}).SecretId, n = e.SecretKey, o = e.KeyTime, a = (e.method || e.Method || "get").toLowerCase(),
+          s = y(e.Query || e.params || {}), u = function (e) {
+            var t = {};
+            for (var r in e) {
+              var n = r.toLowerCase();
+              (n.indexOf("x-cos-") > -1 || p.indexOf(n) > -1) && (t[r] = e[r])
+            }
+            return t
+          }(y(e.Headers || e.headers || {})), c = e.Key || "";
+        e.UseRawKey ? t = e.Pathname || e.pathname || "/" + c : 0 !== (t = e.Pathname || e.pathname || c).indexOf("/") && (t = "/" + t);
+        var d = !1 !== e.ForceSignHost;
+        if (!u.Host && !u.host && e.Bucket && e.Region && d && (u.Host = e.Bucket + ".cos." + e.Region + ".myqcloud.com"),
+          !r)
+          throw new Error("missing param SecretId");
+        if (!n)
+          throw new Error("missing param SecretKey");
+        var f = Math.round(x(e.SystemClockOffset) / 1e3) - 1
+          , _ = f
+          , g = e.Expires || e.expires;
+        _ += void 0 === g ? 900 : 1 * g || 0;
+        var h = r
+          , m = o || f + ";" + _
+          , v = o || f + ";" + _
+          , b = l(u, !0).join(";").toLowerCase()
+          , w = l(s, !0).join(";").toLowerCase()
+          , T = CryptoJS.HmacSHA1(v, n).toString()
+          , S = [a, t, obj2str(s, !0), obj2str(u, !0), ""].join("\n")
+          , E = ["sha1", m, CryptoJS.SHA1(S).toString(), ""].join("\n");
+        return ["q-sign-algorithm=sha1", "q-ak=" + h, "q-sign-time=" + m, "q-key-time=" + v, "q-header-list=" + b, "q-url-param-list=" + w, "q-signature=" + CryptoJS.HmacSHA1(E, T).toString()].join("&")
+      }
+    
+      let e = {
+        "Expires": undefined,
+        ForceSignHost: true,
+        Headers: {"Content-Length": 2110223},
+        KeyTime:
+          "1709523720;1709530870",
+        Method:
+          "PUT",
+        Pathname: pathname,
+        Query:
+          {},
+        SecretId:
+          "null",
+        SecretKey:
+          "null",
+        SystemClockOffset:
+          0,
+        UseRawKey:
+          false,
+      }
+    
+      console.log("获取Auth:" + getAuth(e))
+    
+    }
+    
+    test()
+    
+    
+
+### 二.X-Cos-Security-Token 分析流程
+
+#### 定位位置
+
+1.文件来源：https://fe-static.xhscdn.com/formula-static/ugc/public/js/main.dff1f26.js
+
+2.SecurityToken 就是 获取上传返回地址的 token
+
+3.定位代码：
+
+    return this.getPermit(e.Body, n).then((function(n) {
+      a.setInfo(uploader_objectSpread(uploader_objectSpread({}, a.info), {}, {
+        tokenEndTime: now_default()()
+      }));
+      var s = (0,
+        slicedToArray.A)(n.fileIds, 1)[0]
+        , u = {
+        Domain: n.uploadAddr,
+        getAuthorization: function(e, t) {
+          t({
+            TmpSecretId: n.secretId || "null",
+            TmpSecretKey: n.secretKey || "null",
+            SecurityToken: n.token,
+            StartTime: Math.floor(r / 1e3),
+            ExpiredTime: Math.floor(n.expireTime / 1e3)
+          })
+        }
+      };
+      "unknown" === n.bucket && (u.App);
+    
+
+### videoId 分析流程
+
+#### 定位位置
+
+videoId 在上传视频到空间地址后，响应头里返回视频数据ID、封面图ID
+
+eg:
+
+1.上传地址: https://ros-upload-ali.xiaohongshu.com/spectrum/2v8auw\_3gmg629CPaNRnClQ9L5NwURO5WmngBmEDmYMo\_o4
+
+2.响应头部
+
+    Access-Control-Allow-Methods:
+    PUT, GET, HEAD, POST, DELETE, OPTIONS
+    Access-Control-Allow-Origin:
+    https://creator.xiaohongshu.com
+    Access-Control-Expose-Headers:
+    Etag,Content-length,Content-Type,authorization,x-cos-security-token,X-Tracer,X-Ros-Static-Url,X-Ros-Preview-Url,X-Ros-Video-Id
+    Alt-Svc:
+    h3=":443"; ma=2592000, h3-29=":443"; ma=2592000, h3-27=":443"; ma=2592000, h3-Q050=":443"; ma=2592000, h3-Q046=":443"; ma=2592000, h3-Q043=":443"; ma=2592000, h3-Q039=":443"; ma=2592000, quic=":443"; ma=2592000; v="39,43,46"
+    Connection:
+    keep-alive
+    Content-Length:
+    0
+    Date:
+    Tue, 05 Mar 2024 09:50:07 GMT
+    Etag:
+    "ff84129f9aa797420d7506b9b5d9a867"
+    Server:
+    ros
+    Set-Cookie:
+    tgw_l7_route=8a6c7491cfef5d76c105148723076da7; Expires=Tue, 05-Mar-2024 10:05:06 GMT; Path=/
+    Vary:
+    Origin, Access-Control-Request-Headers, Access-Control-Request-Method
+    X-Ros-Preview-Url:
+    https://ros-preview.xhscdn.com/spectrum/79_PCwiFQlzwE4jG4JTya_qAkpGJXxbJn4JqHC3TPnfEiiw?sign=624e943f2dc304a2ed430b8b1279892e&t=1709633407
+    X-Ros-Video-Id:
+    136769259877962806
+    X-Tracer:
+    34360ba931d5ddfe-34360ba931d5ddfe-0
+    
+
+### X-sign
+
+#### 定位位置
+
+    1.全局搜索可以确定 X-sign 具体debug代码的位置如下：
+    
+    var Et = {
+      name: "crawler-spam",
+      installed: !1,
+      install: function(e, t) {
+        !this.installed && t.isBrowser && (t.http.interceptors.dispatch.use((function(e) {
+          var r, n;
+          ie()(r = e.url).call(r, vt) > -1 && (e.headers["X-Sign"] = function(e, t) {
+            var r, n = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : "X", o = e.url, i = void 0 === o ? "" : o, a = e.params, s = e.paramsSerializer;
+            return i = gt()(i).call(i, ie()(i).call(i, vt), i.length),
+              "X" === n ? f()(r = "".concat(n)).call(r, mt()(t(i, a, s) + "WSUDD")) : ""
+          }(e, t.http.buildURL));
+          var o = e.url
+          
+    2.通过控制台打印参数
+    
+    t(i,a,s)
+    '/fe_api/burdock/v2/note/query_transcode'
+    mt()
+    ƒ (e,t){if(null==e)throw new Error("Illegal argument "+e);var r=n.wordsToBytes(s(e,t));return t&&t.asBytes?r:t&&t.asString?a.bytesToString(r):n.bytesToHex(r)}
+    mt()('/fe_api/burdock/v2/note/query_transcode'+"WSUDD")
+    '2d2ea70d804b4f98d20cc70f5643bc26'
+    mt()('/fe_api/burdock/v2/note/query_transcode'+"WSUDD")
+    '2d2ea70d804b4f98d20cc70f5643bc26'
+    
+    可以看出 是对一个 字符串 '/fe_api/burdock/v2/note/query_transcode'+"WSUDD"  进行md5加密
+    
+    这个方法就是一个 md5加密的算法
+    ƒ (e,t){if(null==e)throw new Error("Illegal argument "+e);var r=n.wordsToBytes(s(e,t));return t&&t.asBytes?r:t&&t.asString?a.bytesToString(r):n.bytesToHex(r)}
+    
+
+#### 代码测试
+
+    import CryptoJS from 'crypto-js';
+    
+    let xSign = CryptoJS.MD5('/fe_api/burdock/v2/note/query_transcode'+"WSUDD")
+    
+    console.log(xSign.toString());
+    
+
+### X-S、X-T流程分析：
+
+#### 定位位置
+
+文件来源：https://fe-static.xhscdn.com/formula-static/ugc/public/js/main.dff1f26.js
+
+    function xsXt(e) {
+      var t = e.url
+        , r = e.headers
+        , n = e.params
+        , o = e.paramsSerializer
+        , i = e.data
+        , a = r["X-t"]
+        , s = r["X-s"];
+      if (!(!(a && s) && shouldSign(t)))
+        return e;
+      var u = sign(getRealUrl(t, n, o), i) || {};
+      return e.headers["X-t"] = u["X-t"],
+        e.headers["X-s"] = u["X-s"],
+        e
+    }
+    
+    
+    import CryptoJS from 'crypto-js';
+    
+    
+    function sign(e, t) {
+      var r = 1452
+        , n = 1507
+        , o = 1589
+        , i = 1411
+        , a = 1551
+        , s = 1533
+        , u = 1455
+        , c = 1289
+        , l = 1334
+        , d = 1553
+        , p = 1343
+        , f = 1265
+        , _ = 1425
+        , g = 1426
+        , h = 1256
+        , m = 1512
+        , v = 1290
+        , y = 1230
+        , b = 1406
+        , w = 1535
+        , T = 1572
+        , S = 1747
+        , E = 1497
+        , A = 1587
+        , x = 1718
+        , I = 1516
+        , k = 1509
+        , M = 1371
+        , C = 1562
+        , O = 1627
+        , N = 1787
+        , j = 1413
+        , L = 1510
+        , D = 1495
+        , R = 1611
+        , P = 1687
+        , B = 1582
+        , F = 1556
+        , z = 1627
+        , U = 1596
+        , H = 1413
+        , W = 1421
+        , V = 1439
+        , G = 1570
+        , q = 1640
+        , $ = 1417
+        , Y = 1409
+        , K = 1578
+        , Q = 1313
+        , X = 1491
+        , Z = 1434
+        , J = 1324
+        , ee = 1294
+        , te = 1160
+        , re = 1284
+        , ne = 1180
+        , oe = 1284
+        , ie = 1326
+        , ae = 1505
+        , se = 1602
+        , ue = 1631
+        , ce = 1460
+        , le = 884
+        , de = 1019
+        , pe = 1212
+        , fe = 1266
+        , _e = 978
+        , ge = 1012
+        , he = 1123
+        , me = 1180
+        , ve = 1227
+        , ye = 822
+        , be = 999
+        , we = 1367
+        , Te = 898
+        , Se = 910
+        , Ee = 1195
+        , Ae = 1341
+        , xe = 1158
+        , Ie = 1068
+        , ke = 1137
+        , Me = 1118
+        , Ce = 1109
+        , Oe = 1518
+        , Ne = 1500
+        , je = 1322
+        , Le = 1316
+        , De = 1255
+        , Re = 1188
+        , Pe = 1297
+        , Be = 1184
+        , Fe = 1153
+        , ze = 1331
+        , Ue = 986
+        , He = 911
+        , We = 1090
+        , Ve = 1016
+        , Ge = 1043
+        , qe = 1050
+        , $e = 863
+        , Ye = 338
+        , Ke = 485
+        , Qe = 1109
+        , Xe = 524
+        , Ze = 489
+        , Je = 595
+        , et = 1173
+        , tt = 862
+        , rt = 874
+        , nt = 190
+        , ot = 12
+        , it = 1587
+        , at = 24
+        , st = 636
+        , ut = 829
+        , ct = 921
+        , lt = 810
+        , dt = 508
+        , pt = 646
+        , ft = 995
+        , _t = 117
+        , gt = 1714
+        , ht = 846
+        , mt = 540
+        , vt = 558
+        , yt = 697
+        , bt = 616
+        , wt = 975
+        , Tt = 1088
+        , St = 324
+        , Et = 153
+        , At = 433
+        , xt = 172
+        , It = 329
+        , kt = 556
+        , Mt = 360
+        , Ct = 359
+        , Ot = 398
+        , Nt = 453
+        , jt = 318
+        , Lt = 347
+        , Dt = 540
+        , Rt = 439
+        , Pt = 502
+        , Bt = 460
+        , Ft = 347
+        , zt = 444
+        , Ut = 453
+        , Ht = 448
+        , Wt = 258
+        , Vt = 427
+        , Gt = 347
+        , qt = 544
+        , $t = 466
+        , Yt = 501
+        , Kt = 415
+        , Qt = 347
+        , Xt = 452
+        , Zt = 598
+        , Jt = 475
+        , er = 361
+        , tr = 392
+        , rr = 189
+        , nr = 347
+        , or = 451
+        , ir = 441
+        , ar = 1843
+        , sr = 1186
+        , ur = {
+        GHzcl: lr(1578, 1465),
+        hpdTP: function(e, t) {
+          return e < t
+        },
+        kPrkP: function(e, t) {
+          return e > t
+        },
+        RNCil: function(e, t) {
+          return e < t
+        },
+        GJYEy: function(e, t) {
+          return e >> t
+        },
+        zDagP: function(e, t) {
+          return e | t
+        },
+        zVOvy: function(e, t) {
+          return e & t
+        },
+        ntvSG: function(e, t) {
+          return e & t
+        },
+        vGIuz: lr(1388, r) + lr(1571, 1394),
+        biuPu: function(e, t) {
+          return e(t)
+        },
+        GMJxV: function(e, t) {
+          return e | t
+        },
+        yTjFW: function(e, t) {
+          return e << t
+        },
+        lsgpi: function(e, t) {
+          return e >> t
+        },
+        oWysL: function(e, t) {
+          return e(t)
+        },
+        mTYNl: function(e, t) {
+          return e + t
+        },
+        VDMgA: function(e, t) {
+          return e + t
+        },
+        MuQYv: function(e, t) {
+          return e === t
+        },
+        MjzGU: function(e, t) {
+          return e === t
+        },
+        bKgFU: lr(n, o) + "ed",
+        MWYyF: function(e, t) {
+          return e !== t
+        },
+        sNYMU: lr(i, a),
+        UyzSw: function(e, t) {
+          return e(t)
+        }
+      }
+        , cr = (lr(s, u) + lr(1462, 1388) + lr(c, l))[lr(d, 1691)]("|");
+      function lr(e, t) {
+        return a0_0x4dee00(t, e - sr)
+      }
+      for (var dr = 0; ; ) {
+        switch (cr[dr++]) {
+          case "0":
+            var pr = ur[lr(p, f)];
+            continue;
+          case "1":
+            var fr = function(e) {
+              function t(e, t) {
+                return lr(t - -ar, e)
+              }
+              e = e[t(-366, -288)](/\r\n/g, "\n");
+              for (var r = "", n = 0; n < e[t(-390, -At)]; n++) {
+                var o = e[t(-xt, -It) + t(-kt, -557)](n);
+                _r[t(-Mt, -Ct)](o, 128) ? r += String[t(-Ot, -Nt) + t(-jt, -Lt)](o) : _r[t(-553, -Dt)](o, 127) && _r[t(-Rt, -Pt)](o, 2048) ? (r += String[t(-423, -453) + t(-Bt, -Ft)](192 | _r[t(-566, -zt)](o, 6)),
+                  r += String[t(-411, -Ut) + t(-379, -347)](_r[t(-572, -Ht)](_r[t(-Wt, -Vt)](o, 63), 128))) : (r += String[t(-279, -453) + t(-268, -Gt)](_r[t(-qt, -448)](_r[t(-$t, -Yt)](o, 12), 224)),
+                  r += String[t(-Kt, -Ut) + t(-411, -Qt)](_r[t(-482, -Xt)](_r[t(-Zt, -Jt)](_r[t(-309, -er)](o, 6), 63), 128)),
+                  r += String[t(-tr, -453) + t(-rr, -nr)](_r[t(-or, -Xt)](_r[t(-308, -ir)](o, 63), 128)))
+              }
+              return r
+            };
+            continue;
+          case "2":
+            var _r = {
+              YcAap: function(e, t) {
+                return ur[(r = -165,
+                  n = -64,
+                  lr(n - -1374, r))](e, t);
+                var r, n
+              },
+              SNmAe: function(e, t) {
+                var r, n;
+                return ur[(r = -142,
+                  n = -Et,
+                  lr(r - -1468, n))](e, t)
+              },
+              IYqgI: function(e, t) {
+                return ur[(r = 603,
+                  n = 440,
+                  lr(n - -918, r))](e, t);
+                var r, n
+              },
+              bBpCr: function(e, t) {
+                var r, n;
+                return ur[(r = 161,
+                  n = St,
+                  lr(n - -1268, r))](e, t)
+              },
+              yESQQ: function(e, t) {
+                var r, n;
+                return ur[(r = wt,
+                  n = Tt,
+                  lr(r - -341, n))](e, t)
+              },
+              DLqdJ: function(e, t) {
+                var r, n;
+                return ur[(r = yt,
+                  n = bt,
+                  lr(n - -827, r))](e, t)
+              },
+              ntwtB: function(e, t) {
+                var r, n;
+                return ur[(r = mt,
+                  n = vt,
+                  lr(n - -1034, r))](e, t)
+              },
+              XhOLE: function(e, t) {
+                var r, n;
+                return ur[(r = 959,
+                  n = ht,
+                  lr(n - -470, r))](e, t)
+              },
+              OUXTe: function(e, t) {
+                return ur[(r = -137,
+                  n = -156,
+                  lr(n - -gt, r))](e, t);
+                var r, n
+              },
+              lPLEl: function(e, t) {
+                return ur[(r = -_t,
+                  n = -34,
+                  lr(n - -1626, r))](e, t);
+                var r, n
+              },
+              HiDFY: function(e, t) {
+                return ur[(r = ft,
+                  n = 939,
+                  lr(r - -563, n))](e, t);
+                var r, n
+              },
+              KfTYt: ur[lr(1352, _)],
+              Swijz: function(e, t) {
+                var r, n;
+                return ur[(r = dt,
+                  n = pt,
+                  lr(r - -978, n))](e, t)
+              },
+              TgopC: function(e, t) {
+                return ur[(r = ut,
+                  n = ct,
+                  lr(r - -lt, n))](e, t);
+                var r, n
+              },
+              uytRs: function(e, t) {
+                var r, n;
+                return ur[(r = -st,
+                  n = -536,
+                  lr(n - -1831, r))](e, t)
+              },
+              CNQIo: function(e, t) {
+                return ur[(r = 140,
+                  n = at,
+                  lr(n - -1534, r))](e, t);
+                var r, n
+              },
+              NrAsb: function(e, t) {
+                return ur[(r = nt,
+                  n = ot,
+                  lr(n - -it, r))](e, t);
+                var r, n
+              },
+              rniTJ: function(e, t) {
+                return ur[(r = tt,
+                  n = rt,
+                  lr(n - -725, r))](e, t);
+                var r, n
+              },
+              vZHUx: function(e, t) {
+                var r, n;
+                return ur[(r = et,
+                  n = 1085,
+                  lr(r - -385, n))](e, t)
+              },
+              trZBo: function(e, t) {
+                var r, n;
+                return ur[(r = Ze,
+                  n = Je,
+                  lr(r - -1143, n))](e, t)
+              },
+              yAgFW: function(e, t) {
+                return e + t
+              },
+              cvnJR: function(e, t) {
+                return ur[(r = 1073,
+                  n = Qe,
+                  lr(n - -Xe, r))](e, t);
+                var r, n
+              },
+              ezOMc: function(e, t) {
+                var r, n;
+                return ur[(r = Ye,
+                  n = Ke,
+                  lr(n - -1025, r))](e, t)
+              }
+            };
+            continue;
+          case "3":
+            var gr = lr(g, h) + lr(m, 1536) + lr(v, y) + lr(1312, b) + lr(w, 1660) + lr(T, S) + lr(1357, E) + lr(1606, A) + lr(1612, x) + "m3";
+            continue;
+          case "4":
+            var hr = ur[lr(1495, I)](Object[lr(k, M) + "pe"][lr(1582, C) + "g"][lr(O, N)](t), lr(j, L) + lr(1420, 1408) + "]") || ur[lr(D, R)](Object[lr(k, P) + "pe"][lr(B, F) + "g"][lr(z, U)](t), lr(H, r) + lr(1317, W));
+            continue;
+          case "5":
+            var mr = function(e) {
+              var t = 287
+                , r = _r[n(le, de)][n(pe, fe)]("|");
+              function n(e, r) {
+                return lr(r - -t, e)
+              }
+              for (var o = 0; ; ) {
+                switch (r[o++]) {
+                  case "0":
+                    return i;
+                  case "1":
+                    e = _r[n(_e, ge)](fr, e);
+                    continue;
+                  case "2":
+                    var i = "";
+                    continue;
+                  case "3":
+                    var a, s, u, c, l, d, p;
+                    continue;
+                  case "4":
+                    var f = 0;
+                    continue;
+                  case "5":
+                    for (; f < e[n(1188, he)]; )
+                      a = e[n(me, ve) + n(ye, be)](f++),
+                        s = e[n(we, 1227) + n(Te, 999)](f++),
+                        u = e[n(1359, ve) + n(Se, be)](f++),
+                        c = _r[n(1137, Ee)](a, 2),
+                        l = _r[n(1318, Ae)](_r[n(1271, xe)](_r[n(Ie, ke)](a, 3), 4), _r[n(Me, Ce)](s, 4)),
+                        d = _r[n(Oe, 1341)]((15 & s) << 2, _r[n(Ne, je)](u, 6)),
+                        p = _r[n(Le, De)](u, 63),
+                        _r[n(Re, Pe)](isNaN, s) ? d = p = 64 : _r[n(Be, 1297)](isNaN, u) && (p = 64),
+                        i = _r[n(Fe, ze)](_r[n(Ue, 1157)](_r[n(He, We)](i, gr[n(Ve, Ge)](c)), gr[n(qe, 1043)](l)) + gr[n($e, 1043)](d), gr[n(874, Ge)](p));
+                    continue
+                }
+                break
+              }
+            };
+            continue;
+          case "6":
+            var vr = ur[lr(V, 1433)]("undefined" == typeof window ? "undefined" : (0,
+              esm_typeof.A)(window), ur[lr(1640, D)]) ? __webpack_require__.g : window;
+            continue;
+          case "7":
+            ur[lr(1587, G)]((0,
+              esm_typeof.A)(vr), ur[lr(q, 1531)]) && vr && vr[lr($, Y) + "or"] && vr[lr(1417, K) + "or"][lr(Q, 1250) + "nt"] && vr[lr(X, Z)] && (pr = ur[lr(Y, J)]);
+            continue;
+          case "8":
+            var yr = (new Date)[lr(ee, te)]();
+            continue;
+          case "9":
+            return {
+              "X-s": ur[lr(re, ne)](mr, ur[lr(oe, ie)](MD5, [yr, pr, e, hr ? JSON[lr(ae, se) + "fy"](t) : ""][lr(ue, ce)](""))),
+              "X-t": yr
+            }
+        }
+        break
+      }
+    }
+    
+    
+    
+    // return {
+    //           "X-s": ur[lr(re, ne)](mr, ur[lr(oe, ie)](MD5, [yr, pr, e, hr ? JSON[lr(ae, se) + "fy"](t) : ""][lr(ue, ce)](""))),
+    //           "X-t": yr
+    //         }
+    
+    // ur[lr(oe, ie)](MD5, [yr, pr, e, hr ? JSON[lr(ae, se) + "fy"](t) : ""][lr(ue, ce)](""))
+    
+    /*
+     * ur[lr(re, ne)](mr, ur[lr(oe, ie)](MD5, [yr, pr, e, hr ? JSON[lr(ae, se) + "fy"](t) : ""][lr(ue, ce)](""))) 等同于
+     *
+     * ur['UyzSw'](mr, CryptoJS.MD5('1709720216726test/fe_api/burdock/v2/note/query_transcode{"videoId":"136770735097717227"}').toString())
+     * 其中 ur['UyzSw'] 就是调用 UyzSw函数
+     *
+     *  UyzSw(mr, CryptoJS.MD5('1709720216726test/fe_api/burdock/v2/note/query_transcode{"videoId":"136770735097717227"}').toString());
+     *
+     *  UyzSw的具体实现就是 第一个参数作为函数，第二个参数就是参数
+     *
+     *  最终实际的实现方式是：
+     *
+     *  mr(CryptoJS.MD5('1709720216726test/fe_api/burdock/v2/note/query_transcode{"videoId":"136770735097717227"}').toString())
+     *
+     *  mr('f39565ff91fa962ab289deb49cdf64a8')
+     *
+     *  mr函数实现见如下：
+     *
+     *
+     *
+     case "3":
+        var gr = lr(g, h) + lr(m, 1536) + lr(v, y) + lr(1312, b) + lr(w, 1660) + lr(T, S) + lr(1357, E) + lr(1606, A) + lr(1612, x) + "m3";
+        continue;
+    case "4":
+        var hr = ur[lr(1495, I)](Object[lr(k, M) + "pe"][lr(1582, C) + "g"][lr(O, N)](t), lr(j, L) + lr(1420, 1408) + "]") || ur[lr(D, R)](Object[lr(k, P) + "pe"][lr(B, F) + "g"][lr(z, U)](t), lr(H, r) + lr(1317, W));
+        continue;
+    case "5":
+    var mr = function(e) {
+      var t = 287
+        , r = _r[n(le, de)][n(pe, fe)]("|");
+      function n(e, r) {
+        return lr(r - -t, e)
+      }
+      for (var o = 0; ; ) {
+        switch (r[o++]) {
+          case "0":
+            return i;
+          case "1":
+            e = _r[n(_e, ge)](fr, e);
+            continue;
+          case "2":
+            var i = "";
+            continue;
+          case "3":
+            var a, s, u, c, l, d, p;
+            continue;
+          case "4":
+            var f = 0;
+            continue;
+          case "5":
+            for (; f < e[n(1188, he)]; )
+              a = e[n(me, ve) + n(ye, be)](f++),
+                s = e[n(we, 1227) + n(Te, 999)](f++),
+                u = e[n(1359, ve) + n(Se, be)](f++),
+                c = _r[n(1137, Ee)](a, 2),
+                l = _r[n(1318, Ae)](_r[n(1271, xe)](_r[n(Ie, ke)](a, 3), 4), _r[n(Me, Ce)](s, 4)),
+                d = _r[n(Oe, 1341)]((15 & s) << 2, _r[n(Ne, je)](u, 6)),
+                p = _r[n(Le, De)](u, 63),
+                _r[n(Re, Pe)](isNaN, s) ? d = p = 64 : _r[n(Be, 1297)](isNaN, u) && (p = 64),
+                i = _r[n(Fe, ze)](_r[n(Ue, 1157)](_r[n(He, We)](i, gr[n(Ve, Ge)](c)), gr[n(qe, 1043)](l)) + gr[n($e, 1043)](d), gr[n(874, Ge)](p));
+            continue
+        }
+        break
+      }
+    };
+    continue;
+    
+    
+     */
+    
+    
+
+#### 测试代码
+
+    
+    function xS(e){
+    
+    // gr 固定的盐值
+      var gr = 'A4NjFqYu5wPHsO0XTdDgMa2r1ZQocVte9UJBvk6/7=yRnhISGKblCWi+LpfE8xzm3'
+      //var e = "fbc9324434cb06c7483a74b648628a67"
+      var f = 0;
+      var a, s, u, c, l, d, p;
+      var i = "";
+    
+    
+    // _r[n(1137, Ee)] => ƒ (e,t){return e>>t}
+    // _r[n(1318, Ae)] => ƒ (e,t){return e|t}
+    // _r[n(1271, xe)] => ƒ (e,t){return e<<t}
+    // _r[n(Ie, ke)]   => ƒ (e,t){return e&t}
+    // _r[n(Me, Ce)]   => ƒ (e,t){return e>>t}
+    // _r[n(Oe, 1341)] => ƒ (e,t){return e|t}
+    // _r[n(Ne, je)]   => ƒ (e,t){return e>>t}
+    // _r[n(Le, De)]   => ƒ (e,t){return e&t}
+    // _r[n(Re, Pe)]   => ƒ (e,t){return e(t)}
+    // _r[n(Be, 1297)] => ƒ (e,t){return e(t)}
+    // _r[n(Fe, ze)]   => ƒ (e,t){return e+t }
+    // _r[n(Ue, 1157)] => ƒ (e,t){return e+t }
+    // _r[n(He, We)]   => ƒ (e,t){return e+t }
+    // gr[n(Ve, Ge)]   => ƒ charAt() { [native code] }
+      for(; f<e.length; ){
+        a = e.charCodeAt(f++);
+        s = e.charCodeAt(f++);
+        u = e.charCodeAt(f++);
+        c = a >> 2;
+        l = ((a & 3) << 4) | (s>> 4)
+        d = ((15 & s) << 2) | (u>>6)
+        p = u & 63
+        //_r[n(Re, Pe)](isNaN, s) ? d = p = 64 : _r[n(Be, 1297)](isNaN, u) && (p = 64),
+        isNaN(s) ? d = p = 64 : isNaN(u) && (p=64)
+        i = i + gr.charAt(c) + gr.charAt(l) + gr.charAt(d) + gr.charAt(p);
+        console.log(`f=${f},a=${a},s=${s},u=${u},c=${c},l=${l},d=${d},p=${p},i=${i}`);
+      }
+      return i;
+    }
+    // var md5Str = '612f28617fee8bc713d59547f45c064e';
+    var md5Str2 = CryptoJS.MD5('1709795208303test/fe_api/burdock/v2/note/query_transcode{"videoId":"136771795787720032"}').toString();
+    console.log(`md5Str2=${md5Str2}`)
+    console.log(`xS(md5Str2)=${xS(md5Str2)}`)
+    var jsonString = {"common":{"type":"video","title":"","note_id":"","desc":"","source":"{\"type\":\"web\",\"ids\":\"\",\"extraInfo\":\"{\\\"subType\\\":\\\"\\\",\\\"systemId\\\":\\\"web\\\"}\"}","business_binds":"{\"version\":1,\"noteId\":0,\"bizType\":0,\"noteOrderBind\":{},\"notePostTiming\":{\"postTime\":\"\"},\"noteCollectionBind\":{\"id\":\"\"}}","ats":[],"hash_tag":[],"post_loc":{},"privacy_info":{"op_type":1,"type":1}},"image_info":null,"video_info":{"file_id":"spectrum/EHPOYg4CbnqSP0eKechHyf_9osJKoMfnGp9zrgysKWfBwYY","format_width":540,"format_height":726,"composite_metadata":{"video":{"bitrate":274705,"colour_primaries":"BT.709","duration":41234,"format":"AVC","frame_rate":30,"height":726,"matrix_coefficients":"BT.709","rotation":0,"transfer_characteristics":"BT.709","width":540},"audio":{"bitrate":132300,"channels":2,"duration":41309,"format":"AAC","sampling_rate":44100}},"timelines":[],"cover":{"file_id":"110/0/01e5e96b4d3805850010000000018e17cb2b21_0.jpg","height":726,"width":540,"frame":{"ts":0,"is_user_select":false,"is_upload":false}},"chapters":[],"chapter_sync_text":false,"segments":{"count":1,"need_slice":false,"items":[{"mute":0,"speed":1,"start":0,"duration":41.234,"transcoded":0,"media_source":1,"original_metadata":{"video":{"bitrate":274705,"colour_primaries":"BT.709","duration":41234,"format":"AVC","frame_rate":30,"height":726,"matrix_coefficients":"BT.709","rotation":0,"transfer_characteristics":"BT.709","width":540},"audio":{"bitrate":132300,"channels":2,"duration":41309,"format":"AAC","sampling_rate":44100}}}]},"entrance":"web","backup_covers":[]}};
+    var md5Str3 = CryptoJS.MD5('1709796263796test/web_api/sns/v2/note'+JSON.stringify(jsonString)).toString();
+    console.log(md5Str3);
+    console.log(xS(md5Str3))
+    
+
+## Java逆向
+
+    package com.yichuang.media.core.xhs;
+    
+    import com.yichuang.common.utils.HmacSHA1Utils;
+    import com.yichuang.common.utils.Md5Util;
+    import com.yichuang.common.utils.SHA1Utils;
+    import lombok.extern.slf4j.Slf4j;
+    import org.apache.commons.lang3.StringUtils;
+    
+    import java.io.UnsupportedEncodingException;
+    import java.net.URLEncoder;
+    import java.util.*;
+    
+    /**
+     * <p></p>
+     *
+     * @author: daizhao 10:59 2024/3/5 0005
+     */
+    @Slf4j
+    public class XhsAuth {
+    
+        /** 固定盐值 */
+        private final static String GR = "A4NjFqYu5wPHsO0XTdDgMa2r1ZQocVte9UJBvk6/7=yRnhISGKblCWi+LpfE8xzm3";
+    
+        /**
+         * URLEncoder.encode 在 Java 中将空格字符编码为 +，这是符合 URL 编码标准的。
+         * 然而，在 JavaScript 的 encodeURIComponent 函数中，空格字符被编码为 %20。这种差异源于不同的规范和历史原因
+         * eg:
+         *           String testString = "Hello! This is a test string with special chars: !'()*";
+         *           String encodedString = getEncodeURIComponent(testString);
+         *           System.out.println(encodedString);
+         * @param str
+         * @return
+         * @throws UnsupportedEncodingException
+         */
+        public static String getEncodeURIComponent(String str) throws UnsupportedEncodingException {
+            String encoded = URLEncoder.encode(str);
+            // 将空格的编码从 '+' 替换为 '%20'
+            encoded = encoded.replace("+", "%20");
+            // 由于URLEncoder.encode已经对大部分特殊字符进行了编码，我们只需要额外处理那些它未处理的字符
+            encoded = encoded.replace(" ","%20").replace("!", "%21").replace("'", "%27").replace("(", "%28").replace(")", "%29").replace("*", "%2A");
+            return encoded;
+        }
+    
+        /**
+         * 提取对象的属性名（或键名）并进行排序, 依据toLowerCase 来判断是否转换小写
+         * @param objectMap
+         * @param toLowerCase
+         * @return
+         */
+        public static List<String> getSortedKeys(Map<String, Object> objectMap, boolean toLowerCase) throws UnsupportedEncodingException {
+            List<String> keys = new ArrayList<>(objectMap.keySet());
+            for (int i = 0; i < keys.size(); i++) {
+                String encodeStr = getEncodeURIComponent(keys.get(i));
+                String key = toLowerCase ? encodeStr.toLowerCase(): encodeStr;
+                keys.set(i, key);
+            }
+            Collections.sort(keys, String.CASE_INSENSITIVE_ORDER);
+            return keys;
+        }
+    
+        // 将对象转换为查询字符串
+        public static String obj2str(Map<String, Object> obj, boolean toLowerCase) throws UnsupportedEncodingException {
+            List<String> pairs = new ArrayList<>();
+    
+            // 遍历对象的所有属性
+            for (Map.Entry<String, Object> entry : obj.entrySet()) {
+                String key = entry.getKey();
+                Object value = entry.getValue();
+    
+                // key, 如果需要将键转换为小写
+                key = toLowerCase ? getEncodeURIComponent(key).toLowerCase() : getEncodeURIComponent(key);
+    
+                // value, 如果值为null则将其视为空字符串
+                String valStr = (value != null) ? value.toString() : "";
+                valStr = getEncodeURIComponent(valStr);
+    
+                // 添加“键=值”对到列表中
+                pairs.add(key + "=" + valStr);
+            }
+    
+            // 使用&符号连接所有对并返回结果字符串
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < pairs.size(); i++) {
+                if (i > 0) {
+                    sb.append("&");
+                }
+                sb.append(pairs.get(i));
+            }
+            return sb.toString();
+        }
+    
+        public static String getAuth(Map<String, Object> params) throws Exception {
+            String secretId = (String) params.getOrDefault("SecretId", "null");
+            String secretKey = (String) params.getOrDefault("SecretKey", "null");
+            String method = ((String) params.getOrDefault("method", params.getOrDefault("Method", "get"))).toLowerCase();
+            Map<String, Object> headers = (Map<String, Object>) params.getOrDefault("Headers", params.getOrDefault("headers", new HashMap<>()));
+            Map<String, Object> query = (Map<String, Object>) params.getOrDefault("Query", params.getOrDefault("params", new HashMap<>()));
+            String pathname = (String) params.getOrDefault("Pathname", params.getOrDefault("pathname", ""));
+            Boolean forceSignHost = (Boolean) params.getOrDefault("ForceSignHost", false);
+            Object bucket = params.getOrDefault("Bucket", null);
+            Object region = params.getOrDefault("Region", null);
+            boolean UseRawKey = (boolean)params.getOrDefault("UseRawKey", false);
+            String Key = (String) params.getOrDefault("Key", "");
+            Integer expires = (Integer) params.getOrDefault("Expires", params.getOrDefault("expires", 900));
+            if (secretId.isEmpty()) {
+                throw new Exception("missing param SecretId");
+            }
+            if (secretKey.isEmpty()) {
+                throw new Exception("missing param SecretKey");
+            }
+            String o = params.get("KeyTime").toString();
+            String m = o;
+            String v = o;
+            Map<String, Object> u = headers;
+            Map<String, Object> s = query;
+            String b = StringUtils.join(getSortedKeys(headers, true), ";").toLowerCase();
+    
+            String w = StringUtils.join(getSortedKeys(s, true), ";").toLowerCase();
+            String n = secretKey;
+            String T = HmacSHA1Utils.getHmacSHA1(v, n);
+            String a = method;
+            String c = Key;
+            String t;
+            if (UseRawKey) {
+                t = pathname != null ? pathname : ("/" + c);
+            } else {
+                t = pathname != null ? pathname : c;
+                if (!t.startsWith("/")) {
+                    t = "/" + t;
+                }
+            }
+            String S = StringUtils.join(new String[]{a, t, obj2str(s, true), obj2str(u, true), ""}, "\n");
+            log.info("##S=\n{}", S);
+            String E = StringUtils.join(new String[]{"sha1", m, SHA1Utils.getSHA1Str(S), ""}, "\n");
+            String signature = HmacSHA1Utils.getHmacSHA1(E, T);
+            String authString = String.format(
+                    "q-sign-algorithm=sha1&q-ak=%s&q-sign-time=%s&q-key-time=%s&q-header-list=%s&q-url-param-list=%s&q-signature=%s",
+                    "null",
+                    m,
+                    v,
+                    b,
+                    w,
+                    signature
+            );
+    
+            return authString;
+        }
+    
+        /**
+         * 计算小红书 X-S
+         * 是由 时间戳+test+请求路径+请求体（json字符串） 经过md5 加密后字符串 在调用如下方法进行盐值位移得出的结果
+         * 备注：X-T 就是当前的时间戳
+         * @param e
+         * @return
+         */
+        public static String xS(String e){
+            int f = 0;
+            int a, s, u, c, l, d, p;
+            String i = "";
+            for(; f<e.length(); ){
+                a = e.charAt(f++);
+                try{
+                    s = e.charAt(f++);
+                }catch (Exception err){
+                    s = 0;
+                }
+                try{
+                    u = e.charAt(f++);
+                }catch (Exception err){
+                    u = 0;
+                }
+                c = a >> 2;
+                l = ((a & 3) << 4) | (s>> 4);
+                d = ((15 & s) << 2) | (u>>6);
+                p = u & 63;
+                if(s == 0){
+                    d = p = 64;
+                }else if(u == 0){
+                    p = 64;
+                }
+                i = i + GR.charAt(c) + GR.charAt(l) + GR.charAt(d) + GR.charAt(p);
+                //System.out.println("f=" + f + ",a=" + a + ",s=" + s + ",u=" + u + ",c=" + c + ",l=" + l + ",d=" + d + ",p=" + p + ",i=" + i);
+            }
+            log.info("##xs签名=\n{}", i);
+            return i;
+        }
+    
+        public static void main(String[] args) throws Exception {
+            // 测试函数
+    //        String testString = "Hello! This is a test string with special chars: !'()*";
+    //        String encodedString = getEncodeURIComponent(testString);
+    //        System.out.println(encodedString);
+            Map<String, Object> e = new HashMap<>();
+            e.put("Expires", null); // 使用null表示没有值
+            e.put("ForceSignHost", true);
+    
+            // 创建一个HashMap来表示Headers
+            Map<String, Integer> headers = new HashMap<>();
+            headers.put("Content-Length", 2110223);
+            e.put("Headers", headers); // 将Headers映射添加到e中
+    
+            e.put("KeyTime", "1709523720;1709530870");
+            e.put("Method", "PUT");
+            e.put("Pathname", "/spectrum/f2RK_yF8TC6Num5DtvUiB9v6I87nGDkm1BO3X2bfHQVqiQI");
+            e.put("Query", new HashMap<>()); // 使用空的HashMap来表示Query参数（如果没有查询参数的话）
+            e.put("SecretId", "null"); // 注意：这里保留了字符串"null"，但可能需要根据实际情况替换为实际的null或有效值
+            e.put("SecretKey", "null"); // 同上，可能需要替换为实际的密钥值或null（如果不需要的话）
+            e.put("SystemClockOffset", 0);
+            e.put("UseRawKey", false);
+    
+            System.out.println("\n##==计算签名==##\n" + getAuth(e));
+    
+    
+            String md5Hex = Md5Util.md5("1709795208303test/fe_api/burdock/v2/note/query_transcode{\"videoId\":\"136771795787720032\"}");
+            System.out.println("##==md5Hex==##\n" + md5Hex);
+    
+            System.out.println("##==X-S签名==##\n" + xS(md5Hex));
+    
+        }
+    }
+    
+    
+
+## 提交地址
+
+        /**
+         * 获取上传视频地址的响应
+         */
+        public static final String GET_VIDEO_UPLOAD_ADDRESS = "https://creator.xiaohongshu.com/api/media/v1/upload/web/permit?biz_name=spectrum&scene=video&file_count=1&version=1&source=web";
+    
+        /**
+         * 获取上传图片地址的响应
+         */
+        public static final String GET_IMAGE_UPLOAD_ADDRESS = "https://creator.xiaohongshu.com/api/media/v1/upload/web/permit?biz_name=spectrum&scene=image&file_count=1&version=1&source=web";
+    
+        /**
+         * 查询视频第一帧封面图
+         */
+        public static final String QUERY_TRANSCODE = "https://www.xiaohongshu.com/fe_api/burdock/v2/note/query_transcode";
+    
+        /**
+         * 发布视频
+         */
+        public static final String SNS_V2_NOTE = "https://edith.xiaohongshu.com/web_api/sns/v2/note";
+    

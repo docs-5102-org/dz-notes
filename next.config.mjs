@@ -12,6 +12,10 @@ const nextConfig = {
       new URL('https://p26-dreamina-sign.byteimg.com/**'),
       new URL('https://p3-dreamina-sign.byteimg.com/**'),
       new URL('https://mmbiz.qpic.cn/**'),
+      new URL('https://pic.rmb.bdstatic.com/**'),
+      new URL('https://placehold.co/**'),
+      
+      
       // {
       //   protocol: 'https',
       //   hostname: 'p26-dreamina-sign.byteimg.com/**',

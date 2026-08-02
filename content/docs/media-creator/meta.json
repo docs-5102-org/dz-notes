@@ -1,0 +1,5 @@
+{
+  "title": "自媒体",
+  "root": true,
+  "pages": ["index", "cover-make", "pic-size", "telegram-register"]
+}

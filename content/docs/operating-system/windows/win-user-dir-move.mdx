@@ -1,0 +1,157 @@
+---
+title: Windows 用户目录迁移与显示名称设置指南
+category:
+  - 操作系统
+tags:
+  - Windows
+  - 文件夹
+  - 用户目录
+---
+
+# Windows 文件夹迁移与显示名称设置指南
+
+## 一、将系统默认文件夹迁移到 D 盘
+
+### 需求背景
+
+系统默认的用户文件夹（如图片、文档、下载等）位于 C 盘：
+
+```
+C:\Users\Administrator\Pictures
+C:\Users\Administrator\Documents
+C:\Users\Administrator\Downloads
+```
+
+为节省 C 盘空间，需将其迁移至 D 盘，同时保证原路径依然可用。
+
+---
+
+### 方法一：系统属性迁移（推荐新手）
+
+Windows 自带迁移功能，操作最简单：
+
+1. 右键目标文件夹（如 `Pictures`）→ **属性**
+2. 点击 **"位置"** 选项卡
+3. 将路径修改为：
+   ```
+   D:\Users\Administrator\Pictures
+   ```
+4. 点击 **"应用"** → 弹窗选 **"是"**
+5. 系统自动迁移文件并建立重定向
+
+> ✅ C 盘原路径依然有效，系统和软件保存路径不受任何影响。
+
+---
+
+### 方法二：Junction 符号链接（推荐进阶用户）
+
+```cmd
+:: 第一步：复制文件到 D 盘
+xcopy C:\Users\Administrator\Pictures D:\Users\Administrator\Pictures /E /H /I
+
+:: 第二步：删除 C 盘原文件夹
+rd /s /q "C:\Users\Administrator\Pictures"
+
+:: 第三步：创建 Junction 链接
+mklink /J "C:\Users\Administrator\Pictures" "D:\Users\Administrator\Pictures"
+```
+
+完成后 `C:\Users\Administrator\Pictures` 依然存在，但实际数据在 D 盘。
+
+---
+
+### 方案对比
+
+| 方案 | 难度 | C 盘原路径是否有效 | 推荐度 |
+|------|------|------------------|--------|
+| 系统属性移动 | 低 | ✅ 有效 | ⭐⭐⭐⭐ |
+| Junction 链接 | 中 | ✅ 有效 | ⭐⭐⭐⭐⭐ |
+| 直接剪切粘贴 | 低 | ❌ 失效 | ❌ 不推荐 |
+
+---
+
+## 二、设置文件夹"显示名称"（视觉欺骗）
+
+### 原理说明
+
+Windows 通过文件夹内的隐藏文件 `desktop.ini` 控制资源管理器中的显示名称。
+
+例如系统 `C:\Users` 文件夹，实际名称是英文 `Users`，但显示为中文 **"用户"**，靠的就是这个机制。
+
+---
+
+### 操作步骤
+
+#### 第一步：创建 desktop.ini 文件
+
+在 `D:\Users` 文件夹内新建 `desktop.ini`，内容如下：
+
+```ini
+[.ShellClassInfo]
+LocalizedResourceName=用户
+```
+
+#### 第二步：设置文件属性（管理员 CMD）
+
+```cmd
+:: 设置 desktop.ini 为隐藏+系统属性（必须）
+attrib +s +h "D:\Users\desktop.ini"
+```
+
+#### 第三步：刷新资源管理器
+
+按 `F5` 刷新，或重启资源管理器，文件夹显示名即变为"用户"。
+
+---
+
+## 三、遇到的问题与解决
+
+### 问题 1：显示乱码（如"鐢ㄦ埛"）
+
+**原因：** `desktop.ini` 文件编码为 UTF-8，Windows 要求必须是 **UTF-16 LE** 才能正确显示中文。
+
+**解决方法：**
+
+用记事本打开 `desktop.ini`：
+
+```
+文件 → 另存为 → 编码选"UTF-16 LE" → 保存覆盖原文件
+```
+
+或使用 PowerShell 自动生成正确编码的文件：
+
+```powershell
+$content = "[.ShellClassInfo]`r`nLocalizedResourceName=用户"
+[System.IO.File]::WriteAllText("D:\Users\desktop.ini", $content, [System.Text.Encoding]::Unicode)
+```
+
+---
+
+### 问题 2：文件夹设置系统属性后不显示了
+
+**原因：** `attrib +s` 将文件夹标记为系统文件夹，资源管理器默认隐藏系统项目。
+
+**解决方法：** 文件夹本身**不需要**加系统属性，只给 `desktop.ini` 加就够了：
+
+```cmd
+:: 移除文件夹的系统属性
+attrib -s "D:\Users"
+
+:: 只保留 desktop.ini 的隐藏+系统属性
+attrib +s +h "D:\Users\desktop.ini"
+```
+
+这样文件夹正常显示，同时名称也能显示为"用户"。
+
+---
+
+## 四、总结
+
+| 步骤 | 操作 | 注意事项 |
+|------|------|---------|
+| 迁移文件夹 | 右键属性 → 位置 → 修改路径 | 推荐系统自带方式 |
+| 创建 desktop.ini | 写入 `LocalizedResourceName=用户` | 编码必须为 UTF-16 LE |
+| 设置文件属性 | `attrib +s +h desktop.ini` | 只给文件加属性，不给文件夹加 |
+| 刷新生效 | 按 F5 或重启资源管理器 | — |
+
+> 💡 `Documents`、`Downloads`、`Desktop` 等文件夹均可用同样方式迁移和设置显示名称。

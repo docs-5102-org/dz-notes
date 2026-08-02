@@ -1,0 +1,46 @@
+---
+title: 影视站搭建与资源配置
+subTitle: 从 CMS、建站环境到播放器配置
+description: 整理影视站搭建时的 CMS、服务器环境、资源采集和播放器配置参考。
+category:
+  - 数字营销
+---
+
+# 影视站搭建与资源配置
+
+本文整理影视内容站常见的 CMS、建站环境、资源采集和播放器配置。实际使用前，请确认内容来源、版权授权和第三方服务条款。
+
+## CMS 程序
+
+以苹果 CMS（X8 版本）为例，可从[官方资源页](http://www.maccms.com/down.html)了解程序版本和安装包。
+
+## 建站环境
+
+本地演示可使用 PHPStudy；线上部署时，应根据访问量、存储和带宽需求选择合适的服务器，并及时更新系统和运行环境。
+
+## 资源采集
+
+### 官方直链资源
+
+官方直链应来自获得授权的内容源。例如：[腾讯视频](https://v.qq.com/)。
+
+### 第三方采集资源站
+
+以下链接仅作为资料整理示例，使用前请自行核验可用性和授权范围：
+
+- [6U 资源站](http://zy.ataoju.com/)
+- [最大资源站](http://zuidazy.net/)
+- [520 资源站](http://www.520zyz.com/)
+- [135 资源站](http://www.135zy.vip/)
+- [永久资源站](http://www.yongjiuzy.cc/)
+
+## 播放器代码示例
+
+下面的代码仅用于说明播放器接口的拼接方式，请替换为合法、可控的解析服务：
+
+```js
+MacPlayer.Html = '<iframe allowfullscreen="true" border="0" src="https://example.com/player?url=' + MacPlayer.PlayUrl + '" width="100%" height="100%" marginwidth="0" framespacing="0" marginheight="0" frameborder="0" scrolling="no"></iframe>';
+MacPlayer.Show();
+```
+
+解析接口示例：`https://example.com/player?url=`

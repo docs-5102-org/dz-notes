@@ -1,0 +1,44 @@
+---
+title: Windows 11 无法访问局域网
+category:
+  - 操作系统
+tags:
+  - Windows
+  - 网络
+  - 共享
+---
+
+Windows 11 无法访问局域网通常由网络发现未开启、关键服务未运行或新版安全策略限制导致。按以下步骤排查即可解决。
+
+## 🔧 基础网络与服务设置
+
+1. 切换网络配置文件：进入“设置”>“网络和互联网”，将当前网络属性改为"专用网络"，公用网络会默认阻止发现 。
+2. 启用网络发现：在“高级共享设置”中，确保“启用网络发现”和“启用文件和打印机共享”已打开 。
+   ![[Pasted image 20260530225900.png]]
+
+3. 启动关键服务：按 `Win+R` 输入 `services.msc`，确保 Function Discovery Resource Publication、SSDP Discovery 等服务状态为“正在运行”并设为自动 。
+   
+
+## 若系统为 Windows 11 24H2 版本，默认安全策略可能阻止无密码访问：
+
+
+
+1. 修改组策略：按 `Win+R` 输入 `gpedit.msc`，导航至“计算机配置”>“管理模板”>“网络”>"Lanman 工作站”，启用"启用不安全的来宾登录"。
+2. 禁用签名要求：在同级“安全选项”中，禁用"Microsoft 网络客户端：对通信进行数字签名 (始终)"。
+3. PowerShell 修复：以管理员运行 PowerShell，输入命令调整 SMB 客户端配置以允许来宾访问 。
+📂 权限与防火墙检查
+
+1. 关闭密码保护：在“高级共享设置”的“所有网络”中，选择"关闭密码保护共享"。
+2. 检查文件夹权限：右键共享文件夹>“属性”>“共享”，确保添加 Everyone 用户并赋予读取/写入权限 。
+3. 防火墙放行：在"Windows 安全中心”>“防火墙”中，确保“文件和打印机共享”允许通过 。
+4. IP 直连测试：若仍无法发现，按 `Win+R` 输入 `\\目标 IP 地址` 直接访问，可绕过发现机制 。
+
+## 其他参考资料
+
+https://blog.csdn.net/zj907638274/article/details/138610064
+
+https://zhuanlan.zhihu.com/p/13954218366
+
+https://zhuanlan.zhihu.com/p/981036505
+
+[Windows11在【网络】中无法发现局域网里面的电脑 - Microsoft Q&A](https://learn.microsoft.com/zh-cn/answers/questions/2193687/windows11)

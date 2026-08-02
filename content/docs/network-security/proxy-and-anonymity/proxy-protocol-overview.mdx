@@ -1,0 +1,48 @@
+---
+title: 代理协议汇总
+subTitle: V2Ray、Trojan、Clash、Shadowsocks 与 VPN 协议对比
+description: 对比常见代理与 VPN 协议的特点、加密方式、适用场景、优缺点及开源项目，并说明 V2Ray 与 v2rayN 的区别。
+category:
+  - 网络安全
+tags:
+  - 代理协议
+  - V2Ray
+  - Clash
+  - Shadowsocks
+source: https://chatgpt.com/c/67e4b2c3-20fc-8013-9ce4-ea5394a5a69d
+---
+
+# 代理协议汇总
+
+本文汇总 V2Ray、Clash 及其他常见代理和 VPN 协议，便于根据设备、网络环境和安全需求进行选型。使用代理服务时，请遵守当地法律、组织安全策略和服务商条款。
+
+## 协议对比
+
+| 协议名称 | 主要特点 | 加密方式 | 适用场景 | 优势 | 劣势 | 开源地址 |
+| --- | --- | --- | --- | --- | --- | --- |
+| **Shadowsocks（SS）** | 轻量级代理 | AEAD（2022 版） | 科学上网、翻墙 | 速度快、易部署、广泛支持 | 需要额外工具防检测 | [github.com/shadowsocks](https://github.com/shadowsocks) |
+| **ShadowsocksR（SSR）** | SS 的改进版，增强混淆 | 多种混淆 | 规避审查 | 兼容性更好、绕过 DPI | 开发已停止，存在安全隐患 | [github.com/shadowsocksrr](https://github.com/shadowsocksrr) |
+| **VMess（V2Ray）** | V2Ray 核心协议，支持伪装 | AEAD | 复杂网络环境 | 可搭配 WebSocket、HTTP/2 等传输协议 | 配置较复杂 | [github.com/v2fly/v2ray-core](https://github.com/v2fly/v2ray-core) |
+| **Trojan** | 伪装成 HTTPS 流量 | TLS | 需要伪装性的场景 | 适用于高隐蔽性需求 | 服务器压力较大，TLS 连接占用资源较高 | [github.com/trojan-gfw](https://github.com/trojan-gfw) |
+| **Snell** | Surge 代理协议 | AEAD | iOS/macOS 代理 | 适用于 Surge 生态 | 生态有限，服务器端较少 | [github.com/surge-networks/snell](https://github.com/surge-networks/snell) |
+| **SOCKS5** | 通用代理协议 | 无 | 通用代理 | 兼容性高，支持多种应用 | 无加密，安全性较低 | [RFC 1928](https://datatracker.ietf.org/doc/html/rfc1928) |
+| **HTTP(S) 代理** | 普通 HTTP 代理 | TLS（可选） | 浏览器代理 | 易于部署，广泛支持 | 容易被封锁，HTTP 版本无加密 | [RFC 7230](https://datatracker.ietf.org/doc/html/rfc7230) |
+| **WireGuard** | 现代 VPN 协议 | ChaCha20 | VPN 代理 | 高效、性能优越 | 需要内核支持，不支持 TCP 传输 | [wireguard.com](https://www.wireguard.com/) |
+| **Clash** | 多协议聚合代理 | 取决于所用协议 | 代理管理 | 支持 SS、SSR、V2Ray、Trojan、Snell | 主要是客户端，不是协议 | [github.com/Dreamacro/clash](https://github.com/Dreamacro/clash) |
+
+## 选型总结
+
+- **Shadowsocks、SSR**：适合低配置设备，注重速度和轻量级代理。
+- **VMess（V2Ray）**：适合需要复杂伪装和多传输方式的场景。
+- **Trojan**：通过 HTTPS 流量进行伪装，适用于高隐蔽性需求。
+- **WireGuard**：适用于 VPN 级别的高安全代理。
+- **Clash**：不是单一协议，而是支持多种协议的代理管理工具。
+
+## V2Ray 与 v2rayN 的区别
+
+V2Ray 和 v2rayN 是两个不同的软件，均可用于代理服务，但定位不同。
+
+1. **V2Ray（也称 Project V）**：开源网络代理工具，提供分布式和高度定制化能力，支持 TCP、mKCP、WebSocket 等传输协议，并可通过 JSON 配置文件进行细粒度设置。
+2. **v2rayN**：基于 V2Ray 的 Windows 图形界面客户端，通过图形界面管理服务器、传输协议和代理规则，降低手动编写配置文件的门槛。
+
+如果需要高度定制化，可以直接使用 V2Ray 手动配置；如果希望通过图形界面管理代理服务，可以选择 v2rayN。

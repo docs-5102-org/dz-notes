@@ -1,0 +1,45 @@
+---
+title: 海洋 CMS 采集注意事项
+subTitle: 播放器、缓存、广告与伪静态配置
+description: 整理海洋 CMS 采集前后的播放器、缓存、广告脚本和 Nginx 伪静态配置检查项。
+category:
+  - 数字营销
+source: https://www.seacms.net/thread-5759.htm?sort=desc
+---
+
+# 海洋 CMS 采集注意事项
+
+使用海洋 CMS 进行内容采集和展示时，请先确认采集来源、内容版权和第三方服务条款。
+
+## 播放与缓存
+
+1. 安装播放插件后清空缓存。
+2. 开始采集前先确认播放器插件已经安装。
+3. 在“系统 → 视频播放设置”中选择合适的解析播放方式。
+
+## 广告与安全
+
+广告管理需要先创建广告位，系统通常会在 `/www/wwwroot/<站点>/js/ads` 目录生成脚本。请限制脚本写入权限，并定期检查站点文件是否被篡改。
+
+原资料还提到以下排查主题：
+
+- [播放页跳链问题](https://www.seacms.net/thread-1773-1-1.html)
+- [海洋 CMS 被挂马排查](https://www.seacms.net/thread-6360.htm?orderby=asc)
+- [海洋 CMS 伪静态设置](https://www.seacms.net/thread-5759.htm?sort=desc)
+
+## Nginx 伪静态示例
+
+```nginx
+location / {
+    rewrite ^/frim/index(.+?)\.html$ /list/index.php?$1 last;
+    rewrite ^/movie/index(.+?)\.html$ /detail/index.php?$1 last;
+    rewrite ^/play/([0-9]+)-([0-9]+)-([0-9]+)\.html$ /video/index.php?$1-$2-$3 last;
+    rewrite ^/topic/index.html$ /topic/index.php last;
+    rewrite ^/topic/(.+?)\.html$ /topic/index.php?$1 last;
+    rewrite ^/topiclist/(.+?).html$ /topiclist/index.php?$1 last;
+    rewrite ^/index\.html$ index.php permanent;
+    rewrite ^/news\.html$ news/ permanent;
+    rewrite ^/part/index(.+?)\.html$ /articlelist/index.php?$1 last;
+    rewrite ^/article/index(.+?)\.html$ /article/index.php?$1 last;
+}
+```

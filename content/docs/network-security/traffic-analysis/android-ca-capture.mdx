@@ -1,0 +1,163 @@
+---
+title: Android 7+ 绕过 CA 限制抓取 HTTPS
+subTitle: Android 7+ 绕过 CA 限制抓取 HTTPS
+description: 介绍 Android 7 及以上版本通过系统证书绕过 CA 限制抓取 HTTPS 请求的方法。
+category:
+  - 网络
+source: https://www.cnblogs.com/Entr0py/p/9675061.html
+---
+
+# Android 7+ 绕过 CA 限制抓取 HTTPS
+
+参考文章：[简书文章](https://www.jianshu.com/p/035f7d7a0f7e)
+
+# **环境**
+
+手机：小米5A
+
+系统：MIUI 10
+
+电脑：win10
+
+抓包：mitmdump （可替换成其他抓包软件 eg：charles）
+电脑需要安装：
+
+* mitmdump（可替换成任意抓包软件 eg：charles）
+* adb
+* openssl
+
+# **背景**
+
+我需要抓取https请求，苹果手机可以毫无问题的抓取，而安卓就不可以。原因是安卓7之后对证书的策略进行变更，应用不再使用用户证书。
+有两种方式绕过：
+
+* **在手机上安装系统证书**
+* **修改app的manifest文件重新打包**
+
+这里我们只讲第一种方法， 所以我们需要把证书添加到系统证书中。
+为此，我们需要一台已经root的小米手机。root教程在miui论坛中已经非常详细了。官方给出了详细的步骤和工具。
+
+# **开始**
+
+假设到这里你已经有一台root成功的小米手机或模拟器 操作前模拟器需要启动。
+安卓受信任的CA证书以特定的格式存储在 /system/etc/security/cacerts 目录下。我们可以在 adb shell 中查看到：
+
+![证书目录示意](/assets/images/network/crawler/2.png)
+
+这里我们用到的是mitmproxy，它的证书存放在user/Administrator/.mitmproxy/ 目录下。pem为后缀的文件。
+查看openssl版本
+
+openssl version
+
+如果是1.0以上的版本：
+
+openssl x509 -inform DER -in cacert.der -out cacert.pem
+openssl x509 -inform PEM -subject\_hash\_old -in cacert.pem
+
+如果是1.0以下的版本：
+
+openssl x509 -inform DER -in cacert.der -out cacert.pem
+openssl x509 -inform PEM -subject\_hash -in cacert.pem
+
+上面的两条语句，如果已经是pem后缀的文件，可以直接执行第二条， cacert.pem就是你的证书文件。
+第一行会输出一个类似这样的hash串：
+
+7672ac4b
+
+然后重命名证书
+
+cp cacert.pem 7672ac4b.0
+
+# 一个完整的示例 这里是用的是Git Bash shell命令行 
+
+```
+Administrator@PC-201902211827 MINGW64 /d
+$ openssl version
+OpenSSL 1.1.1a  20 Nov 2018
+Administrator@PC-201902211827 MINGW64 /d
+$ openssl x509 -inform PEM -subject_hash_old -in c
+Config.Msi/                                  charles-proxy-ssl-proxying-certificate.pem
+Administrator@PC-201902211827 MINGW64 /d
+$ openssl x509 -inform PEM -subject_hash_old -in  charles-proxy-ssl-proxying-certificate.pem
+83de1669
+-----BEGIN CERTIFICATE-----
+MIIFTDCCBDSgAwIBAgIGAWq5kBAqMA0GCSqGSIb3DQEBCwUAMIGqMTswOQYDVQQD
+DDJDaGFybGVzIFByb3h5IENBICgxNSDkupTmnIggMjAxOSwgUEMtMjAxOTAyMjEx
+ODI3KTElMCMGA1UECwwcaHR0cHM6Ly9jaGFybGVzcHJveHkuY29tL3NzbDERMA8G
+A1UECgwIWEs3MiBMdGQxETAPBgNVBAcMCEF1Y2tsYW5kMREwDwYDVQQIDAhBdWNr
+bGFuZDELMAkGA1UEBhMCTlowHhcNMDAwMTAxMDAwMDAwWhcNNDgwNzExMDMzNjI3
+WjCBqjE7MDkGA1UEAwwyQ2hhcmxlcyBQcm94eSBDQSAoMTUg5LqU5pyIIDIwMTks
+IFBDLTIwMTkwMjIxMTgyNykxJTAjBgNVBAsMHGh0dHBzOi8vY2hhcmxlc3Byb3h5
+LmNvbS9zc2wxETAPBgNVBAoMCFhLNzIgTHRkMREwDwYDVQQHDAhBdWNrbGFuZDER
+MA8GA1UECAwIQXVja2xhbmQxCzAJBgNVBAYTAk5aMIIBIjANBgkqhkiG9w0BAQEF
+AAOCAQ8AMIIBCgKCAQEAzucxxRSetwelZAC/zBfAauV2E7btxiRNHw19TYUTVJyG
+H4byPlA+2Fr3Y8ztKCjkGiH86RUr52Gh2w6Q1Tc8B9/X9oH2l6O/7gyp/KLYAQ4z
+q76QL71Anm7CzkRw0l7LuvLHMJOtV4p+Eh7YgHvd2T2eX4YfTQNWjYi2hUCjdhen
+jjes8RyvaleiaU2zWWyeCqcqrvUPEl4qA/vwsaGOE+OMwC5FbK4v1T/yMM1r+gWb
+Z2kzsVaxWQ9l4WnPuoUaQk6jshcXBCGY3f2dEf2hNwlFP7F2UEt+PeHayWb8bFc2
+bY9i6op/6MLHlWZQPUZLU2Knjfa3Qrna+ZUk0uYEPwIDAQABo4IBdDCCAXAwDwYD
+VR0TAQH/BAUwAwEB/zCCASwGCWCGSAGG+EIBDQSCAR0TggEZVGhpcyBSb290IGNl
+cnRpZmljYXRlIHdhcyBnZW5lcmF0ZWQgYnkgQ2hhcmxlcyBQcm94eSBmb3IgU1NM
+IFByb3h5aW5nLiBJZiB0aGlzIGNlcnRpZmljYXRlIGlzIHBhcnQgb2YgYSBjZXJ0
+aWZpY2F0ZSBjaGFpbiwgdGhpcyBtZWFucyB0aGF0IHlvdSdyZSBicm93c2luZyB0
+aHJvdWdoIENoYXJsZXMgUHJveHkgd2l0aCBTU0wgUHJveHlpbmcgZW5hYmxlZCBm
+b3IgdGhpcyB3ZWJzaXRlLiBQbGVhc2Ugc2VlIGh0dHA6Ly9jaGFybGVzcHJveHku
+Y29tL3NzbCBmb3IgbW9yZSBpbmZvcm1hdGlvbi4wDgYDVR0PAQH/BAQDAgIEMB0G
+A1UdDgQWBBTr9RU+M8JbNopFAvm8cgObJ1T5PjANBgkqhkiG9w0BAQsFAAOCAQEA
+fKeT6GeavYLBd1uReFkQUXkNqiMN6HTPFPr2+AZ+a9EKPQ1ehyYUqDdQpPsTVXqx
+x1oAN9CBzSCHo8WKNHdOhLLQ811HrdEbLkKao2lRf+vNrqBo7CgMolM75mPBKaQz
+R/UTFzJLc7OY0z1Ah2T4b2t8EJH9Co3J1crsrkj1JmRH/JtbPuNSoUZEPiFo3hXN
+2mGilfTAJAhot0K5HTAmQUt09mbqhLB87xDz6UrEOUdVy96y98tLSgEb9pBEIzM1
+QpP00s0H8jaYArx61SS/jDRU+kVVRRGv++je4jmz2Oq3jbNyn0re4fDCk/O9blcm
+4xaEvhqTfCCoUDgdAjrjJw==
+-----END CERTIFICATE-----
+Administrator@PC-201902211827 MINGW64 /d
+$ cp charles-proxy-ssl-proxying-certificate.pem 83de1669.0
+```
+
+# **复制证书到设备上**
+
+可以直接粘贴到手机中，也可以用adb复制过去，这里的7672ac4b换成前面你得到的那个hash串
+
+adb root
+adb remount
+adb push 7672ac4b.0 /sdcard/
+
+# **复制到系统目录并修改权限**
+
+adb shell
+su
+mount \-o rw,remount /system
+mv /sdcard/7672ac4b.0 /system/etc/security/cacerts/
+chmod 644 /system/etc/security/cacerts/7672ac4b.0
+
+# **验证**
+
+然后我们在手机中依次进入：设置 → 安全 → 信任证书 → 系统证书，此处就可以看到你安装的证书了。
+
+![系统证书页面示意](/assets/images/network/crawler/1.png)
+
+# **测试**
+
+证书安装成功就没什么问题了：
+
+# **可能遇到的问题**
+
+##### **可问题：**
+
+remount of /system failed: Read-only file system
+remount failed
+
+##### **解决方法：**
+
+adb root
+adb disable-verity
+adb reboot
+adb remount
+adb shell
+mount -o rw,remount /system
+
+* * *
+
+参考文章：
+[参考链接](https://blog.csdn.net/ShadowySpirits/article/details/79756274)

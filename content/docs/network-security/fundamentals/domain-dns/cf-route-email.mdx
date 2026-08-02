@@ -1,0 +1,138 @@
+---
+title: CF邮件路由转发
+subTitle: 自定义域名收信与转发配置
+description: 整理 Cloudflare Email Routing 的启用、DNS 记录、目标邮箱验证和转发规则配置。
+category:
+  - 网络安全
+tags:
+  - 域名
+  - DNS
+  - Cloudflare
+  - 邮件路由
+source: https://developers.cloudflare.com/email-routing/
+---
+
+# Cloudflare Email Routing 邮件路由
+
+Cloudflare Email Routing 可以将自定义域名收到的邮件转发到已有邮箱，无需单独购买邮件托管服务。它主要用于收信和转发，不提供完整的发信邮箱服务；具体功能和额度以 Cloudflare 当前政策为准。
+
+## 目录
+
+- [前提条件](#前提条件)
+- [配置步骤](#配置步骤)
+- [高级规则](#高级规则)
+- [常见问题](#常见问题)
+- [安全与维护建议](#安全与维护建议)
+
+## 前提条件
+
+1. 拥有一个域名，并确认域名注册账户可用。
+2. 域名已经添加到 Cloudflare。
+3. 域名的 DNS 由 Cloudflare 管理。
+4. 准备一个可以接收验证邮件的目标邮箱，例如 Gmail 或 Outlook。
+
+## 配置步骤
+
+### 1. 启用 Email Routing
+
+1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com/)。
+2. 选择要配置的域名。
+3. 打开 **Email → Email Routing**。
+4. 点击 **Get started** 或 **Enable Email Routing**，按照向导完成初始化。
+
+官方文档：[Email Routing](https://developers.cloudflare.com/email-routing/)。
+
+### 2. 检查 DNS 记录
+
+Cloudflare 通常会提示添加邮件路由所需的 DNS 记录：
+
+- **MX 记录**：指向 Cloudflare 的邮件接收服务器。
+- **TXT 记录**：用于邮件验证和发件人策略。
+
+如果控制台提供 **Add records automatically**，可以使用自动添加功能；如果域名已有 MX 记录，请先确认现有邮件服务是否会受到影响。
+
+示例记录格式如下，实际记录值以控制台显示为准：
+
+```text
+类型：MX
+名称：@
+优先级：10
+目标：route1.mx.cloudflare.net
+```
+
+### 3. 验证目标邮箱
+
+1. 在 **Destination addresses** 中点击 **Add destination address**。
+2. 输入目标邮箱地址。
+3. 打开目标邮箱收到的验证邮件，并点击验证链接。
+4. 返回控制台确认目标地址状态为已验证。
+
+请不要在文档或截图中暴露真实邮箱地址和验证链接。
+
+### 4. 创建路由规则
+
+在 **Routing rules** 中创建自定义地址与目标地址的映射：
+
+- 单地址转发：`info@example.com` → `yourname@example.com`
+- 多地址转发：`sales@example.com`、`support@example.com` 分别转发到对应目标邮箱
+- Catch-all：将未匹配的地址统一转发到指定目标邮箱
+
+创建规则时选择已验证的目标地址，保存后再发送测试邮件确认效果。
+
+### 5. 测试转发
+
+使用其他邮箱向自定义地址发送测试邮件，并检查：
+
+- 目标邮箱是否收到邮件
+- 邮件是否进入垃圾邮件文件夹
+- 邮件头中的转发路径和验证结果是否正常
+- 不存在的地址是否被 Catch-all 规则接收
+
+## 高级规则
+
+### Catch-all 规则
+
+Catch-all 会接收发往域名下未匹配地址的邮件。它容易收到垃圾邮件，启用前应评估风险，并为目标邮箱设置过滤规则。
+
+### 多目标转发
+
+根据控制台当前能力，一个地址可以配置多个目标邮箱。配置后应分别测试投递状态，并避免将敏感邮件转发到不受控的个人邮箱。
+
+### 邮件操作
+
+常见操作包括：
+
+- **Drop**：直接丢弃邮件
+- **Forward**：转发到指定邮箱
+- **Worker**：交由 Cloudflare Worker 做自定义处理
+
+Worker 处理邮件时应限制权限、记录必要日志，并避免保存不必要的邮件正文。
+
+## 常见问题
+
+### 可以使用 Email Routing 发邮件吗？
+
+Email Routing 主要支持收信和转发，不等同于完整的 SMTP 发信服务。如需发信，可另行配置合规的 SMTP 服务或使用邮箱服务商提供的“以其他地址发送”功能。
+
+### 转发是否绝对不会进入垃圾邮件？
+
+不能保证。投递结果还会受到发件人信誉、目标邮箱策略、SPF/DKIM/DMARC 配置和邮件内容影响。应使用目标邮箱的垃圾邮件报告和邮件头信息进行排查。
+
+### DNS 配置多久生效？
+
+通常几分钟到数小时不等，完全生效时间取决于 DNS TTL、注册商和缓存情况。修改 MX 记录前应规划迁移窗口，避免影响现有邮件服务。
+
+## 安全与维护建议
+
+1. 为 Cloudflare 和目标邮箱启用多因素认证。
+2. 定期检查 MX、TXT 和路由规则，删除不再使用的地址。
+3. 不要在公开仓库中保存 API Token、验证链接或真实邮箱凭据。
+4. 对 Catch-all 和 Worker 规则设置最小权限，避免形成邮件转发滥用通道。
+5. 保留规则清单和变更记录，便于故障恢复。
+
+## 相关资源
+
+- [Cloudflare Email Routing 官方文档](https://developers.cloudflare.com/email-routing/)
+- [Email Routing 入门指南](https://developers.cloudflare.com/email-routing/get-started/)
+- [Email Routing API](https://developers.cloudflare.com/api/operations/email-routing-routing-rules-list-routing-rules)
+- [Cloudflare 社区](https://community.cloudflare.com/)

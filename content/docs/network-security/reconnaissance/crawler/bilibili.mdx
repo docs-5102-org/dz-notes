@@ -1,0 +1,40 @@
+---
+title: B站视频采集与解析资源
+subTitle: B站视频采集与解析资源
+description: 收录 B 站视频采集工具、开放 API 文档和解析资源。
+category:
+  - 网络
+---
+
+# B站视频采集与解析资源
+
+## 相关资源
+
+1. 官方网站：[Bilibili](https://www.bilibili.com/)
+2. 单视频 URL 采集工具：
+   - [唧唧Down](https://www.lanzouw.com/ig8fMtnf1eh)：可直接运行已封装的 exe
+   - [bilibili-downloader](https://github.com/stevenjoezhang/bilibili-downloader)：需要通过命令行启动
+3. 开源 API 文档：
+   - [bilibili-api](https://github.com/Nemo2011/bilibili-api)
+   - [BilibiliAPIDocs](https://github.com/fython/BilibiliAPIDocs)
+   - [Bilibili-API-collect](https://github.com/SocialSisterYi/bilibili-API-collect)（推荐）
+   - [Bilibili-Live-API](https://github.com/lovelyyoshino/Bilibili-Live-API)
+   - [CSDN 参考文章](https://blog.csdn.net/Asnet_/article/details/83450937)
+
+> 备注：GitHub 上搜索关键词 `bilibili-api` 可找到更多资料。 也可以尝试解析器地址 `https://jx.aidouer.net/?url=`，后面直接拼接目标平台视频地址。
+
+## 解析示例
+
+下面是一段常见的解析示例链接格式：
+
+```html
+<iframe
+  allowfullscreen="true"
+  allowtransparency="true"
+  rel="noreferrer"
+  frameborder="0"
+  id="palybox"
+  scrolling="no"
+  src="https://jx.aidouer.net/?url=https://www.bilibili.com/video/BV1XL41137BE/?spm_id_from=pageDriver&vd_source=19bcb091b0112d6028dc150c1edfa43a"
+></iframe>
+```

@@ -1,0 +1,48 @@
+---
+title: 免费域名与 DNS 服务汇总
+subTitle: 注册平台、二级域名与托管支持
+description: 汇总免费或低成本域名、二级域名和 DNS 托管平台，并标注使用时的限制。
+category:
+  - 网络安全
+tags:
+  - 域名
+  - DNS
+  - 网络基础与服务
+---
+
+# 免费域名与 DNS 服务汇总
+
+以下平台信息仅作资料整理，价格、注册政策和可用性可能变化。注册前请核对服务条款、续费规则、隐私政策和 DNS 托管限制。
+
+## 平台列表
+
+| 平台网址 | 可申请域名类型 | 费用/有效期 | DNS 托管支持 | 备注 |
+| --- | --- | --- | --- | --- |
+| [subreg.cz](https://subreg.cz) | `free.hr` 二级域名 | 1.6 元/年 | ✅ Cloudflare | 当前可能需要付费 |
+| [freedomain.one](https://freedomain.one) | `publicvm.com`、`run.place` 等 | 免费 | - | 以平台当前政策为准 |
+| [azote.org](https://www.azote.org) | 多种二级域名 | 免费 | ✅ afraid.org；⚠️ 不支持直接托管到 Cloudflare | 需要额外中转配置 |
+| [FreeDNS](https://freedns.afraid.org) | 多种二级域名 | 免费 | ⚠️ 不支持直接托管到 Cloudflare | 可研究 CNAME 中转方案 |
+| [EU.org](https://nic.eu.org) | `eu.org` 二级域名 | 免费 | ✅ Cloudflare | 审核和可用性以官方为准 |
+| [Nom.za](https://secure.nom.za) | `nom.za` 二级域名 | 免费 | ✅ Cloudflare | 以注册政策为准 |
+| [NIC.ua](https://nic.ua) | `pp.ua` 二级域名 | 免费 | ✅ Cloudflare | 可能需要绑定银行卡 |
+| [ClouDNS](https://www.cloudns.net) | 多种二级域名 | 免费 | ✅ Cloudflare | 部分域名可托管到 Cloudflare |
+| [Sitelutions](https://www.sitelutions.com) | `kwikto.com`、`rr.nu` 等 | 免费 | ✅ he.net、afraid.org | 可用域名类型以平台为准 |
+| [L53](https://www.l53.net) | `onflashdrive.app` 二级域名 | 免费 1 年 | ✅ Cloudflare | 优惠活动可能失效 |
+| [Domain Digitalplat](https://dash.domain.digitalplat.org/) | 免费域名服务 | 免费 | - | 以平台状态为准 |
+| [GoDaddy](https://www.godaddy.com/zh-sg) | 国际域名 | 付费 | - | 商业注册商 |
+| [DNSPod](https://www.dnspod.cn/register/mail) | DNS 解析服务 | 免费/付费 | - | 腾讯旗下 DNS 服务 |
+| [NameSilo](https://www.namesilo.com/) | 国际域名 | 付费 | - | 国外域名注册商 |
+| [DNSHE](https://www.dnshe.com/) | 免费域名服务 | 免费 | - | 以平台公告为准 |
+
+## 图例
+
+- ✅ 表示支持
+- ⚠️ 表示有限制或需要额外配置
+- `-` 表示资料中未提供信息
+
+## 使用建议
+
+1. 优先选择有清晰注册、续费和转移政策的平台。
+2. 域名注册商与 DNS 托管商分离时，确认名称服务器和 DNSSEC 配置。
+3. 不要在公开文档中暴露注册账户、API Token 或域名验证记录。
+4. 对免费二级域名设置定期备份和迁移方案，避免平台停服导致业务中断。

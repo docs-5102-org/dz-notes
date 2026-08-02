@@ -1,0 +1,77 @@
+---
+title: Windows 7 家庭组共享设置
+source: http://jingyan.baidu.com/article/e8cdb32b673a8a37052badf6.html
+tags:
+  - Windows
+  - 共享
+  - 家庭组
+---
+
+## 前言
+
+在 Windows 7 中，使用家庭组共享文件方便快捷。不过当撇开家庭组尝试与其它版本 Windows 系统共享文件时，常常失败。原因可能包括工作组名称不同、设置不正确等。
+
+## 操作
+
+为解决问题，下面给出了一套操作流程供参考：
+
+### 步骤一
+
+同步工作组：不管使用的是什么版本的 Windows 操作系统，第一步是保证联网的各计算机的工作组名称一致。要查看或更改计算机的工作组、计算机名等信息，请右键单击“计算机”，选择“属性”。
+
+![查看计算机信息](/assets/images/windows/unknown_filename41.png)
+
+若相关信息需要更改，请在“计算机名称、域和工作组设置”一栏中单击“更改设置”。
+
+![更改设置](/assets/images/windows/unknown_filename.10.png)
+
+单击“更改”。
+
+![更改计算机名和工作组名](/assets/images/windows/unknown_filename.7.png)
+
+输入合适的计算机名/工作组名后，按“确定”。
+
+![完成更改](/assets/images/windows/unknown_filename6.png)
+
+这一步操作完成后，请重启计算机使更改生效。
+
+### 步骤二
+
+更改 Windows 7 的相关设置：打开“控制面板 → 网络和 Internet → 网络和共享中心 → 更改高级共享设置”。
+
+![高级共享设置](/assets/images/windows/unknown_filename11.png)
+
+启用“网络发现”、“文件和打印机共享”、“公用文件夹共享”；在“密码保护的共享”部分请选择“关闭密码保护共享”。
+
+![密码保护的共享](/assets/images/windows/unknown_filename12.png)
+
+注意：媒体流最好也打开；另外，在“家庭组”部分建议选择“允许 Windows 管理家庭组连接（推荐）”。
+
+### 步骤三
+
+共享对象设置：最直接的方法是将需要共享的文件/文件夹直接拖拽至公共文件夹中。如果需要共享某些特定的 Windows 7 文件夹，请右键点击该文件夹，选择“属性”。
+
+![共享对象设置](/assets/images/windows/unknown_filename5.png)
+
+点击“共享”标签，单击“高级共享”按钮。
+
+![高级共享](/assets/images/windows/unknown_filename31.png)
+
+勾选“共享此文件夹”后，单击“应用”、“确定”退出。
+
+![共享此文件夹](/assets/images/windows/unknown_filename6.png)
+
+如果某文件夹被设为共享，它的所有子文件夹通常也会默认被设为共享。
+
+在第二步中已关闭密码保护共享，所以现在要对共享文件夹的安全权限进行更改。右键点击要共享的文件夹，选择“属性”。在“安全”页上单击“编辑”。
+
+![安全权限设置](/assets/images/windows/unknown_filename22.png)
+
+接着按“添加”按钮。
+
+![添加用户](/assets/images/windows/unknown_filename.9.png)
+
+键入 `Everyone` 后一路按“确定”退出。
+
+![Everyone 权限](/assets/images/windows/unknown_filename.8.png)
+

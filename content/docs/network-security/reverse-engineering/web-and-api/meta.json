@@ -1,0 +1,10 @@
+{
+  "title": "Web 与 API 分析",
+  "pages": [
+    "index",
+    "baidu-ai-tts-analyze",
+    "douyin-creator-analyze",
+    "douyin-upload-analyze",
+    "xiaohongshu-web-analyze"
+  ]
+}

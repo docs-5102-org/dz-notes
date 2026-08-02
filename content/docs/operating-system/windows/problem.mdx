@@ -1,0 +1,80 @@
+---
+title: Windows 常见问题汇总：照片、启动故障与 PowerShell 脚本策略
+tags:
+  - Windows
+  - 启动问题
+  - PowerShell
+  - 问题修复
+---
+
+## Win10 照片应用无法打开
+
+您还可以尝试以下方案进行操作，看看是否可行：
+
+`设置 → 应用 → 应用和功能 → 照片 → 高级选项 → 重置`
+
+## Windows 屏幕显示：Reboot and select proper boot device or Insert Boot Media in selected Boot
+
+### 问题
+
+开机进不了系统，出现提示：
+
+### 现象
+
+**Reboot and select proper boot device or insert boot media in selected boot device and press a key**
+
+中文翻译：重新启动并且选择适当的启动装置或者插入启动光盘。在选中启动装置后，按一个键。
+
+可能原因：
+
+1. 安装盘缺少引导文件，无法进入系统，需要启动盘启动电脑。
+2. 系统安装失败，硬盘中根本没有系统。（安装盘存在问题，建议更换安装盘）
+3. 光驱坏了。
+4. 硬盘数据线插口松动，内存条或显卡接触不良，硬盘有坏道。
+5. 将系统重新安装一次，避免使用刚才用过的系统盘。
+
+### 解决方式
+
+#### 一、用系统光盘修复系统
+
+1. 设置光驱启动。
+
+Award BIOS 6.0 设置：
+
+- 重启后按 `Del` 进入 BIOS 设置界面。
+- 找到 `Advanced BIOS Features`（高级 BIOS 参数设置），按回车进入。
+- 用方向键选定 `First Boot Device`，用 `PgUp` 或 `PgDn` 将其改为 `CDROM`。
+- 按 `ESC`，按 `F10`，输入 `Y`，回车保存退出。
+
+AMI BIOS 8.0 设置：
+
+- 启动电脑，按 `Del` 进入 AMI BIOS 设置程序主界面。
+- 在上方菜单中找到 `Boot` 并选中，按回车。
+- 在打开界面中用方向键选中 `Boot Device Priority`，回车。
+- 进入 `1st Boot Device` 界面后，回车进入选项界面。
+- 用方向键选中 `CD/DVD: 3S-PH...`（光驱启动），回车。
+- 按 `Esc`，按 `F10`，输入 `Y`，回车保存退出。
+
+2. 将 XP 安装光盘插入光驱，重启，在屏幕底部出现 `CD...` 字样时及时按任意键。
+3. 会出现 WINXP 安装界面，选择“现在安装 WINXP...”，回车。
+4. 若出现“Windows XP 安装协议”界面，按 `F8` 同意许可协议。
+5. 如果出现“假如下列 WINXP 安装中有一个已损坏，安装程序将尝试修复它”的界面时，选择要修复的 WINXP 安装。
+6. 按中文提示继续操作。
+
+#### 二、重装系统
+
+如果修复无效，可考虑重新安装系统。
+
+## Windows PowerShell 无法加载文件 xxxxx，因为在此系统上禁止运行脚本
+
+### 1. 管理员身份运行 PowerShell
+
+![以管理员运行 PowerShell](/assets/images/windows/unknown_filename.1.png)
+
+### 2. 执行：`Set-ExecutionPolicy RemoteSigned`（允许运行本地脚本或签名脚本）
+
+![执行 Set-ExecutionPolicy 界面](/assets/images/windows/unknown_filename1.png)
+
+## Win10 必看：如何关闭病毒和威胁防护与用户账户控制提示
+
+参考链接： [微信文章](https://mp.weixin.qq.com/s/TquTWarRlZ9QT2rmY3lJMw)

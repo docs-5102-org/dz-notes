@@ -1,0 +1,76 @@
+---
+title: Baidu AI TTS 接口分析
+description: 分析 Baidu 百科/AI TTS 接口请求签名与音频获取流程
+category:
+  - 网络
+  - 逆向工程
+source: about:blank
+---
+
+图片:（原始资源路径含特殊字符，已移除）
+
+
+最终分析得出结论：
+
+String text = "中文名,百科。外文名,Encyclopedia。纸类百科,中国大百科全书，不列颠百科全书。网络百科,百度、维基、互动、搜狗、360等。拼音,bǎi kē。";
+String vol = "9"; //固定值 音量值
+String per = "4003"; //音色id
+String time = "1677664397"; //毫秒数时间
+String once = "fd598a5"; // 计算签名值 必须7位 随机的数字和字母的组合 这个可以自己计算 后台最后根据你传递的值 在计算sign与你传递的sign进行比对
+String s = "%Ej9&lz9\*1R5O\*XCSXvY6E8PlWoZ@haY"; //固定盐值  这是我经过分析多次请求得出的
+
+Java 的示例：
+
+```java
+public static void test(){
+
+String text = "百科，指天文、地理、自然、人文、宗教、信仰、文学等全部学科的知识的总称。";
+
+String vol = "9"; //固定值 音量值
+
+String per = "4100"; //音色id
+
+Long currentMilliseconds = System._currentTimeMillis_() / 1000;
+
+String time = currentMilliseconds.toString(); //毫秒数时间
+
+String once = "fd598a5"; // 计算签名值 必须7位 随机的数字和字母的组合
+
+String s = "%Ej9&lz9\*1R5O\*XCSXvY6E8PlWoZ@haY"; //固定盐值
+
+StringBuilder sb = new StringBuilder()
+.append(text).append(vol).append(per).append(time).append(once).append(s);
+
+System._out_.println("sb.toString() = " + sb);
+String sign = _md5_(sb.toString());
+System._out_.println("sign=" + sign);
+
+StringBuilder url = new StringBuilder("https://baike.baidu.com/wikiui/api/getaudio");
+
+String reqUrl = url.append("?text=").append(text)
+.append("&vol=").append(vol)
+.append("&per=").append(per)
+.append("&time=").append(time)
+.append("&once=").append(once)
+.append("&sign=").append(sign).toString();
+
+System._out_.println("reqUrl = " + reqUrl);
+
+String res = HttpUtil._get_(reqUrl);
+
+System._out_.println("res = " + res);
+```
+
+
+```
+sb.toString() = 百科，指天文、地理、自然、人文、宗教、信仰、文学等全部学科的知识的总称。941001677665941fd598a5%Ej9&lz9\*1R5O\*XCSXvY6E8PlWoZ@haY
+32result = 533421617d80fa50077f5fe9fc231603
+16result = 7d80fa50077f5fe9
+sign=533421617d80fa50077f5fe9fc231603
+reqUrl = https://baike.baidu.com/wikiui/api/getaudio?text=百科，指天文、地理、自然、人文、宗教、信仰、文学等全部学科的知识的总称。&vol=9&per=4100&time=1677665941&once=fd598a5&sign=533421617d80fa50077f5fe9fc231603
+res = {"errno":0,"errmsg":"","data":"**https:\/\\/[tts.baidu.com](http://tts.baidu.com/)\\/text2audio?time=1677665946&lan=ZH&vol=9&cuid=baike&ctp=1&rate=32&per=4100&tex=%E7%99%BE%E7%A7%91%EF%BC%8C%E6%8C%87%E5%A4%A9%E6%96%87%E3%80%81%E5%9C%B0%E7%90%86%E3%80%81%E8%87%AA%E7%84%B6%E3%80%81%E4%BA%BA%E6%96%87%E3%80%81%E5%AE%97%E6%95%99%E3%80%81%E4%BF%A1%E4%BB%B0%E3%80%81%E6%96%87%E5%AD%A6%E7%AD%89%E5%85%A8%E9%83%A8%E5%AD%A6%E7%A7%91%E7%9A%84%E7%9F%A5%E8%AF%86%E7%9A%84%E6%80%BB%E7%A7%B0%E3%80%82&pdt=32&auth=18769610032297d113121503c96171e29b944422fa6d30f880b656645d2485af**"}
+```
+
+加粗返回的url，可以通过Audio直接播放
+
+Ps: 这里依赖了md5工具类 这里不再复述了

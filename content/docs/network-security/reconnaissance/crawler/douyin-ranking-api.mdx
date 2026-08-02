@@ -1,0 +1,114 @@
+---
+title: 抖音榜单接口与视频详情抓取
+subTitle: 抖音榜单接口与视频详情抓取
+description: 记录抖音榜单接口、视频详情接口和抓取示例。
+category:
+  - 网络
+---
+
+# 抖音榜单接口与视频详情抓取
+
+偶然在抖音创作平台中看到了一系列排行榜，例如热搜榜、热门视频榜、娱乐明星榜、音乐榜等。登录后可在 [创作中心榜单页](https://creator.douyin.com/billboard/home) 查看数据。
+
+> 原文中的截图在当前仓库中未同步附件，这里以接口说明和代码示例为主。
+
+## 榜单分类接口
+
+[榜单分类接口](https://creator.douyin.com/aweme/v1/creator/data/v2/billboard_category/)
+
+## 榜单接口
+
+| 接口名 | 类型 | 链接 |
+| --- | --- | --- |
+| 热搜榜单 | Get | [热搜榜单](https://creator.douyin.com/aweme/v1/creator/data/billboard/?billboard_type=1) |
+| 热点上升榜 | Get | [热点上升榜](https://creator.douyin.com/aweme/v1/creator/data/billboard/?billboard_type=9) |
+| 今日热门视频 | Get | [今日热门视频](https://creator.douyin.com/aweme/v1/creator/data/billboard/?billboard_type=4) |
+| 娱乐明星 | Get | [娱乐明星](https://creator.douyin.com/aweme/v1/creator/data/billboard/?billboard_type=2) |
+| 体育热力 | Get | [体育热力](https://creator.douyin.com/aweme/v1/creator/data/billboard/?billboard_type=3) |
+| 直播榜单 | Get | [直播榜单](https://creator.douyin.com/aweme/v1/creator/data/billboard/?billboard_type=10) |
+| 热歌榜 | Get | [热歌榜](https://creator.douyin.com/aweme/v1/creator/data/billboard/?billboard_type=5) |
+| 音乐飙升榜 | Get | [音乐飙升榜](https://creator.douyin.com/aweme/v1/creator/data/billboard/?billboard_type=6) |
+| 原创音乐榜 | Get | [原创音乐榜](https://creator.douyin.com/aweme/v1/creator/data/billboard/?billboard_type=7) |
+| 二次元榜单 | Get | [二次元榜单](https://creator.douyin.com/aweme/v1/creator/data/billboard/?billboard_type=61) |
+| 搞笑榜单 | Get | [搞笑榜单](https://creator.douyin.com/aweme/v1/creator/data/billboard/?billboard_type=86) |
+| 旅行 | Get | [旅行](https://creator.douyin.com/aweme/v1/creator/data/billboard/?billboard_type=91) |
+| 剧情 | Get | [剧情](https://creator.douyin.com/aweme/v1/creator/data/billboard/?billboard_type=81) |
+| 美食榜 | Get | [美食榜](https://creator.douyin.com/aweme/v1/creator/data/billboard/?billboard_type=71) |
+| 美食—新势力榜 | Get | [美食—新势力榜](https://creator.douyin.com/aweme/v1/creator/data/billboard/?billboard_type=71) |
+
+这些接口通常不能直接访问，访问时需要补上 `Referer`。下面以《今日热门视频》为例说明。
+
+## 今日热门视频
+
+已知今日热门视频的数据接口与请求方式，可以直接使用 `requests` 发起请求。
+
+```python
+import requests
+
+hot_video_url = 'https://creator.douyin.com/aweme/v1/creator/data/billboard/?billboard_type=4'
+
+headers = {
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.106 Safari/537.36',
+    'referer': 'https://creator.douyin.com/billboard/hot_aweme',
+}
+
+response = requests.get(url=hot_video_url, headers=headers).json()
+print(response)
+```
+
+## 获取视频详情
+
+返回的榜单数据中通常只有标题、封面、分享链接和热度等字段。如果想获取更多信息，比如点赞、评论和作者信息，可以通过分享链接中的视频 ID 继续请求详情接口。
+
+示例分享链接：
+
+[抖音视频分享链接](https://www.iesdouyin.com/share/video/6844023242781412622/?region=CN&mid=6844023258854345479&u_code=0&titleType=title)
+
+对应详情接口：
+
+[视频详情接口](https://www.iesdouyin.com/web/api/v2/aweme/iteminfo/?item_ids=6844023242781412622)
+
+## 代码示例
+
+先获取《今日热门视频》集合，然后提取每个视频对应的 `item_ids`，再根据 ID 获取详细视频数据。
+
+```python
+import re
+import requests
+
+hot_video_url = 'https://creator.douyin.com/aweme/v1/creator/data/billboard/?billboard_type=4'
+
+headers = {
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.106 Safari/537.36',
+    'referer': 'https://creator.douyin.com/billboard/hot_aweme',
+}
+
+response = requests.get(url=hot_video_url, headers=headers).json()
+
+for video in response['billboard_data']:
+    link = video['link']
+    title = video['title']
+    rank = video['rank']
+    hot_value = video['value']
+
+    item_ids = re.findall(r'video/(.*?)/', link)[0]
+    video_detail_url = f'https://www.iesdouyin.com/web/api/v2/aweme/iteminfo/?item_ids={item_ids}'
+    detail = requests.get(video_detail_url, headers=headers).json()
+
+    print(detail['item_list'][0]['share_url'])
+    break
+```
+
+## 额外说明
+
+部分接口在请求时可能还需要补上 Cookie，否则会返回类似 `无权限操作` 的提示。可以把完整 Cookie 放入请求头，也可以只保留其中的 `sid_guard`。
+
+```python
+headers = {
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.106 Safari/537.36',
+    'referer': 'https://creator.douyin.com/billboard/hot_aweme',
+    'cookie': 'sid_guard=（示例）',
+}
+```
+
+参考链接：[CSDN 原文](https://blog.csdn.net/weixin_43582101/article/details/107082121)

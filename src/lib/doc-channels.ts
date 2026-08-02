@@ -3,6 +3,9 @@ import path from 'node:path';
 import { load } from 'js-yaml';
 import docsMeta from '../../content/docs/meta.json';
 
+/**
+ * 频道颜色
+ */
 const channelColorMap: Record<string, string> = {
   notion: 'var(--channel-notion)',
   web: 'var(--channel-web)',
@@ -16,13 +19,21 @@ const channelColorMap: Record<string, string> = {
   python: 'var(--channel-coding)',
   middleware: 'var(--channel-coding)',
   storage: 'var(--channel-coding)',
+  'office-design': 'var(--channel-notion)',
+  'operating-system': 'var(--channel-coding)',
   'game-development': 'var(--channel-web)',
+  'media-creator': 'var(--channel-web)',
+  'digital-marketing': 'var(--channel-web)',
+  'network-security': 'var(--channel-web)',
   bigdata: 'var(--channel-coding)',
   devops: 'var(--channel-coding)',
   blockchain: 'var(--channel-web)',
   ai: 'var(--channel-web)',
 };
 
+/**
+ * 频道标题
+ */
 const channelTitleFallbackMap: Record<string, string> = {
   notion: 'Notion',
   web: 'Web 开发',
@@ -36,13 +47,21 @@ const channelTitleFallbackMap: Record<string, string> = {
   python: 'Python',
   middleware: '中间件',
   storage: '存储',
+  'office-design': '办公设计',
+  'operating-system': '操作系统',
   'game-development': '游戏开发',
+  'media-creator': '自媒体',
+  'digital-marketing': '数字营销',
+  'network-security': '网络安全',
   bigdata: '大数据',
   devops: 'DevOps',
   blockchain: '区块链',
   ai: 'AI',
 };
 
+/**
+ * 频道描述
+ */
 const channelDescriptionFallbackMap: Record<string, string> = {
   notion: '知识管理、数据库设计与模板实践',
   web: '前端框架、工程化与页面实现',
@@ -56,13 +75,21 @@ const channelDescriptionFallbackMap: Record<string, string> = {
   python: 'Python 基础、环境配置与工具实践',
   middleware: '消息队列、缓存、搜索与分库分表笔记',
   storage: '数据库与对象存储相关笔记',
+  'office-design': '办公软件、图片设计、文档排版、演示设计与效率工作流笔记',
+  'operating-system': 'Windows、Linux、macOS 与系统基础使用笔记',
   'game-development': '游戏引擎、入门资源与开发笔记',
+  'media-creator': '自媒体创作、视觉内容与传播策略笔记',
+  'digital-marketing': '工作室项目、广告联盟、流量变现与网赚项目笔记',
+  'network-security': '网络安全基础、协议、部署与故障排查笔记',
   bigdata: '数据处理、仓库建模与计算框架',
   devops: 'Linux、容器、部署运维与 CI/CD',
   blockchain: '链上基础、以太坊开发与 Web3 笔记',
   ai: '模型应用、提示词工程与多模态实践',
 };
 
+/**
+ * 频道排序
+ */
 const channelOrderMap: Record<string, number> = {
   notion: 10,
   web: 20,
@@ -76,11 +103,16 @@ const channelOrderMap: Record<string, number> = {
   python: 100,
   middleware: 110,
   storage: 120,
-  'game-development': 130,
-  bigdata: 140,
-  devops: 150,
-  blockchain: 160,
-  ai: 170,
+  'office-design': 130,
+  'operating-system': 140,
+  'game-development': 150,
+  'media-creator': 151,
+  'digital-marketing': 151.5,
+  'network-security': 152,
+  bigdata: 160,
+  devops: 170,
+  blockchain: 180,
+  ai: 190,
 };
 
 // 从 content/docs/meta.json 的 pages 字段拿到真实一级频道。

@@ -1,0 +1,14 @@
+{
+  "title": "网络安全",
+  "root": true,
+  "pages": [
+    "index",
+    "fundamentals",
+    "reconnaissance",
+    "proxy-and-anonymity",
+    "traffic-analysis",
+    "reverse-engineering",
+    "penetration-testing",
+    "malware-and-phishing"
+  ]
+}

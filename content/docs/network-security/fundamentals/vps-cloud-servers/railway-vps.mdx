@@ -1,0 +1,80 @@
+﻿---
+title: RailWay VPS
+category:
+  - 网络安全
+tags:
+  - 代理
+  - VPS
+---
+
+# RailWay VPS
+
+## 官网
+
+[https://railway.com/](https://railway.com/)
+
+家庭宽度IP。可以用来注册账号使用，纯净度干净
+
+住宅IP，Railway平台套壳
+
+208.77.244.109
+
+### **检测IP**
+
+- [IP纯净检测【点击查看】](https://ping0.cc/)
+- [IP欺诈值查询【点击查看】](https://scamalytics.com/)
+### **注意事项**
+
+VPS试用30天，续杯流程：每30天删除账号，重新注册即可重复使用
+
+## 部署教程
+
+### **教程一（应用当前部署方案）**
+
+采用勇哥的开源项目
+
+[https://github.com/yonggekkk/argosbx](https://github.com/yonggekkk/argosbx)
+
+Docker的部署方式，教程地址
+
+[https://www.youtube.com/watch?v=xOQV_E1-C84](https://www.youtube.com/watch?v=xOQV_E1-C84)
+
+### **教程二**
+
+#### **开源项目地址**
+
+[https://github.com/eooce/nodejs-argo](https://github.com/eooce/nodejs-argo)
+#### **视频地址**
+[https://kjgx668.blogspot.com/2025/10/ipip2ipip.html](https://kjgx668.blogspot.com/2025/10/ipip2ipip.html)
+
+[https://www.youtube.com/watch?v=L4amDxNdXW4](https://www.youtube.com/watch?v=L4amDxNdXW4)
+
+## VPS部署流程
+
+### **新建项目，选择Docker镜像的部署方式**
+
+![](/assets/images/network/vps/Pasted%20image%2020251115105630.png)
+
+### **输入镜像名称，查找成功后，直接回车进行安装 `ygkkk/argosbx`**
+
+[https://hub.docker.com/r/ygkkk/argosbx](https://hub.docker.com/r/ygkkk/argosbx)
+
+![](/assets/images/network/vps/Pasted%20image%2020251115105724.png)
+
+### **添加变量**
+
+目前添加如下变量，采用vmess/vless协议的方式，临时argo隧道
+
+```
+vmpt=
+argo=vmpt
+```
+
+![](/assets/images/network/vps/Pasted%20image%2020251115110040.png)
+
+### **自动部署，查看部署日志 `View logs`**
+
+修改变量后，会自动部署容器并执行
+
+![](/assets/images/network/vps/Pasted%20image%2020251219180312.png)
+

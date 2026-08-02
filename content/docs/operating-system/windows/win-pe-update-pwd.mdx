@@ -1,0 +1,50 @@
+---
+title: 使用 WinPE 修改/恢复 Windows 管理员密码
+tags:
+  - Windows
+  - WinPE
+  - 密码恢复
+---
+
+## 前言
+
+说明：有时我们忘记了 Windows XP 的超级管理员密码，无法进入系统且无法登录带命令行的安全模式，这时可以使用一些工具来修改超级管理员密码。以 WinPE 为例，介绍几种修改密码的方法。
+
+## 操作方式
+### 方法一
+
+说明：如果有该系统的安装盘，并且该安装盘有修复登陆密码的工具，就可以应用该系统盘，直接操作
+1.将系统启动设置以光盘为第一启动，保存；
+2.光盘启动(CD-ROM driver)之后，找到对应的系统登陆密码修复的菜单，点击进去，根据工具的提示信息进行操作
+
+![Windows XP 修复界面](/assets/images/windows/Windows%20XP%20Home%20Edition-2013-03-11-16-28-27.png)
+
+![Windows XP 修复界面 2](/assets/images/windows/Windows%20XP%20Home%20Edition-2013-03-11-16-29-17.png)
+
+![Windows XP 修复界面 3](/assets/images/windows/Windows%20XP%20Home%20Edition-2013-03-11-16-28-59.png)
+
+![Windows XP 修复界面 4](/assets/images/windows/Windows%20XP%20Home%20Edition-2013-03-11-16-29-30.png)
+
+### 方法二：使用 WinPE 的恢复功能（不推荐）
+
+说明：当安装盘不包含修复工具时，可在安装盘的 WinPE 环境中尝试恢复 C 盘（前提是系统有备份或 C 盘数据无关紧要）。
+
+![WinPE 启动界面](/assets/images/windows/Windows%20XP%20Home%20Edition-2013-03-11-16-37-03.png)
+
+### 方法三
+
+1.下载一个“深山红叶PE工具箱 ”的ZIP文件，解压后为ISO文件，用刻录机把它刻成光盘。
+2.用光盘启动(CD-ROM driver)电脑，通过菜单栏选择启动WinPE系统。
+3.进入WinPE系统后，选择“开始→程序→Windows系统维护→Windows用户密码修复”菜单。
+4.在后续的选择Windows目录一步，选择系统目录，比如“C:\Windows”。 然后创建一个新的管理员用户(如设置用户名为a，密码为a)，点“应用”按钮，就会生成一个新的超级管理员账号。
+5.重新启动电脑，我们就能通过新创建的超级管理员a账户进入系统。然后再修改超级管理员administrator密码即可。
+
+### 方法四
+
+类似方法三，把PE工具做成U盘/可移动的设备
+
+1.下载一个“深山红叶PE工具箱 ”的ZIP文件，解压后为ISO文件，放到U盘/可移动的设备。
+2.用光盘启动(CD-ROM driver)电脑，通过菜单栏选择启动WinPE系统。
+3.进入WinPE系统后，选择“开始→程序→Windows系统维护→Windows用户密码修复”菜单。
+4.在后续的选择Windows目录一步，选择系统目录，比如“C:＼Windows”。 然后创建一个新的管理员用户(如设置用户名为a，密码为a)，点“应用”按钮，就会生成一个新的超级管理员账号。
+5.重新启动电脑，我们就能通过新创建的超级管理员a账户进入系统。然后再修改超级管理员administrator密码即可。

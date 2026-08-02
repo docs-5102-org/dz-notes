@@ -1,0 +1,82 @@
+---
+title: CF托管与自定义域名配置
+subTitle: 从 DNS 托管到 Workers 域名绑定
+description: 整理 Cloudflare 托管域名、Workers 自定义域名和 DNS 验证的操作流程。
+category:
+  - 网络安全
+source: https://www.nodeseek.com/post-132514-1
+---
+
+## 域名
+
+添加域名
+
+<img src="/assets/images/network/fundamentals/Pasted image 20260601214835.png" />
+
+连接域名，
+
+<img src="/assets/images/network/fundamentals/Pasted image 20260601214916.png" />
+
+选择连接域名
+
+<img src="/assets/images/network/fundamentals/Pasted image 20260601215003.png" />
+
+选择免费计划
+
+<img src="/assets/images/network/fundamentals/Pasted image 20260601215436.png" />
+
+
+
+## 📋 新流程：Workers 绑定自定义域名
+
+### 步骤一：创建 Worker
+
+**Workers & Pages** → **创建应用程序** → 选择模板或直接部署
+
+<img src="/assets/images/network/fundamentals/Pasted image 20260601213233.png" />
+
+模板选择从Hello World 开始，作为演示
+
+<img src="/assets/images/network/fundamentals/Pasted image 20260601213352.png" />
+
+点击部署
+
+<img src="/assets/images/network/fundamentals/Pasted image 20260601213446.png" />
+
+
+### 步骤二：添加域名
+
+进入你的 Worker → **域和** → **添加域名**
+
+<img src="/assets/images/network/fundamentals/Pasted image 20260601215619.png" />
+
+<img src="/assets/images/network/fundamentals/Pasted image 20260601215546.png" />
+
+### 步骤三：填写域名
+
+输入子域名，可以留空，点击**添加域名**即可
+
+<img src="/assets/images/network/fundamentals/Pasted image 20260601215718.png" />
+
+### 步骤四：查看自定义域名
+
+<img src="/assets/images/network/fundamentals/Pasted image 20260601215824.png" />
+
+Cloudflare 会**自动**：
+
+- ✅ 创建对应的 DNS 记录（CNAME 指向 Worker）
+- ✅ 签发 SSL 证书
+- ✅ 完成绑定
+
+### 步骤五：将原域名服务器DNS，替换为CF的名称服务器
+
+<img src="/assets/images/network/fundamentals/Pasted image 20260601215922.png" />
+
+<img src="/assets/images/network/fundamentals/Pasted image 20260601220514.png" />
+
+---
+
+
+> [!NOTE] **注意**
+>CF 在签发边缘证书时，会在后台自动添加一条 `_acme-challenge` 的 TXT 解析记录来进行域控制验证。验证完成后，该记录会自动消失。在此期间，请勿删除 CF 控制台中的相关解析。 [[1](https://www.nodeseek.com/post-132514-1)]
+

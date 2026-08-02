@@ -1,0 +1,32 @@
+---
+title: 海洋 CMS 自动采集脚本参考
+subTitle: 分类绑定问题与代码调整
+description: 记录海洋 CMS 自动采集时的分类绑定问题、排查思路和代码调整示例。
+category:
+  - 数字营销
+---
+
+# 海洋 CMS 自动采集脚本参考
+
+本文整理自动采集时的分类绑定排查思路。脚本和后台文件属于站点核心代码，修改前请备份，并只在获得授权的站点上操作。
+
+## 参考资料
+
+- [海洋 CMS 采集相关主题](https://www.seacms.net/thread-8253.htm)
+- [采集脚本说明](https://zhuanlan.zhihu.com/p/123259328?from_voters_page=true)
+
+原资料引用了 `attachments/seacmsbot.sh` 附件，但该附件当前不在仓库中，已移除失效链接。
+
+## 分类绑定问题
+
+自动采集时需要绑定本地分类。如果资源库已经在手动采集中完成配置，但自动采集仍无法找到本地分类，可以检查后台 `admin_reslib2.php` 中的绑定参数。以下是原资料提供的调整示例：
+
+```php
+// 原始写法
+$localId = getBindedLocalId($ressite . '_' . $xmltid); // 入库后本地 id
+
+// 示例调整
+$localId = getBindedLocalId('_' . $xmltid); // 入库后本地 id
+```
+
+修改前请确认函数调用逻辑、数据库结构和版本差异；不建议直接覆盖生产文件。

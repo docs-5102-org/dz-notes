@@ -1,0 +1,47 @@
+---
+title: 宝塔面板部署教程
+subTitle: 安装、目录与 Nginx 配置
+description: 整理宝塔面板安装命令、常用目录和站点重写配置参考。
+category:
+  - 数字营销
+source: https://www.wanghualang.com/linux-bt.html
+---
+
+# 宝塔面板部署教程
+
+本文整理宝塔面板的安装、站点目录和 Nginx 重写配置。正式部署前请确认服务器系统版本，并优先使用官方安装文档。
+
+## 安装面板
+
+参考[宝塔 Linux 面板安装教程](https://www.wanghualang.com/linux-bt.html)：
+
+```bash
+yum install -y wget && wget -O install.sh http://download.bt.cn/install/install_6.0.sh && bash install.sh
+```
+
+面板建站流程可参考[宝塔网站建立使用教程](https://boke112.com/6675.html)。
+
+## 常用目录
+
+- 面板程序目录：`/www/server`
+- 网站根目录：`/www/wwwroot`
+
+## 账户信息
+
+原始资料中的账户标识已隐去，请使用部署时自行创建的管理员账户，并立即修改默认密码、启用双因素认证（如可用）。
+
+## Nginx 访问认证配置
+
+以下配置用于说明常见的入口重写方式，请结合实际站点路由和安全策略调整：
+
+```nginx
+location / {
+    if (!-e $request_filename) {
+        rewrite ^/index.php(.*)$ /index.php?s=$1 last;
+        rewrite ^/admin.php(.*)$ /admin.php?s=$1 last;
+        rewrite ^/api.php(.*)$ /api.php?s=$1 last;
+        rewrite ^(.*)$ /index.php?s=$1 last;
+        break;
+    }
+}
+```

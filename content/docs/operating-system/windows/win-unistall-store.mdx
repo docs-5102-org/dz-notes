@@ -1,0 +1,49 @@
+---
+title: 卸载并重装 Microsoft Store
+description: 通过 PowerShell 重新卸载并重装 Microsoft Store 的操作步骤。
+category:
+  - 操作系统
+tags:
+  - Windows
+  - Microsoft Store
+source: https://consumer.huawei.com/cn/support/content/zh-cn15779991/
+---
+
+# 卸载并重装 Microsoft Store
+
+下面步骤用于在 Windows 中卸载（移除）Microsoft Store 应用并重新注册安装。
+
+> 注意：删除应用会同时删除该应用的数据，请谨慎操作。
+
+## 1. 以管理员身份打开 PowerShell
+
+在任务栏搜索框中输入 **PowerShell**，选择“以管理员身份运行”。
+
+![打开 PowerShell](/assets/images/windows/unknown_filename12.png)
+
+## 2. 删除 Microsoft Store
+
+在管理员 PowerShell 窗口中运行：
+
+```powershell
+Get-AppxPackage *WindowsStore* | Remove-AppxPackage
+```
+
+运行完成后，系统应用列表中将不再显示 Microsoft Store。
+
+![删除确认](/assets/images/windows/unknown_filename3.png)
+![删除示意](/assets/images/windows/unknown_filename2.png)
+
+## 3. 重新注册并安装 Microsoft Store
+
+在管理员 PowerShell 中运行：
+
+```powershell
+Get-AppXPackage -AllUsers -Name Microsoft.WindowsStore |
+  Foreach {Add-AppxPackage -DisableDevelopmentMode -Register "$($_.InstallLocation)\\AppXManifest.xml" -Verbose}
+```
+
+运行完成后，在应用列表中将恢复 Microsoft Store。
+
+![重新注册示意](/assets/images/windows/unknown_filename22.png)
+![安装完成示意](/assets/images/windows/unknown_filename4.png)

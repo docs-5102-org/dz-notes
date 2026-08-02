@@ -1,0 +1,91 @@
+---
+title: Frida
+description: Frida 动态二进制插桩工具简介与入门示例
+category:
+  - 网络
+  - 逆向工程
+---
+
+Frida 是一个强大的跨平台动态二进制插桩工具，广泛应用于安全研究、逆向工程和移动应用测试等领域。它允许开发者在运行时注入自定义脚本，以观察和修改目标进程的行为，而无需访问源代码或重新编译程序。([Medium](https://medium.com/illumination/frida-for-beginners-your-first-steps-in-binary-instrumentation-and-function-hooking-34595ccade71?utm_source=chatgpt.com "Frida for Beginners: Your First Steps in Binary Instrumentation and ..."))
+
+---
+
+## 🔗 官方网站
+
+- **Frida 官方网站**：[https://frida.re/](https://frida.re/)
+    
+---
+
+## 🧩 什么是 Hook？
+
+在 Frida 中，"hook" 指的是在目标程序运行时，拦截并修改其函数调用的过程。通过 Hook，开发者可以：
+
+- 监视函数的输入参数和返回值
+    
+- 修改函数的行为或输出
+    
+- 绕过安全校验或反调试机制
+    
+- 记录敏感数据的使用情况
+    
+
+Frida 提供了多种方式来实现 Hook，包括 JavaScript 脚本和 Python API，使得开发者可以灵活地选择适合自己的方式进行开发。
+
+---
+
+## 📚 入门教程与资源
+
+以下是一些推荐的 Frida Hook 教程和资源，适合不同层次的学习者：
+
+1. **官方文档**：Frida 官方提供了详尽的文档，包括函数 Hook 的示例和使用指南。
+    
+    - [Frida 官方文档](https://frida.re/docs/functions/)([trellix.com](https://www.trellix.com/assets/docs/atr-library/tr-function-hooking-for-recon-and-exploitation.pdf?utm_source=chatgpt.com "[PDF] Function Hooking for Recon and Exploitation | Trellix"))
+    - [https://github.com/frida/frida](https://github.com/frida/frida)
+        
+2. **Corellium 教程**：介绍了如何使用 Frida 在 Android 应用中查找和 Hook 函数。
+    
+    - [Using Frida to Find Hooks - Corellium Support Center](https://support.corellium.com/features/frida/using-frida-find-hooks)([erev0s.com](https://erev0s.com/blog/how-hook-android-native-methods-frida-noob-friendly/?utm_source=chatgpt.com "How to hook Android Native methods with Frida (Noob Friendly)"))
+        
+3. **GitHub 示例**：提供了 Frida Hook 的实际示例代码，帮助理解其工作原理。
+    
+    - [Write Frida Hook For Android - GitHub](https://github.com/cyberheartmi9/Frida-Guide/blob/main/Frida%20Guide/Frida%20Guide.md)
+        
+4. **视频教程**：通过视频形式展示了如何使用 Frida Hook Android 应用中的原生方法。
+    
+    - [Hooking Native Android Methods with Frida - YouTube](https://www.youtube.com/watch?v=N2JtRXCofUU)
+    
+5. 第三方教程：
+   * https://www.52pojie.cn/thread-1128884-1-1.html
+   * https://www.cnblogs.com/pythonywy/p/13157827.html
+   * https://www.cnblogs.com/mysticbinary/p/12016364.html
+   * https://blog.csdn.net/wangwanglele11/article/details/112844470
+   * https://www.jianshu.com/p/51e6aef175a2
+        
+
+---
+
+## 🛠️ 示例：Hook Android 应用中的 Java 方法
+
+以下是一个使用 Frida Hook Android 应用中 Java 方法的示例脚本：
+
+```javascript
+Java.perform(function () {
+    var TargetClass = Java.use("com.example.app.TargetClass");
+    TargetClass.targetMethod.implementation = function (arg) {
+        console.log("Original argument: " + arg);
+        var result = this.targetMethod("Modified Argument");
+        console.log("Modified result: " + result);
+        return result;
+    };
+});
+```
+
+此脚本在运行时修改了 `targetMethod` 方法的输入参数，并打印了修改前后的结果。([Frida](https://frida.re/docs/functions/?utm_source=chatgpt.com "Functions | Frida • A world-class dynamic instrumentation toolkit"))
+
+---
+
+## 🧠 小结
+
+Frida 是一个功能强大的工具，适用于需要动态分析和修改应用行为的场景。通过学习和实践 Frida 的 Hook 技术，开发者可以深入理解应用的内部机制，提升逆向分析和安全测试的能力。([Medium](https://medium.com/illumination/frida-for-beginners-your-first-steps-in-binary-instrumentation-and-function-hooking-34595ccade71?utm_source=chatgpt.com "Frida for Beginners: Your First Steps in Binary Instrumentation and ..."))
+
+如果您有特定的应用场景或遇到具体的问题，欢迎继续提问，我将尽力提供帮助。

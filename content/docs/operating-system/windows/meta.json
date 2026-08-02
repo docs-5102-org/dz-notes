@@ -1,0 +1,21 @@
+{
+  "title": "Windows",
+  "description": "Windows 操作系统相关笔记与故障处理",
+  "pages": [
+    "index",
+    "win11-open-admin",
+    "win11-share-settings",
+    "win7-share-settings",
+    "boot",
+    "win10-cancel-pin",
+    "partition-tools",
+    "win-common-tools",
+    "win-pe-update-pwd",
+    "win-iso-in-vm",
+    "win-user-dir-move",
+    "problem",
+    "win-unistall-store",
+    "win-microsoftstore-download",
+    "win-t480s"
+  ]
+}

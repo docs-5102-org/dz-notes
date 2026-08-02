@@ -1,0 +1,142 @@
+﻿---
+title: V2ray安装教程
+category:
+  - 网络安全
+tags:
+  - 代理
+  - VPS
+  - V2ray
+---
+
+# V2Ray 安装与配置笔记
+
+
+### 1. 检测速度
+
+  
+
+可以通过以下命令快速检测服务器的网络速度：
+
+
+```bash
+
+wget -qO- --no-check-certificate https://raw.githubusercontent.com/oooldking/script/master/superbench.sh | bash
+
+```
+
+
+
+该命令会自动下载并运行一个脚本，检测服务器的网速、延迟等信息。
+
+
+
+> [!NOTE]
+>
+> v2ray官网：[https://github.com/233boy/v2ray](https://github.com/233boy/v2ray) 
+>
+> 最好用的 V2Ray 一键安装脚本：[https://233boy.com/v2ray/v2ray-script/](https://233boy.com/v2ray/v2ray-script/)
+
+
+
+------
+
+  
+
+### 2. V2Ray 一键安装脚本教程
+
+  
+
+V2Ray 提供了一键安装脚本，使用这个脚本可以快速在你的服务器上安装 V2Ray。
+
+  
+
+### 参考文档
+
+  
+
+- [V2Ray 一键安装脚本教程](https://github.com/233boy/v2ray/wiki/V2Ray一键安装脚本)
+
+  
+
+#### 一键安装命令
+
+  
+
+运行以下命令即可自动安装 V2Ray：
+
+
+
+```bash
+
+bash <(curl -s -L https://git.io/v2ray.sh)
+
+```
+
+
+该命令会下载并执行一键安装脚本，自动完成 V2Ray 的安装过程。
+
+
+
+------
+
+  
+
+### 3. 查看配置
+
+  
+
+安装完成后，你可以通过以下命令查看 V2Ray 的配置。
+
+  
+
+#### 查看所有配置
+
+  
+
+```bash
+
+v2ray info
+
+```
+
+  
+
+#### 查看 TCP 相关配置
+
+  
+
+```bash
+
+v2ray info tcp
+
+```
+
+  
+
+#### 查看 KCP 相关配置
+
+  
+
+```bash
+
+v2ray info kcp
+
+```
+
+  
+
+------
+
+  
+
+## 总结
+
+  
+
+- **速度检测**：使用 `superbench.sh` 脚本检测服务器速度。
+
+- **V2Ray 安装**：使用一键安装脚本快速部署 V2Ray。
+
+- **查看配置**：通过 `v2ray info` 命令查看 V2Ray 配置信息，了解 TCP 和 KCP 的相关设置。
+
+

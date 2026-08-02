@@ -1,0 +1,12 @@
+﻿{
+    "title":  "数字营销",
+    "root":  true,
+    "pages":  [
+                  "index",
+                  "studio-projects",
+                  "affiliate-marketing",
+                  "traffic-monetization",
+                  "online-income-projects",
+                  "lead-generation"
+              ]
+}

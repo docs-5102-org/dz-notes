@@ -1,0 +1,45 @@
+---
+title: Excel 快速填充 26个字母
+category:
+  - 办公设计
+tags:
+  - Excel
+---
+
+# Excel 快速填充 26 个字母
+
+在 WPS/Excel 中可以通过 `CHAR` 公式快速生成连续的英文字母序列。
+
+## 生成大写字母
+
+在 A1 单元格输入：/assets
+
+```text
+=CHAR(65+ROW()-1)
+```
+
+按 Enter 确认后，A1 单元格会显示 `A`。
+
+![生成大写字母](/assets/images/excel/1/Image.4.png)
+
+然后向下拖动填充柄即可快速填充连续的大写字母，而无需逐个输入。
+
+![下拉填充大写字母](/assets/images/excel/1/Image.webp)
+
+## 生成小写字母
+
+如果希望生成小写字母，可以在 B1 单元格输入：
+
+```text
+=CHAR(97+ROW()-1)
+```
+
+按 Enter 后，下拉填充柄即可得到连续的小写字母。
+
+![生成小写字母](/assets/images/excel/1/Image.2.webp)
+
+![下拉填充小写字母](/assets/images/excel/1/Image.3.webp)
+
+## 小结
+
+使用 `CHAR` 结合 `ROW()` 可以快速生成大写或小写字母序列，适合批量填充字母编号场景。

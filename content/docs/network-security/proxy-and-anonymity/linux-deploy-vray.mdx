@@ -1,0 +1,603 @@
+﻿---
+title: Linux 无头服务器部署 Xray
+subTitle: 命令行代理客户端安装、配置与维护
+description: 介绍在无图形界面的 Linux 云服务器上安装 Xray、配置本地代理端口、管理服务和排查连接问题。
+category:
+  - 网络安全
+tags:
+  - 代理
+  - v2ray
+---
+
+# Linux 无头服务器部署 Xray
+
+本文面向已拥有合法节点配置的 Linux 云服务器，介绍 Xray 客户端的安装、配置、服务管理和本地代理使用方法。请勿将代理端口直接暴露到公网，也不要在文档中粘贴真实节点、UUID 或订阅链接。
+
+## 📋 场景说明
+
+你手里有 VPS 节点（vmess/vless/trojan/shadowsocks），想让一台**无图形界面的 Linux 云服务器**作为客户端使用这些节点，实现：
+
+- 访问国际网络资源
+- 作为爬虫程序的代理出口
+- 为其他应用提供代理服务
+
+本文将详细介绍如何在纯命令行环境下配置和运行代理客户端。
+
+---
+
+## 🎯 一、客户端选择
+
+### 推荐方案：Xray-core
+
+**为什么选择 Xray-core？**
+
+- ✅ V2Ray 的高性能分支，性能更优
+- ✅ 支持全协议：vmess/vless/trojan/shadowsocks/socks/http
+- ✅ 纯命令行运行，资源占用低
+- ✅ 官方持续维护，生态成熟
+
+**项目地址：** 
+- [Xray-core](https://github.com/XTLS/Xray-core)
+- [XTLS 组织](https://github.com/XTLS)
+
+**官方文档：** 
+- [xtls.github.io](https://xtls.github.io/)
+---
+
+## 🔧 二、安装 Xray-core
+
+### 快速安装（推荐）
+
+```bash
+# 使用官方安装脚本
+bash <(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)
+```
+
+注意，如果是国内服务器下载较慢，可以先手动下载 `install-release.sh`，配置镜像源后再执行。
+
+1. **下载链接**（第 327 行附近）：
+
+```bash
+# 原来：
+local DOWNLOAD_LINK="https://github.com/XTLS/Xray-core/releases/download/${INSTALL_VERSION}/Xray-linux-${MACHINE}.zip"
+
+# 改为：
+local DOWNLOAD_LINK="https://gh-proxy.com/https://ghproxy.com/https://github.com/XTLS/Xray-core/releases/download/${INSTALL_VERSION}/Xray-linux-${MACHINE}.zip"
+```
+
+2. **geodata 下载链接**（第 567-568 行附近）：
+
+```bash
+# 原来：
+local download_link_geoip="https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat"
+local download_link_geosite="https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat"
+
+# 改为：
+local download_link_geoip="https://gh-proxy.com/https://ghproxy.com/https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat"
+local download_link_geosite="https://gh-proxy.com/https://ghproxy.com/https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat"
+```
+
+3. 将脚本文件手动上传到服务器，授权+解决编码问题， 执行
+
+```
+# 授权执行
+sudo chmod +x install-release.sh
+# 解决编码问题
+# Ubuntu
+sudo apt-get install dos2unix
+# CentOS 
+sudo yum install dos2unix 
+dos2unix install-release.sh
+```
+
+### 安装后的文件位置
+
+```
+/usr/local/bin/xray              # 可执行文件
+/usr/local/etc/xray/config.json  # 配置文件
+/var/log/xray/                   # 日志目录
+```
+
+### 验证安装
+
+```bash
+xray version
+```
+
+---
+
+## ⚙️ 三、配置代理节点
+
+### 1. 基础配置结构
+
+创建或编辑配置文件：
+
+```bash
+sudo nano /usr/local/etc/xray/config.json
+```
+
+### 2. VMess 协议配置示例
+
+```json
+{
+  "log": {
+    "access": "/var/log/xray/access.log",
+    "error": "/var/log/xray/error.log",
+    "loglevel": "warning"
+  },
+  "inbounds": [
+    {
+      "port": 1080,
+      "listen": "127.0.0.1",
+      "protocol": "socks",
+      "settings": {
+        "udp": true
+      }
+    },
+    {
+      "port": 1087,
+      "listen": "127.0.0.1",
+      "protocol": "http",
+      "settings": {}
+    }
+  ],
+  "outbounds": [
+    {
+      "protocol": "vmess",
+      "settings": {
+        "vnext": [
+          {
+            "address": "your-server.com",
+            "port": 443,
+            "users": [
+              {
+                "id": "your-uuid-here",
+                "alterId": 0,
+                "security": "auto"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "tls",
+        "wsSettings": {
+          "path": "/your-path",
+          "headers": {
+            "Host": "your-server.com"
+          }
+        }
+      }
+    }
+  ]
+}
+```
+
+### 3. 其他协议配置示例请自行转换
+
+### 4.多个 VMess/VLESS 节点映射为本地多个 SOCKS5 端口（适用于 Linux 无头系统）
+
+[多个 VMess/VLESS 节点映射为本地 SOCKS5 端口的参考页面](https://tuonioooo.github.io/fast-web-template/web/proxy/v2ray.html)
+* 可用于本地代理、爬虫等业务
+
+---
+
+## 🚀 四、启动和管理服务
+
+### 启动 Xray 服务
+
+```bash
+# 启动服务
+sudo systemctl start xray
+
+# 设置开机自启
+sudo systemctl enable xray
+
+# 查看运行状态
+sudo systemctl status xray
+
+# 重启服务
+sudo systemctl restart xray
+
+# 停止服务
+sudo systemctl stop xray
+```
+
+### 查看日志
+
+```bash
+# 查看错误日志
+sudo tail -f /var/log/xray/error.log
+
+# 查看访问日志
+sudo tail -f /var/log/xray/access.log
+```
+
+### 测试连接
+
+```bash
+# 测试 SOCKS5 代理
+curl -v -x socks5h://127.0.0.1:1080 https://ipinfo.io
+
+# 测试 HTTP 代理
+curl -v -x http://127.0.0.1:1087 https://ipinfo.io
+```
+
+---
+
+## 🌐 五、使用代理
+
+### 方法 1：环境变量（推荐）
+
+适用于大多数命令行工具和编程语言。
+
+```bash
+# 临时设置（当前会话有效）
+export http_proxy="socks5h://127.0.0.1:1080"
+export https_proxy="socks5h://127.0.0.1:1080"
+export all_proxy="socks5h://127.0.0.1:1080"
+
+# 测试
+curl https://www.google.com
+# 取消代理
+unset http_proxy
+# 验证 没有输出就说明成功取消 ✅
+echo $http_proxy
+```
+
+#### 永久设置
+
+编辑 `~/.bashrc` 或 `~/.zshrc`：
+
+```bash
+echo 'export http_proxy="socks5h://127.0.0.1:1080"' >> ~/.bashrc
+echo 'export https_proxy="socks5h://127.0.0.1:1080"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+### 方法 2：Proxychains（全局代理）
+
+安装 Proxychains：
+
+```bash
+# Debian/Ubuntu
+sudo apt install proxychains4 -y
+
+# CentOS/RHEL
+sudo yum install proxychains-ng -y
+```
+
+配置 Proxychains：
+
+```bash
+sudo nano /etc/proxychains4.conf
+```
+
+在文件末尾添加：
+
+```
+[ProxyList]
+socks5  127.0.0.1 1080
+```
+
+使用示例：
+
+```bash
+# 任何命令前加 proxychains4
+proxychains4 curl https://www.google.com
+proxychains4 wget https://example.com/file.zip
+proxychains4 git clone https://github.com/user/repo.git
+```
+
+### 方法 3：特定程序配置
+
+#### Python 爬虫
+
+```python
+import requests
+
+proxies = {
+    'http': 'socks5h://127.0.0.1:1080',
+    'https': 'socks5h://127.0.0.1:1080'
+}
+
+response = requests.get('https://ipinfo.io', proxies=proxies)
+print(response.text)
+```
+
+#### Node.js
+
+```javascript
+const axios = require('axios');
+const SocksProxyAgent = require('socks-proxy-agent');
+
+const agent = new SocksProxyAgent('socks5h://127.0.0.1:1080');
+
+axios.get('https://ipinfo.io', { httpAgent: agent, httpsAgent: agent })
+  .then(response => console.log(response.data));
+```
+
+#### Git 配置
+
+```bash
+# 设置 Git 代理
+git config --global http.proxy socks5h://127.0.0.1:1080
+git config --global https.proxy socks5h://127.0.0.1:1080
+
+# 取消代理
+git config --global --unset http.proxy
+git config --global --unset https.proxy
+```
+
+---
+
+## 🎨 六、其他客户端选择
+
+### Sing-Box（新一代内核）
+
+特点：配置更简洁，支持订阅链接
+
+```bash
+# 安装
+bash <(curl -fsSL https://sing-box.app/install.sh)
+
+# 配置文件位置
+/usr/local/etc/sing-box/config.json
+```
+
+### Clash.Meta（支持规则分流）
+
+特点：支持订阅、规则分流、自动选择节点
+
+```bash
+# 下载最新版本
+wget https://github.com/MetaCubeX/Clash.Meta/releases/download/latest/clash.meta-linux-amd64.gz
+gunzip clash.meta-linux-amd64.gz
+chmod +x clash.meta-linux-amd64
+sudo mv clash.meta-linux-amd64 /usr/local/bin/clash
+
+# 创建配置目录
+mkdir -p ~/.config/clash
+```
+
+---
+
+## 🔍 七、常见问题排查
+
+### 1. 服务启动失败
+
+```bash
+# 检查配置文件语法
+xray run -test -config /usr/local/etc/xray/config.json
+
+# 查看详细错误
+sudo journalctl -u xray -n 50
+```
+
+### 2. 代理连接不通
+
+```bash
+# 检查端口监听
+ss -tlnp | grep xray
+
+# 测试本地连接
+telnet 127.0.0.1 1080
+```
+
+### 3. DNS 解析问题
+
+在配置文件中添加 DNS 设置：
+
+```json
+{
+  "dns": {
+    "servers": [
+      "8.8.8.8",
+      "1.1.1.1"
+    ]
+  }
+}
+```
+
+### 4. 防火墙配置
+
+如需外部访问代理端口：
+
+```bash
+# 开放端口（谨慎操作）
+sudo ufw allow 1080/tcp
+sudo firewall-cmd --permanent --add-port=1080/tcp
+sudo firewall-cmd --reload
+```
+
+---
+
+## ⚡ 八、性能优化建议
+
+### 1. 启用 BBR 拥塞控制
+
+```bash
+echo "net.core.default_qdisc=fq" | sudo tee -a /etc/sysctl.conf
+echo "net.ipv4.tcp_congestion_control=bbr" | sudo tee -a /etc/sysctl.conf
+sudo sysctl -p
+```
+
+### 2. 调整系统限制
+
+```bash
+# 增加文件描述符限制
+echo "* soft nofile 51200" | sudo tee -a /etc/security/limits.conf
+echo "* hard nofile 51200" | sudo tee -a /etc/security/limits.conf
+```
+
+### 3. 日志轮转
+
+```bash
+sudo nano /etc/logrotate.d/xray
+```
+
+添加内容：
+
+```
+/var/log/xray/*.log {
+    daily
+    rotate 7
+    compress
+    delaycompress
+    missingok
+    notifempty
+}
+```
+
+---
+
+## 📊 九、监控和维护
+
+### 创建监控脚本
+
+```bash
+#!/bin/bash
+# check-xray.sh
+
+if ! systemctl is-active --quiet xray; then
+    echo "Xray is down, restarting..."
+    systemctl restart xray
+    echo "Xray restarted at $(date)" >> /var/log/xray-monitor.log
+fi
+```
+
+### 添加定时任务
+
+```bash
+crontab -e
+```
+
+添加：
+
+```
+*/5 * * * * /path/to/check-xray.sh
+```
+
+---
+
+## ✅ 十、总结
+
+|步骤|命令/操作|
+|---|---|
+| **安装客户端** | `bash install-release.sh` |
+|**配置节点**|编辑 `/usr/local/etc/xray/config.json`|
+|**启动服务**|`sudo systemctl start xray && sudo systemctl enable xray`|
+|**设置代理**|`export https_proxy="socks5h://127.0.0.1:1080"`|
+|**测试连接**|`curl -x socks5h://127.0.0.1:1080 https://ipinfo.io`|
+
+---
+
+## 🔐 安全提示
+
+1. **限制端口访问**：代理端口仅监听 127.0.0.1，避免暴露到公网
+2. **定期更新**：保持 Xray-core 版本最新
+3. **日志管理**：定期清理或轮转日志文件
+4. **连接加密**：优先使用 TLS/Reality 等加密传输
+5. **防火墙规则**：严格控制入站和出站规则
+
+---
+
+按照本指南操作后，你的无头 Linux 服务器就可以作为代理客户端稳定运行了。如需帮助配置具体的节点信息，欢迎提供你的节点链接（隐藏敏感信息），我可以生成完整的配置文件！
+
+## 卸载脚本
+
+### **✅ 一、官方自带卸载命令（推荐）**
+
+Xray 官方安装脚本内置了卸载功能，只需运行：
+
+```bash
+bash <(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh) --remove
+```
+
+如果脚本已经下载
+
+```bash
+# 查看帮助命令
+./install-release.sh help
+# 卸载脚本
+./install-release.sh remove
+# 执行后输出如下内容：
+Removed "/etc/systemd/system/multi-user.target.wants/xray.service".
+removed: /usr/local/bin/xray
+removed: /etc/systemd/system/xray.service
+removed: /etc/systemd/system/xray@.service
+removed: /etc/systemd/system/xray.service.d
+removed: /etc/systemd/system/xray@.service.d
+removed: /usr/local/share/xray
+You may need to execute a command to remove dependent software: apt purge curl unzip
+info: Xray has been removed.
+info: If necessary, manually delete the configuration and log files.
+info: e.g., /usr/local/etc/xray and /var/log/xray/ ...
+
+```
+
+👉 它会执行以下操作：
+
+- 停止并禁用 systemd 服务；
+- 删除 `/usr/local/bin/xray` 可执行文件；
+- 删除 `/usr/local/share/xray/` 目录；
+- 删除 `/usr/local/etc/xray/` 配置目录；
+- 删除 `/etc/systemd/system/xray.service`；
+- 清理缓存 `/var/log/xray/`。
+
+> ✅ 这个命令等价于“完全卸载”，官方脚本自己做得很干净。
+
+---
+
+### **🧹 二、手动彻底卸载（如果你想手动清理）**
+
+1. 停止服务：
+    
+    ```bash
+    systemctl stop xray
+    systemctl disable xray
+    ```
+    
+2. 删除文件：
+    
+    ```bash
+    rm -f /usr/local/bin/xray
+    rm -rf /usr/local/share/xray
+    rm -rf /usr/local/etc/xray
+    rm -rf /var/log/xray
+    rm -f /etc/systemd/system/xray.service
+    ```
+    
+3. 清除 systemd 缓存：
+    
+    ```bash
+    systemctl daemon-reload
+    systemctl reset-failed
+    ```
+    
+4. （可选）检查残留进程：
+    
+    ```bash
+    ps -ef | grep xray
+    ```
+    
+
+---
+
+### **🧩 三、如果只是想“禁用暂时不用”**
+
+可以保留配置与日志，停止服务即可：
+
+```bash
+systemctl stop xray
+systemctl disable xray
+```
+
+这样不会删除文件，下次要用再：
+
+```bash
+systemctl enable --now xray
+```
+
+---

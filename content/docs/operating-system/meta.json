@@ -1,0 +1,5 @@
+{
+  "title": "操作系统",
+  "root": true,
+  "pages": ["index", "ios", "qr-588", "windows", "vmware"]
+}

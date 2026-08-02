@@ -1,0 +1,81 @@
+---
+title: Apple / iOS 技术笔记整理-1
+description: Apple ID、iCloud、设备管理与 iOS 开发与上架相关笔记
+---
+
+# Apple / iOS 技术笔记整理-1
+
+> 本文档由 6 篇零散笔记合并整理而成，按主题重新分类，方便后续查阅。
+
+## 目录
+
+1. [Apple ID 相关](#一apple-id-相关)
+2. [iCloud 与设备管理](#二icloud-与设备管理)
+3. [iPhone 机型参考](#三iphone-机型参考)
+4. [开发与上架工具](#四开发与上架工具)
+
+---
+
+## 一、Apple ID 相关
+
+### Apple ID 注册流程以及如何更改美区
+
+参考链接：
+
+- [Apple ID 注册流程以及如何更改美区](https://my.feishu.cn/wiki/MWNAwpir9i7cONkhBKNcqoCMn5Y)
+- 如何创建新的 Apple ID：[百度经验](https://jingyan.baidu.com/article/cbf0e500fc33532eaa2893b1.html)
+- 如何将 Apple ID 信息更改为美区：[参考文章](https://blog.52date.cn/article/9635.html)
+
+---
+
+## 二、iCloud 与设备管理
+
+### iCloud 查找我的 iPhone
+
+来源：[百家号文章](https://baijiahao.baidu.com/s?id=1776347734859623883&wfr=spider&for=pc)
+
+iCloud 是苹果提供的云服务，可在不同设备间同步数据。其中“查找我的 iPhone”功能可以远程定位、锁定甚至擦除设备。
+
+#### 操作步骤
+
+1. 打开 iCloud 设置：进入“设置” > “iCloud”，开启“查找我的 iPhone”。
+2. 登录 iCloud 网站：电脑浏览器打开 [icloud.com](https://www.icloud.com/)，用 Apple ID 登录。
+3. 启动“查找我的 iPhone”：网站上点击对应图标，设备会显示在地图上（前提是设备已开启该功能）。
+4. 远程操作：
+   - 播放声音（即使静音也可响铃，便于查找）
+   - 锁定屏幕（防止他人访问个人信息）
+   - 擦除 iPhone（⚠️ 会清空全部数据，操作前需确认已备份重要数据）
+
+#### 延伸功能
+
+同样支持远程擦除 iPad / Mac / Apple Watch，查找 AirPods；iCloud 还可备份照片、视频、联系人、日历等数据，实现多设备同步。
+
+---
+
+## 三、iPhone 机型参考
+
+### 各系列型号、尺寸
+
+*原笔记内容为空，待补充具体机型与尺寸数据。*
+
+---
+
+## 四、开发与上架工具
+
+### iPhone 配置实用工具——删除描述文件
+
+参考链接：[iPhone 配置实用工具怎么删除描述文件](https://www.onlinedown.net/soft/987607.htm)
+
+### Win10 下 “iPhone 配置实用工具” 找不到 Apple Mobile Device Support
+
+来源：[百度贴吧](https://tieba.baidu.com/p/4991157820?red_tag=2857470225)
+
+#### 解决步骤
+
+1. 进入目录 `C:\Program Files (x86)\Common Files\Apple\Mobile Device Support\`，复制 `MobileDevice.dll` 到 `C:\Program Files (x86)\iPhone 配置实用工具\` 下。
+2. 进入目录 `C:\Program Files (x86)\Common Files\Apple\Apple Application Support\`，复制 `SQLite3.dll` 到 `C:\Program Files (x86)\iPhone 配置实用工具\` 下。
+3. 运行 “iPhone 配置实用工具” 即可。
+
+### 被拒两次后，重构 iOS 上架流程｜Appuploader 复盘实录
+
+参考链接：[原文](https://my.oschina.net/u/9259598/blog/18498699)

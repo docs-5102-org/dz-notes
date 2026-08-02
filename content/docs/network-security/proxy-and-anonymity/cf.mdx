@@ -1,0 +1,70 @@
+---
+title: CF教程
+category:
+  - 网络安全
+tags:
+  - CF
+  - 代理
+---
+
+## 简介
+
+主要介绍了Cloudflare 使用基本教程，详细的介绍了CDN、Workers、Pages配置
+
+官网: [https://dash.cloudflare.com/](https://dash.cloudflare.com/)
+
+## 网络学习中心
+
+https://www.cloudflare.com/zh-cn/learning/
+
+## CDN、域名托管设置教程
+
+**视频教程**: [Cloudflare CDN 设置教程](https://www.youtube.com/watch?v=3JTpeGsP158&ab_channel=%E5%88%86%E4%BA%AB%E5%B7%A5%E5%9D%8A)
+	
+## Workers/Pages 节点配置&工具介绍
+
+### **开源代码工具**
+
+[【vpn】工具教程合集](../fundamentals/vpn-proxy/vpn-tools) 表格中搜索 **【Worker/Pages】部署工具**
+	
+### 节点配置教程
+
+[【vpn】工具教程合集](../fundamentals/vpn-proxy/vpn-tools) → 表格中搜索 **【CF+Worker/Pages】部署教程，推荐 零度/甬哥侃侃侃**
+
+### Workers与Pages区别
+
+* **TLS加密**
+	* Workers：可不加密（不带TLS的理论速度会更快）
+	* Pages: 必须加密
+* 域名阻断
+	* Workers：全阻断（被墙）
+	* Pages：电信联通可用，移动需要自定义域名
+
+**注意事项**
+
+* Workers/Pages，尽量不要修改默认的生成的域名，否则可能会出现被阻断的情况
+
+## CF 技术原理图
+
+[https://tuonioooo.github.io/fast-web-template/web/cloudflare/1.html](https://tuonioooo.github.io/fast-web-template/web/cloudflare/1.html)
+
+## V2rayN节点配置情况
+
+|     |     |     |
+| --- | --- | --- |
+| **订阅分组** | **CF节点** | **脚本部署代码/开源仓库地址** |
+| 【worker-subscription-01】 | worker-node-3.daizhaoman.workers.dev | CF官方通过github仓库一键部署地址：[https://github.com/tuonioooo/worker_page](https://github.com/tuonioooo/worker_page) |
+| 【worker-node-1】 | worker-node-1.daizhaoman.workers.dev | workers\_news.js 脚本下载地址：[https://qvctgytc9tu.feishu.cn/wiki/Z6U1wrPJSiMcETkl0VmcuWWUnGc?from=from_copylink](https://qvctgytc9tu.feishu.cn/wiki/Z6U1wrPJSiMcETkl0VmcuWWUnGc?from=from_copylink) |
+| 【worker-node-2】 | worker-node-2.daizhaoman.workers.dev | workers\_news.js 脚本下载地址：[https://qvctgytc9tu.feishu.cn/wiki/Z6U1wrPJSiMcETkl0VmcuWWUnGc?from=from_copylink](https://qvctgytc9tu.feishu.cn/wiki/Z6U1wrPJSiMcETkl0VmcuWWUnGc?from=from_copylink) |
+| 【worker-node-3】 | worker-node-3.daizhaoman.workers.dev | CF官方通过github仓库一键部署地址：[https://github.com/tuonioooo/worker_page](https://github.com/tuonioooo/worker_page) |
+| 【worker-page】 | worker-page-ca7.pages.dev | CF官方通过github仓库一键部署地址：[https://github.com/tuonioooo/worker_page](https://github.com/tuonioooo/worker_page) |
+| 【test】 | small-smoke-9c2d.daizhaoman.workers.dev | 测试节点，主要用于测试worker脚本 |
+
+## 配置证书教程
+
+### 视频地址
+https://www.youtube.com/watch?v=ynKwxUAs7D4
+
+### 文档地址
+
+https://blog.fjy.zone/archives/http-ca-cf-free

@@ -1,0 +1,86 @@
+---
+title: Android 脱壳与 Dex 导出流程
+subTitle: Android 脱壳与 Dex 导出流程
+description: 记录使用模拟器、Xposed、反射大师和 dex2jar 等工具进行 Android 脱壳与 dex 导出的操作流程。
+category:
+  - 网络
+  - 逆向工程
+source: https://blog.csdn.net/gengbaolong/article/details/108993934
+---
+
+# Android 脱壳与 Dex 导出流程
+
+## 1. 准备环境
+
+- 模拟器：夜神模拟器，可自行下载。
+- 相关说明：[夜神模拟器命令详解](https://www.yeshen.com/faqs/H15tDZ6YW)
+
+![夜神模拟器界面示意](https://placehold.co/600x300?text=attachment-placeholder)
+
+## 2. 安装 Xposed Installer
+
+```text
+链接：https://pan.baidu.com/s/1n5t8fiuVPFNvqImQBRqcqA
+提取码：81vr
+
+官网：https://repo.xposed.info/module/de.robv.android.xposed.installer
+```
+
+官网导航图：
+
+![Xposed 安装界面示意](https://placehold.co/600x300?text=attachment-placeholder)
+
+## 3. 安装反射大师
+
+```text
+链接：https://pan.baidu.com/s/1XxcRvyUj39h_0kPSWXOBqQ
+提取码：mcap
+```
+
+## 4. 脱壳操作步骤
+
+参考：[CSDN 相关文章](https://blog.csdn.net/qq_41855420/article/details/106276824)
+
+> 注意：使用反射大师前，需要先打开“芒星”或对应监控工具，让其能够监控目标应用。
+
+## 5. 导出 dex 文件到电脑
+
+```bash
+# 夜神模拟器（其他模拟器类似）
+# 进入对应模拟器的 adb 命令目录
+D:\SoftWare\Nox\bin>nox_adb devices
+List of devices attached
+127.0.0.1:62001 device
+
+# 夜神模拟器默认连接端口：62001
+D:\SoftWare\Nox\bin>adb connect 127.0.0.1:62001
+already connected to 127.0.0.1:62001
+
+# 从模拟器中导出对应的 dex 文件
+D:\SoftWare\Nox\bin>adb pull /storage/emulated/0/dump d:/tmp
+/storage/emulated/0/dump/: 4 files pulled. 0 files skipped. 2.4 MB/s (24182204 bytes in 9.546s)
+
+# 导出下载的 apk 文件
+adb pull /storage/emulated/0/Download/mmlu.apk D:/tmp
+
+# PC 与模拟器共享下载目录图片等信息
+C:\Users\Administrator\Nox_share
+```
+
+## 6. 使用 dex2jar 转换 dex
+
+参考：[dex2jar 仓库](https://github.com/pxb1988/dex2jar)
+
+```bash
+# 说明：用于将 dex 文件转换为 jar，建议使用源码编译
+# 例如：
+d2j-dex2jar.bat D:/tmp/dump/**.dex
+dex2jar D:\tmp\dump\classes.dex -> .\classes-dex2jar.jar
+dex2jar D:\tmp\dump\classes2.dex -> .\classes2-dex2jar.jar
+dex2jar D:\tmp\dump\classes3.dex -> .\classes3-dex2jar.jar
+```
+
+## 7. 其他工具
+
+- [jd-gui](https://jd-gui.apponic.com/download/)
+- [jadx](https://github.com/skylot/jadx.git)

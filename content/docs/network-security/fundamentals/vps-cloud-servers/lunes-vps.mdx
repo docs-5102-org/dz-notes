@@ -1,0 +1,43 @@
+﻿---
+title: Lunes Host VPS （容器托管）
+category:
+  - 网络安全
+tags:
+  - 代理
+  - VPS
+---
+
+# Lunes Host VPS（容器托管）
+
+## Lunes Host VPS 基本信息
+
+| 名称     | Lunes Host                             |     |
+| :----- | :------------------------------------- | --- |
+| 地址     | [https://lunes.host/](https://lunes.host/)                    |     |
+| 服务面板地址 | [https://ctrl.lunes.host/auth/login](https://ctrl.lunes.host/auth/login)     |     |
+| 账号面板地址 | [https://betadash.lunes.host/](https://betadash.lunes.host/)           |     |
+
+
+## 教程
+
+开源项目
+[https://github.com/eishare/tuic-hy2-node.js-python](https://github.com/eishare/tuic-hy2-node.js-python)
+
+建议用第二个脚本，性能最佳
+
+```bash
+curl -Ls https://raw.githubusercontent.com/eishare/tuic-hy2-node.js-python/main/tuic.sh | sed 's/\r$//' | bash -s -- port
+```
+
+> port 是面板服务器的开发端口
+
+搭建前在面板`Startup` 选项中将变量替换成 `bash`
+
+教程地址
+
+[https://www.youtube.com/watch?v=xZlp0ST7cd4](https://www.youtube.com/watch?v=xZlp0ST7cd4)
+
+## 注意实现
+
+需要15天登录一次 `[https://betadash.lunes.host/`](https://betadash.lunes.host/`) 控制台面板地址，否则节点会被删除，作为备选方案
+

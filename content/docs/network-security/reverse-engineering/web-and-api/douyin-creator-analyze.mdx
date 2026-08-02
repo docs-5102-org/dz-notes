@@ -1,0 +1,81 @@
+---
+title: 抖音 Creator 平台逆向分析
+description: 抖音 Creator 平台上传/榜单等接口逆向与请求分析
+category:
+  - 网络
+  - 逆向工程
+---
+
+# 【Web逆向】抖音平台上传文件的Authorization认证逆向分析
+
+//创作热点
+
+https://creator.douyin.com/web/api/creator/material/center/billboard/?hot_search_type=1&billboard_type=2&billboard_tag=0
+
+//查询创作热点的子列表
+https://creator.douyin.com/web/api/creator/material/center/related?query_id=926266&billboard_type=2&limit=20
+
+4.35 MJI:/ 快2023年了 还有2018年的朋友吗. @# 我曾遇到一束光  https://v.douyin.com/rocyYWy/ 复制此链接，打开Dou音搜索，直接观看视频！
+
+//查询明细列表
+https://creator.douyin.com/aweme/v1/creator/data/v2/billboard_extra/?
+
+billboard\_id
+:
+"MS4wLjABAAAAscWzqwRyaul4ixlQELVh\_4W19DfXPU2H0A7wEvEJ42s"
+billboard\_type
+:
+71
+```json
+{
+	"billboard_id": "MS4wLjABAAAAscWzqwRyaul4ixlQELVh_4W19DfXPU2H0A7wEvEJ42s",
+	"billboard_type": 71
+}
+```
+
+https://creator.douyin.com/aweme/v1/creator/data/v2/billboard_extra/?billboard_id=MS4wLjABAAAADUObyc_aoKXnXnV01JEcZMdvU0_ZFvFnVQAU-weztOgHubCQont1aDrDASxWu8B6&billboard_type=511
+
+//查询某一个明细
+https://creator.douyin.com/aweme/v1/creator/item/detail/?sec_item_id=@ivVg6LdMT0n6uMxb5rzsutV5oymSYy3yKqQvO61ggapDtgOdR4wnWI00IRZ29Op5BxqVgY40pK4PMJse3xzjug==
+
+博主id
+https://www.iesdouyin.com/web/api/v2/aweme/iteminfo/?item_ids=7156073389755534111
+
+https://www.iesdouyin.com/web/api/v2/aweme/iteminfo/?item_ids=7156073389755534000
+
+awemeid          7156910157245467941
+https://www.iesdouyin.com/web/api/v2/aweme/iteminfo/?item_ids=7156910157245467941
+
+https://www.iesdouyin.com/web/api/v2/aweme/iteminfo/?item_ids=7164368513530940703
+
+https://www.iesdouyin.com/web/api/v2/aweme/iteminfo/?item_ids=7130835407834565921
+
+//查询音乐的流程
+
+1）根据 音乐榜单接口 https://creator.douyin.com/aweme/v1/creator/data/v2/billboard_detail 获取音乐 billboard\_id=7109372467444975617 其实就是up主的id也就是music\_id
+
+2）https://www.iesdouyin.com/web/api/v2/music/list/aweme/?music_id=7109372467444975617 根据 music\_id=7109372467444975617 获取音乐相关列表接口 第一个是原创
+
+3）https://www.iesdouyin.com/web/api/v2/aweme/iteminfo/?item_ids=7130835407834565921   item\_ids= "aweme\_id" 传递aweme\_id即可获取音乐播放地址
+
+//影视
+https://m.douyin.com/web/api/v2/aweme/post/?sec_uid=MS4wLjABAAAAXY7nuz-WqulVXY-W5rqvIFpROhGFzqeAXgTTACJRtH1vrrmtsZZ4FBycm9cjKpZ7
+
+https://m.douyin.com/web/api/v2/aweme/post/?sec_uid=@ivVg6LdMT0n6uMxb5rzsutV5oyiRZSnyLqQtPaNoiKBAsAaZR4wnWI00IRZ29Op5haTLTnLYFJ1rjVOpd4v1Dw==
+
+https://www.iesdouyin.com/share/billboard/?id=7161305190271091207
+
+长按复制此条消息，打开抖音搜索，查看TA的更多作品。 https://v.douyin.com/h1CbjPe/
+
+sec\_uid: MS4wLjABAAAAXY7nuz-WqulVXY-W5rqvIFpROhGFzqeAXgTTACJRtH1vrrmtsZZ4FBycm9cjKpZ7
+
+//查询音乐
+
+https://www.iesdouyin.com/web/api/v2/music/list/aweme/?reflow_source=reflow_page&music_id=7130835468677483295&count=9&cursor=0&aid=1128&screen_limit=3&download_click_limit=0&msToken=e-xRPnVcxG45oVCp_z8-h6cIiFRG-aFj9k6Qny9sVpazf-ptfhGfr3O1u6cHierH1KBz-J8nf62KxAC2kfxfPbj6CdXvQ-cHSOL6mODf5TUnbtpLEk91OZ86qYksYUKf9n8=&X-Bogus=DFSzswSOz0sANJy8SpVt7nCr9FmC&_signature=_02B4Z6wo00001YioedQAAIDCQBSwyK2WCI2IuH1AAAGhNs4C5C9fpPAnHUhCZuMpS8jA-P8bqVV0eE.QzWw33vv9PsOOSQfHt9bO7WfbE4TjOJg.KYk5qz-dGQF8ainAwVseKgKbDcBGpImncd
+
+aweme\_id: "7130835407834565921"
+
+https://creator.douyin.com/aweme/v1/creator/item/detail/?
+sec\_item\_id=@ivVg6LdMT0n6uMxb5rzsutV5oyiXZSjzK6QsPaZgjqxFsQacR4wnWI00IRZ29Op5PD0M4a9WE7lpyMh30pM/Xw==
+
+https://creator.douyin.com/aweme/v1/creator/item/detail/?sec_item_id=@ivVg6LdMT0n6uMxb5rzsutV5oymQYSnyKawtPKZqj6BAswebR4wnWI00IRZ29Op568n6mHsUKyio5mYUZQ9Unw==

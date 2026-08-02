@@ -1,0 +1,253 @@
+---
+title: 抖音上传文件 Authorization 认证逆向
+description: 分析抖音上传流程中 Authorization 签名与认证参数逆向方法
+category:
+  - 网络
+  - 逆向工程
+source: devtools://devtools/bundled/devtools_app.html?remoteBase=https://chrome-devtools-frontend.appspot.com/serve_file/@204016af461e03117aa3858b51ba4534c7cfda81/&can_dock=true&targetType=tab
+---
+
+# 抖音平台上传文件的Authorization认证逆向分析
+
+## 简介
+
+抖音平台上传文件包含上传视频、上传图片封面等，由于要实现自动化的上传过程，但是又不想去官方申请api，所以进行Authorization认证逆向拆解计算，而达到自动化的目的。
+
+**抖音上传接口调用的是火山引擎的接口**, 如下：[火山引擎文档](https://www.volcengine.com/docs/4/2915)
+
+## 认证分析过程
+
+### chrome请求分析过程
+
+通过抓包请求，分析得出
+
+![请求分析截图](/assets/images/network/reverse/unknown_filename.png)
+
+响应结果
+
+![响应结果截图](/assets/images/network/reverse/unknown_filename.1.png)
+
+请求地址是这个 `"StoreUri": "tos-cn-v-0015c001/ocAQmfkWt0QqzN4HetdBx1AEgCh9AmUEdyMHEH"` , 下面是根据这个地址进行上传文件
+
+![上传地址截图](/assets/images/network/reverse/unknown_filename.2.png)
+
+依次的往后看，可以看到很多类似的请求，有上传视频的、上传图片封面的，如下：
+
+* ?Action=ApplyUploadInnerXXXXX
+
+* ?Action=ApplyImageUploadXXXXX
+
+![上传请求截图](/assets/images/network/reverse/unknown_filename.3.png)
+
+这里面在获取上传地址时，需要传递请求头部认证 Authorization，如下：
+
+    Authorization: AWS4-HMAC-SHA256 Credential=<VOLCENGINE_ACCESS_KEY_ID>/YYYYMMDD/cn-north-1/vod/aws4_request, SignedHeaders=x-amz-date;x-amz-security-token, Signature=<SIGNATURE>
+    
+
+请求参数如下:
+
+![请求参数截图](/assets/images/network/reverse/unknown_filename.4.png)
+
+可以看出Action值：ApplyImageUpload/ApplyUploadInner 等值，s的值貌似是随机数，比较统一，其余的值都是固定的
+
+可以看出很明显用的是AWS4 SHA256 算法， 计算头部的方法可能是比较重要的，还有如下两个请求头部参数：
+
+    X-Amz-Date:20240116T075626Z
+    X-Amz-Security-Token: <VOLCENGINE_SESSION_TOKEN>
+    
+
+X-Amz\_Date: 可以看出是一个ios6格式的日期，其余的具体值是怎么算的也是很懵逼呀!!!
+
+### js逆向分析过程
+
+![JavaScript 调试截图](/assets/images/network/reverse/unknown_filename.5.png)
+
+不清楚的值：
+
+* `Authorization: AWS4-HMAC-SHA256 Credential=<VOLCENGINE_ACCESS_KEY_ID>/YYYYMMDD/cn-north-1/vod/aws4_request, SignedHeaders=x-amz-date;x-amz-security-token, Signature=<SIGNATURE>`
+* X-Amz-Date
+* X-Amz-Security-Token
+
+我将Authorization又拆解了几部分，最后得出的值如下：
+
+* SignedHeaders
+* Signature
+* `<VOLCENGINE_ACCESS_KEY_ID>`
+* X-Amz-Date
+* X-Amz-Security-Token
+* AWS4-HMAC-SHA256
+
+我们依次搜索 上面罗列的值
+
+#### SignedHeaders
+
+![SignedHeaders 定位截图](/assets/images/network/reverse/unknown_filename.6.png)
+
+![签名参数截图](/assets/images/network/reverse/unknown_filename.7.png)
+
+点击SignedHeaders，定位到如下函数，通过该函数，我们还能定位了Signature的位置了，继续搜
+
+#### Signature
+
+![Signature 定位截图](/assets/images/network/reverse/unknown_filename.8.png)
+
+单独搜索Singature 很难定位哪一个功能，看样子必须结合 SignedHeaders，才可以
+
+#### AccessKeyID
+
+![AccessKey 定位截图](/assets/images/network/reverse/unknown_filename.9.png)
+
+通过这个参数搜索能定位到 具体的一个接口如下：
+
+`https://creator.douyin.com/web/api/media/upload/auth/v5/?cookie_enabled=true&screen_width=1429&screen_height=804&browser_language=zh-CN&browser_platform=Win32&browser_name=Mozilla&browser_version=5.0+%28Windows+NT+10.0%3B+Win64%3B+x64%29+AppleWebKit%2F537.36+%28KHTML%2C+like+Gecko%29+Chrome%2F120.0.0.0+Safari%2F537.36&browser_online=true&timezone_name=Asia%2FShanghai&aid=1128&msToken=UnVMCvXwiamggMEInmmGUxVJaMWwJC67laMX7cSnRu3_F97AApGnSwsu2rdMiisoVpF_lqOi592-L2OrRh9bh6DLjIXa5RZb7obbcqxx2nZN4Ya46CfZzUnIn_oyPSgn&a_bogus=Ov-xfO2sMsm1WDv0swkz9tTmN8S0YW-sgZEP9Je5FUqo&msToken=Z8ZtDNUrGUA4XDfO04nPx9RH7zZ2cRPOEq1-PpdgRHnws4z38DFZ_dYFMdOoW0j0H2xIFWKkOTYx_nDVDgK2mCUHok5z16Ux9-4FQQfVUymEbNF2pdA8N-3PCkRJggC6&X-Bogus=DFSzswVu98TAN9oEtiBnPiB9PiuG&_signature=_02B4Z6wo00001Lb3w4QAAIDDi17ZG-2Bm8C298cAAEggjHtz-ZpCwb5fay1lBKiKiIUolo5CNb3ozmf.WHFcaf.EV0jdJL9jHUrwhMsT5xemmDUxVv.6Toxn9MAShWf0h5Cc5KiJKvcqn565a1`
+
+这个接口返回的内容如下：
+
+对应关键代码段
+
+```java
+```java
+private String calculateSignature(String str) {
+    try {
+        return bytesToHex(SHA256UseMac(getSignatureKey(this.secretAccessKey, this.currentDate, this.regionName, this.serviceName), str));
+    } catch (Exception unused) {
+        return null;
+    }
+}
+
+public static synchronized byte[] getSignatureKey(String str, String str2, String str3, String str4) {
+    byte[] SHA256UseMac;
+    synchronized (AWSV4Auth.class) {
+        StringBuilder sb = StringBuilderCache.get();
+        sb.append("AWS4");
+        sb.append(str);
+        SHA256UseMac = SHA256UseMac(SHA256UseMac(SHA256UseMac(SHA256UseMac(StringBuilderCache.release(sb).getBytes("UTF8"), str2), str3), str4), "aws4_request");
+    }
+    return SHA256UseMac;
+}
+```
+```
+
+    其实代码都很关键，只是这个签名key 是经过多轮签名计算而来！
+
+#### js 断点调试的位置
+
+通过搜索“ApplyImageUpload” 能帮我们定位到 发送请求的位置便于断点，断点调试图如下：
+
+![断点调试截图](/assets/images/network/reverse/unknown_filename.12.png)
+
+计算签名的
+
+![签名计算截图](/assets/images/network/reverse/unknown_filename.13.png)
+
+签名的hash算法
+
+![哈希算法截图](/assets/images/network/reverse/unknown_filename.14.png)
+
+通过以上debug，你能了解各个参数的运作以及含义包含整个请求的过程都可以看到
+
+#### jadx反编译
+
+经过多次，获取到了具体的资源文件路径为 classes.dex~classes19.dex
+
+搜索的关键字：Signature、AWS4-HMAC-SHA256
+
+找到了对应的类的名称为“AWSV4Auth”
+
+对应关键代码段
+
+    private String calculateSignature(String str) {
+            try {
+                return bytesToHex(SHA256UseMac(getSignatureKey(this.secretAccessKey, this.currentDate, this.regionName, this.serviceName), str));
+            } catch (Exception unused) {
+                return null;
+            }
+        }
+    
+    public static synchronized byte[] getSignatureKey(String str, String str2, String str3, String str4) {
+            byte[] SHA256UseMac;
+            synchronized (AWSV4Auth.class) {
+                StringBuilder sb = StringBuilderCache.get();
+                sb.append("AWS4");
+                sb.append(str);
+                SHA256UseMac = SHA256UseMac(SHA256UseMac(SHA256UseMac(SHA256UseMac(StringBuilderCache.release(sb).getBytes("UTF8"), str2), str3), str4), "aws4_request");
+            }
+            return SHA256UseMac;
+        }
+    
+    
+    
+
+其实代码都很关键，只是这个签名key 是经过多轮签名计算而来！
+
+## 分析结论
+
+### Authorization 认证结论
+
+`AWS4-HMAC-SHA256 Credential=` : 固定头部
+
+`<VOLCENGINE_ACCESS_KEY_ID>` : accessKeyID
+
+`20240114` : 当前日期
+
+`cn-north-1` : regionName
+
+`vod` : serviceName: //默认“vod”，上传图片是“imagex”，上传视频是“vod”
+
+`/aws4_request` : 固定字符串
+
+`SignedHeaders=x-amz-date;x-amz-security-token` : 固定头部,x-amz-security-token就是SessionToken
+
+`Signature=6a4563beb8d8ae12d816b460029418e1e18311e9a644bf7b383936ee1e34d75` : 签名的重要部分，这个计算非常的繁琐
+
+AccessKeyID、SecretAccessKey、SessionToken 参数是通过 `https://creator.douyin.com/web/api/media/upload/auth/v5/?` 这个接口获取的，每次获取上传地址都有调一次，这里是动态变化的
+
+定位的js：**vender.60eb6efd.js**
+
+## Java 实现签名的代码
+
+具体请参考 易媒自媒体助手工程代码
+
+## python 实现签名的代码
+
+忽略
+
+## js 实现签名的代码
+
+    
+    import CryptoJS from 'crypto-js';
+    
+    function SHA256UseMac(key, message) {
+      var hash = CryptoJS.HmacSHA256(message, key);
+      return hash;
+    }
+    
+    function getSigningKey(secretAccessKey, dateStamp, regionName, serviceName) {
+      var kDate = SHA256UseMac("AWS4" + secretAccessKey, dateStamp);
+      var kRegion = SHA256UseMac(kDate, regionName);
+      var kService = SHA256UseMac(kRegion, serviceName);
+      var kSigning = SHA256UseMac(kService, "aws4_request");
+      return kSigning;
+    }
+    
+    // 将时间转化为 ISO字符串
+    function toDate(e) {
+    return void 0 === e && (e = new Date),
+    e.toISOString().replace(/\.\d{3}Z$/, "Z")
+    }
+    
+    //调用 https://creator.douyin.com/web/api/media/upload/auth/v5/ 这个接口返回
+    //accessKeyID、secretAccessKey、sessionToken
+    
+    // 示例使用
+    const secretAccessKey = "<VOLCENGINE_SECRET_ACCESS_KEY>"; // 替换为您的 secretAccessKey
+    var dateStamp = "20240116T013018Z"; // 替换为实际的日期
+    var regionName = "cn-north-1"; // 替换为实际的区域名称
+    var serviceName = "vod"; // 替换为实际的服务名称 ，默认“vod”，上传图片是“imagex”，上传视频是“vod”
+    
+    
+    var signingKey = getSigningKey(secretAccessKey, dateStamp, regionName, serviceName);
+    
+    console.log(signingKey.toString(CryptoJS.enc.Hex));
+    
+    

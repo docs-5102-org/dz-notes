@@ -1,0 +1,14 @@
+﻿{
+    "title":  "电影采集站",
+    "pages": [
+        "index",
+        "site-setup",
+        "baota-installation",
+        "virtual-machine-baota",
+        "server-configuration",
+        "seacms-resources",
+        "seacms-auto-collection",
+        "seacms-notes",
+        "sina-base64-rules"
+    ]
+}

@@ -1,0 +1,48 @@
+---
+title: VMware Workstation
+category:
+  - 操作系统
+tags:
+  - 虚拟机
+---
+
+# VMware Workstation
+
+## VMware Workstation Pro 17
+
+- 不需要激活密钥
+- 官网： [https://www.vmware.com](https://www.vmware.com/)
+- 下载安装教程：[https://www.cnblogs.com/SoliGhost/p/18498715](https://www.cnblogs.com/SoliGhost/p/18498715)
+
+## VMware 15 Pro
+
+### 下载地址
+
+- 百度网盘： [https://pan.baidu.com/s/1AnsE4FKMMB7TLdniz4XfjQ?pwd=sh7q](https://pan.baidu.com/s/1AnsE4FKMMB7TLdniz4XfjQ?pwd=sh7q)
+- 提取码：`sh7q`
+
+## 本机 CentOS 7 64 位（裸机）账户密码
+
+```
+root/root
+```
+
+## 虚拟机连接本机主机的 MySQL 数据库
+
+![VMware MySQL 连接示意图](/assets/images/vm/unknown_filename.png)
+
+## 虚拟机设置系统：静态 IP
+
+编辑网络配置文件：
+
+```bash
+vi /etc/sysconfig/network-scripts/ifcfg-ens33
+```
+
+示例配置：
+
+```text
+IPADDR0=192.168.122.108
+NETMASK=255.255.255.0
+GATEWAY0=192.168.122.1
+```
