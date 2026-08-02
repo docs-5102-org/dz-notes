@@ -41,8 +41,9 @@ source: devtools://devtools/bundled/devtools_app.html?remoteBase=https://chrome-
 
 这里面在获取上传地址时，需要传递请求头部认证 Authorization，如下：
 
-    Authorization: AWS4-HMAC-SHA256 Credential=<VOLCENGINE_ACCESS_KEY_ID>/YYYYMMDD/cn-north-1/vod/aws4_request, SignedHeaders=x-amz-date;x-amz-security-token, Signature=<SIGNATURE>
-    
+```
+Authorization: AWS4-HMAC-SHA256 Credential=<VOLCENGINE_ACCESS_KEY_ID>/YYYYMMDD/cn-north-1/vod/aws4_request, SignedHeaders=x-amz-date;x-amz-security-token, Signature=<SIGNATURE>
+```    
 
 请求参数如下:
 
@@ -52,9 +53,10 @@ source: devtools://devtools/bundled/devtools_app.html?remoteBase=https://chrome-
 
 可以看出很明显用的是AWS4 SHA256 算法， 计算头部的方法可能是比较重要的，还有如下两个请求头部参数：
 
+```
     X-Amz-Date:20240116T075626Z
     X-Amz-Security-Token: <VOLCENGINE_SESSION_TOKEN>
-    
+```    
 
 X-Amz\_Date: 可以看出是一个ios6格式的日期，其余的具体值是怎么算的也是很懵逼呀!!!
 
@@ -106,7 +108,6 @@ X-Amz\_Date: 可以看出是一个ios6格式的日期，其余的具体值是怎
 对应关键代码段
 
 ```java
-```java
 private String calculateSignature(String str) {
     try {
         return bytesToHex(SHA256UseMac(getSignatureKey(this.secretAccessKey, this.currentDate, this.regionName, this.serviceName), str));
@@ -125,7 +126,6 @@ public static synchronized byte[] getSignatureKey(String str, String str2, Strin
     }
     return SHA256UseMac;
 }
-```
 ```
 
     其实代码都很关键，只是这个签名key 是经过多轮签名计算而来！
@@ -156,6 +156,7 @@ public static synchronized byte[] getSignatureKey(String str, String str2, Strin
 
 对应关键代码段
 
+```java
     private String calculateSignature(String str) {
             try {
                 return bytesToHex(SHA256UseMac(getSignatureKey(this.secretAccessKey, this.currentDate, this.regionName, this.serviceName), str));
@@ -174,7 +175,7 @@ public static synchronized byte[] getSignatureKey(String str, String str2, Strin
             }
             return SHA256UseMac;
         }
-    
+```   
     
     
 
@@ -214,7 +215,7 @@ AccessKeyID、SecretAccessKey、SessionToken 参数是通过 `https://creator.do
 
 ## js 实现签名的代码
 
-    
+```js    
     import CryptoJS from 'crypto-js';
     
     function SHA256UseMac(key, message) {
@@ -249,5 +250,5 @@ AccessKeyID、SecretAccessKey、SessionToken 参数是通过 `https://creator.do
     var signingKey = getSigningKey(secretAccessKey, dateStamp, regionName, serviceName);
     
     console.log(signingKey.toString(CryptoJS.enc.Hex));
-    
+```    
     
