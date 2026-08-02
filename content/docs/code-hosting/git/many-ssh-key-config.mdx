@@ -1,0 +1,178 @@
+---
+title: 配置多个 SSH 密钥
+subTitle: Git 多账号管理
+description: 为多个 Git 托管账号配置独立 SSH 密钥，并在不同仓库之间切换身份。
+category:
+  - 代码托管
+  - Git
+source: https://www.cnblogs.com/popfisher/p/5731232.html
+---
+
+# 配置多个 SSH 密钥
+
+## 参考资料
+
+gitee官网：https://gitee.com/help/articles/4229
+
+第三方文档：https://www.cnblogs.com/popfisher/p/5731232.html
+
+## 🔑 配置步骤
+
+### 1️⃣ 为每个账号生成单独的 SSH Key
+
+```bash
+# 个人账号
+ssh-keygen -t rsa -C "your_personal_email@example.com" -f ~/.ssh/id_rsa_personal
+
+# 公司账号
+ssh-keygen -t rsa -C "your_work_email@example.com" -f ~/.ssh/id_rsa_work
+```
+
+会在 `~/.ssh/` 下生成：
+
+```
+C:\Users\Administrator\.ssh
+├─ id_rsa_personal
+├─ id_rsa_personal.pub
+├─ id_rsa_work
+└─ id_rsa_work.pub
+```
+
+### 2️⃣ 把公钥添加到 GitHub
+
+- 登录 **GitHub 个人账号** → Settings → SSH and GPG keys → 添加 `id_rsa_personal.pub`
+- 登录 **GitHub 公司账号** → Settings → SSH and GPG keys → 添加 `id_rsa_work.pub`
+
+### 3️⃣ 配置 `~/.ssh/config`
+
+在 `~/.ssh/config` 中添加：
+
+```ssh-config
+# 个人账号
+Host github.com-personal
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/id_rsa_personal
+
+# 公司账号
+Host github.com-work
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/id_rsa_work
+```
+
+这样就能通过不同 Host 区分账号。（这里的Host是别名，可以随意起名）
+
+### 4️⃣ Clone 仓库时使用对应 Host
+
+- 个人账号仓库： 
+    ```bash
+    git clone git@github.com-personal:your-username/your-repo.git
+    ```
+- 公司账号仓库：
+    ```bash
+    git clone git@github.com-work:company-username/your-repo.git
+    ```
+
+> 注意：这里的 `github.com-personal` 和 `github.com-work` 就是上面 `~/.ssh/config` 里配置的 Host 别名。
+
+### 5️⃣ 配置 Git 提交身份
+
+在不同的仓库中设置不同的用户名和邮箱：
+
+- 进入 **个人仓库**
+```bash
+git config user.name "PersonalName"
+git config user.email "your_personal_email@example.com"
+```
+- 进入 **公司仓库**
+```bash
+git config user.name "WorkName"
+git config user.email "your_work_email@example.com"
+```
+如果要全局设置默认身份（比如个人）
+```bash
+git config --global user.name "PersonalName"
+git config --global user.email "your_personal_email@example.com"
+```
+### 6️⃣ 测试是否生效
+```bash
+ssh -T git@github.com-personal
+ssh -T git@github.com-work
+```
+看到类似：
+```
+Hi your-username! You've successfully authenticated...
+```
+
+就说明配置成功了 🎉
+
+### 7️⃣ 用一个新的github账号提交远程仓库示例
+
+#### 创建新账号
+
+```bash
+$ ssh-keygen -t ed25519 -C "zhysg1001@163.com"
+Generating public/private ed25519 key pair.
+Enter file in which to save the key (/c/Users/Administrator/.ssh/id_ed25519): C:\Users\Administrator/.ssh/github_tuonizhysg
+Enter passphrase (empty for no passphrase):
+Enter same passphrase again: 
+Your identification has been saved in C:\Users\Administrator/.ssh/github_tuonizhysg
+Your public key has been saved in C:\Users\Administrator/.ssh/github_tuonizhysg.pub
+The key fingerprint is:
+SHA256:FkhJF46dXrZ/wICdo7OpwxkQ215550mLjgZiVKhTpOM zhysg1001@163.com
+The key's randomart image is:
++--[ED25519 256]--+
+|   ..oo.o.       |
+|   .+.o* + .     |
+|  oo =o *.B      |
+| .o.+ ..o=.=o    |
+|  Eo o .S..=oo   |
+|    o +. +..+.   |
+|   . o +oo  . .  |
+|      +.o .  .   |
+|      .o         |
++----[SHA256]-----+
+```
+
+### 把公钥添加到 GitHub
+
+登录 **GitHub 账号** → Settings → SSH and GPG keys → 添加 `github_tuonizhysg.pub`
+
+### 配置 `~/.ssh/config`
+
+```bash
+# 其他...
+# 子账号-tuonizhysg
+Host github.com-tuonizhysg
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/github_tuonizhysg
+```
+### 在Github创建一个新的仓库，用户新账号将已存在的仓库提交到远程
+
+```bash
+# 初始化项目
+git init
+
+# 设置当前仓库的用户
+git config user.name "tuonizhysg"
+git config user.email "zhysg1001@163.com"
+
+# 添加内容提交
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin git@github.com-tuonizhysg:tuonizhysg/vue-first-npm.git
+git push -u origin main
+
+```
+
+> [!NOTE]
+> 1. **检测设置账号信息是否生效**
+> * git config --get user.name
+> * git config --get user.email
+>
+> 2. **测试是否生效**
+>
+> * ssh -T git@github.com-github_tuonizhysg

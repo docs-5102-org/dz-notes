@@ -1,0 +1,94 @@
+---
+title: 检查 SSH 连接
+subTitle: Git SSH 配置验证
+description: 通过命令行验证 SSH 密钥、文件权限和 Git 托管平台连接状态。
+category:
+  - 代码托管
+  - Git
+---
+
+# 检查 SSH 连接
+
+验证 `.ssh` 配置是否生效，并排查 Git 远程仓库的 SSH 认证问题。
+
+## 验证 `.ssh` 导入是否生效
+
+### 第一步：确认文件已就位
+
+在 PowerShell 或 Git Bash 中运行：
+
+```bash
+ls ~/.ssh
+```
+
+确认 `id_rsa`（或 `id_ed25519`）等私钥文件存在。
+
+---
+
+### 第二步：检查文件权限（重要！）
+
+Windows 上权限不对会导致 SSH 拒绝使用私钥，在 Git Bash 中运行：
+
+```bash
+ls -la ~/.ssh
+```
+
+私钥文件权限应为 `600`，如果不对需要修复：
+
+```bash
+chmod 600 ~/.ssh/id_rsa
+```
+
+---
+
+### 第三步：测试连接
+
+**GitHub：**
+
+```bash
+ssh -T git@github.com
+```
+
+成功返回：
+
+```
+Hi 你的用户名! You've successfully authenticated, but GitHub does not provide shell access.
+```
+
+**GitLab：**
+
+```bash
+ssh -T git@gitlab.com
+```
+
+**Gitee（码云）：**
+
+```bash
+ssh -T git@gitee.com
+```
+
+---
+
+### 第四步：排查问题（如果失败）
+
+加 `-v` 参数查看详细调试信息：
+
+```bash
+ssh -Tv git@github.com
+```
+
+重点看输出中的：
+
+- `identity file` → 确认读取了正确的私钥
+- `Permission denied` → 权限问题或公钥未添加到平台
+- `Host key verification failed` → 删除 `known_hosts` 重试
+
+---
+
+### 常见问题速查
+
+| 现象                                 | 原因        | 解决               |
+| ---------------------------------- | --------- | ---------------- |
+| `Permission denied (publickey)`    | 私钥不匹配或未授权 | 检查平台上的公钥是否一致     |
+| `WARNING: UNPROTECTED PRIVATE KEY` | 文件权限太宽松   | `chmod 600` 修复权限 |
+| `Could not open a connection`      | 网络/防火墙问题  | 检查代理或网络设置        |

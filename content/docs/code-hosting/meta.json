@@ -1,0 +1,11 @@
+{
+  "title": "代码托管",
+  "root": true,
+  "pages": [
+    "index",
+    "git",
+    "gitee",
+    "gitea",
+    "github"
+  ]
+}

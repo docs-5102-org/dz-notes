@@ -1,0 +1,12 @@
+{
+  "title": "Git",
+  "pages": [
+    "index",
+    "install-git",
+    "check-ssh",
+    "many-ssh-key-config",
+    "git-crypt",
+    "cancel-husky",
+    "remove-gitignore"
+  ]
+}

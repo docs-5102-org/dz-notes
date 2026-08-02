@@ -1,0 +1,27 @@
+---
+title: Gitea 工作流插件汇总
+subTitle: Gitea Actions 生态
+description: 汇总 Gitea Actions 工作流中常见的 Action 类型和选择建议。
+category:
+  - 代码托管
+  - Gitea
+---
+
+# Gitea 工作流插件汇总
+
+Gitea Actions 与 GitHub Actions 工作流语法兼容度较高，但第三方 Action 是否可用仍取决于 Runner 镜像、网络和权限配置。
+
+## 常用类型
+
+- **代码检出**：如 `actions/checkout`，用于获取当前仓库代码。
+- **运行环境**：如 Node.js、Java、Python 等运行时的安装与缓存 Action。
+- **构建与测试**：执行包管理器、编译器和测试命令。
+- **制品发布**：上传构建产物或发布镜像。
+- **部署通知**：通过 SSH、Webhook 或消息服务触发部署和通知。
+
+## 使用建议
+
+1. 优先在测试仓库中验证 Action 的兼容性和镜像依赖。
+2. 固定 Action 的版本标签或提交 SHA，避免不受控更新。
+3. 令牌、部署密钥等敏感值应放入 Gitea Secrets，不能写入工作流文件。
+4. 使用前阅读 Action 的源码与权限要求，避免将不受信任代码运行在高权限 Runner 中。

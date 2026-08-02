@@ -1,0 +1,150 @@
+---
+title: GitHub 综合指南
+subTitle: 仓库与协作配置
+description: 介绍 GitHub 仓库、SSH 密钥、Deploy Key、私有仓库、Maven 仓库和 Actions 的基础用法。
+category:
+  - 代码托管
+  - GitHub
+---
+
+# GitHub 综合指南
+
+## 目录
+- [创建文件夹](#创建文件夹)
+- [创建SSH Key](#创建ssh-key)
+- [添加Deploy Key](#添加deploy-key)
+- [创建免费私有仓库](#创建免费私有仓库)
+- [将自定义jar包上传并制作成maven仓库](#将自定义jar包上传并制作成maven仓库)
+- [GitHub Actions教程](#github-actions教程)
+
+## 创建文件夹
+
+在GitHub中创建文件夹的方法：
+
+![创建文件夹示例](https://img-blog.csdn.net/20170413171413893?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvV0lpbnRlcl9GRGQ=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
+
+> 注：创建文件夹时，需要同时创建一个文件，不能直接创建空文件夹。
+
+## 创建SSH Key
+
+GitHub官方文档：[生成新的SSH密钥并添加到SSH代理](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
+
+SSH Key可以让你在不使用用户名和密码的情况下连接GitHub仓库，提高安全性和便利性。
+
+### 生成SSH Key的基本步骤：
+
+1. 打开终端
+2. 输入`ssh-keygen -t ed25519 -C "your_email@example.com"`
+3. 按提示完成密钥生成
+4. 将公钥添加到GitHub账户
+
+## 添加Deploy Key
+
+Deploy Key是一种特殊的SSH密钥，它只对单个仓库有效。适用于需要从特定服务器部署代码的场景。
+
+### 添加Deploy Key的步骤：
+
+1. 在服务器上生成SSH密钥对
+2. 在GitHub仓库中，进入Settings -> Deploy Keys
+3. 点击"Add deploy key"按钮
+4. 输入标题并粘贴公钥
+5. 如需写权限，勾选"Allow write access"
+6. 点击"Add key"保存
+
+## 创建免费私有仓库
+
+GitHub现在允许免费用户创建无限量的私有仓库，但有一些限制：
+- 私有仓库最多可以有3个协作者
+- 包含完整的GitHub功能
+* GitHub 私有仓库与协作者数量以[官方文档](https://docs.github.com/en/repositories/creating-and-managing-repositories/setting-repository-visibility)为准。
+
+### 创建私有仓库的步骤：
+
+1. 登录GitHub账号
+2. 点击右上角"+"图标，选择"New repository"
+3. 填写仓库名称和描述
+4. 选择"Private"选项
+5. 根据需要初始化仓库
+6. 点击"Create repository"完成创建
+
+## 将自定义jar包上传并制作成maven仓库
+
+将自定义的jar包上传到GitHub并作为maven仓库使用，可以方便地在其他项目中引用。
+
+### 基本步骤：
+
+1. 创建GitHub仓库
+2. 将jar包及相关文件上传到仓库
+3. 配置pom.xml文件
+4. 在其他项目中添加仓库引用
+
+### 详细配置：
+
+```xml
+<!-- 在pom.xml中添加仓库引用 -->
+<repositories>
+    <repository>
+        <id>github-repo</id>
+        <url>https://raw.githubusercontent.com/用户名/仓库名/master/</url>
+    </repository>
+</repositories>
+
+<!-- 添加依赖 -->
+<dependency>
+    <groupId>com.example</groupId>
+    <artifactId>your-artifact</artifactId>
+    <version>1.0.0</version>
+</dependency>
+```
+> 参考：https://www.wandouip.com/t5i253309/
+## GitHub Actions教程
+
+GitHub Actions是GitHub提供的持续集成/持续部署(CI/CD)工具，可以自动化构建、测试和部署流程。
+
+### 主要概念：
+
+- **工作流(Workflow)**: 可配置的自动化过程
+- **事件(Event)**: 触发工作流的条件
+- **作业(Job)**: 工作流中的一系列步骤
+- **步骤(Step)**: 可以运行命令或操作的任务
+- **操作(Action)**: 可重用的工作单元
+
+### 基本使用：
+
+1. 在仓库中创建`.github/workflows`目录
+2. 在该目录下创建YAML文件定义工作流
+3. 配置触发条件、环境和执行步骤
+
+### 示例工作流：
+
+```yaml
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up JDK
+      uses: actions/setup-java@v2
+      with:
+        java-version: '11'
+        distribution: 'adopt'
+    - name: Build with Maven
+      run: mvn -B package --file pom.xml
+```
+
+更多详细教程请参考：
+* [GitHub Actions文档](https://docs.github.com/en/actions)
+* [Github Actions中文文档](https://devops.dzspace.top/linux/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E4%B8%8E%E8%AE%A1%E5%88%92%E4%BB%BB%E5%8A%A1/Github%20Actions%20%E6%95%99%E7%A8%8B.html#%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5)
+* [Github Actions工具包](https://devops.dzspace.top/linux/%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90%E4%B8%8E%E8%AE%A1%E5%88%92%E4%BB%BB%E5%8A%A1/Github%20Actions%20%E5%B7%A5%E5%85%B7%E5%8C%85.html)
+
+---
+
+> 注：本文档整合自多个来源，仅供参考。使用时请参考 GitHub 最新官方文档。

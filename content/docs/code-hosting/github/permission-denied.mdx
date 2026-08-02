@@ -1,0 +1,222 @@
+---
+title: GitHub SSH 权限被拒绝
+subTitle: Permission denied (publickey)
+description: 排查 GitHub SSH 公钥认证失败、SSH Agent、仓库权限和主机密钥问题。
+category:
+  - 代码托管
+  - GitHub
+source: https://yuanbao.tencent.com/chat/naQivTmsDa/f0cc1a2f-e3ea-4cd4-9b4b-b792b57c495d
+aliases:
+  - "Github git@github.com: Permission denied (publickey)."
+---
+
+# GitHub SSH 权限被拒绝
+
+## git@github.com: Permission denied (publickey)
+
+```text
+$ git clone git@github.com:opentiny/tiny-editor.git
+Cloning into 'tiny-editor'...
+git@github.com: Permission denied (publickey).
+fatal: Could not read from remote repository.
+Please make sure you have the correct access rights and the repository exists.
+```
+
+你遇到的 `Permission denied (publickey)` 错误表示 GitHub 无法通过你的 SSH 密钥验证身份。以下是完整的解决方案：
+
+---
+
+### **原因分析**
+
+1. **本地未生成 SSH 密钥**，或密钥未添加到 GitHub 账户。
+
+* **SSH 代理未运行**，或未加载正确的私钥。
+* 克隆的仓库可能是 **私有仓库**，而你的账号无权限访问。
+
+---
+
+### **解决方案一**
+
+
+#### **1. 检查当前 SSH 密钥**
+
+```
+# 查看是否已有 SSH 密钥
+ls -la ~/.ssh/
+
+# 查看公钥内容（如果存在）
+cat ~/.ssh/id_rsa.pub
+# 或者
+cat ~/.ssh/id_ed25519.pub
+```
+
+#### 2. **生成并添加 SSH 密钥到 GitHub(如果没有)**
+
+```bash
+# 生成新的 SSH 密钥（如果已有可跳过）
+ssh-keygen -t ed25519 -C "your_email@example.com"
+# 按回车接受默认路径（~/.ssh/id_ed25519），并设置密码（可选）
+
+# 查看公钥内容
+cat ~/.ssh/id_ed25519.pub
+# 复制输出的全部内容（从 ssh-ed25519 开头到邮箱结尾）
+``` 
+
+**将公钥添加到 GitHub**：
+
+1. 登录 GitHub → 右上角头像 → **Settings** → **SSH and GPG keys** → **New SSH key**。
+2. 粘贴复制的公钥内容(一定要包含头部和尾部)，保存。
+
+---
+
+#### 3. **启动 SSH 代理并添加私钥**
+
+```bash
+# 启动 SSH 代理
+eval "$(ssh-agent -s)"
+# 添加私钥到代理
+ssh-add ~/.ssh/id_ed25519
+``` 
+
+* * *
+
+#### 4. **测试 SSH 连接**
+
+```bash
+ssh -T git@github.com
+``` 
+
+• 如果看到 `You've successfully authenticated!` 表示配置成功。
+• 如果失败，检查以下内容：
+• **公钥是否完整粘贴**（不要遗漏开头/结尾）。
+• **GitHub 账户是否关联了该 SSH 密钥**（可能误添加到其他账号）。
+
+#### 5. **改用 HTTPS 方式克隆（临时绕过 SSH 问题）**
+
+git clone https://github.com/opentiny/tiny-editor.git
+    
+
+### **解决方案二**
+
+您使用了自定义的密钥名称 `github_id_rsa`，但 SSH 默认只会查找标准名称的密钥文件。
+
+1. 创建 SSH 配置文件
+
+```bash
+# 创建或编辑 SSH 配置文件
+notepad ~/.ssh/config
+```
+
+2. 在配置文件中添加：
+
+```
+ Host github.com
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/github_id_rsa
+  IdentitiesOnly yes
+```
+
+3. 保存后测试：
+
+```bash
+ssh -T git@github.com
+```
+
+### **解决方案三， 手动添加密钥到 SSH 代理**
+
+```bash
+ # 启动 ssh-agent
+ eval "$(ssh-agent -s)"
+
+ # 添加您的自定义密钥
+ ssh-add ~/.ssh/github_id_rsa
+
+ # 测试连接
+ ssh -T git@github.com
+```
+
+### **其他可能原因**
+
+• **仓库权限问题**：确认 `opentiny/tiny-editor` 是公开仓库（访问 [仓库页面](https://github.com/opentiny/tiny-editor) 验证）。
+• **SSH 配置文件冲突**：检查 `~/.ssh/config` 是否有针对 `github.com` 的特殊配置。
+• **防火墙/网络限制**：某些网络会拦截 SSH 流量，尝试切换网络或使用 HTTPS。
+
+### **最终验证**
+
+若以上步骤仍无法解决，运行以下命令检查详细错误：
+
+```bash
+GIT_SSH_COMMAND="ssh -v" git clone git@github.com:opentiny/tiny-editor.git
+```
+    
+
+观察输出中哪一步认证失败，并针对性修复。
+
+成功解决后，你应该能正常克隆仓库！
+
+## WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!
+
+问题
+
+```bash
+$ git clone git@github.com:opentiny/tiny-editor.git Cloning into 'tiny-editor'... @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ @ WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED! @ @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY! Someone could be eavesdropping on you right now (man-in-the-middle attack)! It is also possible that a host key has just been changed. The fingerprint for the RSA key sent by the remote host is SHA256:uNiVztksCsDhcc0u9e8BujQXVUpKZIDTMczCvj3tD2s. Please contact your system administrator. Add correct host key in /c/Users/Administrator/.ssh/known\_hosts to get rid of this message. Offending RSA key in /c/Users/Administrator/.ssh/known\_hosts:1 Host key for github.com has changed and you have requested strict checking. Host key verification failed. fatal: Could not read from remote repository. Please make sure you have the correct access rights and the repository exists.
+```
+
+这个错误是由于本地保存的 GitHub 的 SSH 主机密钥与远程服务器不匹配导致的（常见于 GitHub 更换过服务器密钥，或你之前连接过其他 Git 服务）。以下是解决方法：
+
+### **分步解决方案**
+
+#### 1. **删除旧的 GitHub 主机密钥**
+
+打开终端，执行以下命令删除已知的旧 GitHub 密钥：
+
+```
+# Windows（Git Bash/WSL）路径：
+sed -i '/github.com/d' ~/.ssh/known_hosts
+
+# macOS/Linux 路径：
+sed -i '' '/github.com/d' ~/.ssh/known_hosts
+``` 
+
+#### 2. **重新克隆仓库**
+
+再次尝试克隆仓库，此时会提示接受新的主机密钥：
+
+`git clone git@github.com:opentiny/tiny-editor.git`
+    
+
+输入 `yes` 确认接受新密钥即可。
+
+### **其他可能原因**
+
+如果仍失败，检查以下内容：
+
+1. **SSH 密钥权限问题**
+
+确保你的 SSH 私钥已添加到 SSH Agent：
+
+```bash
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_rsa  # 替换为你的私钥文件
+```	    
+	
+2. **网络代理干扰**
+
+如果使用代理，尝试关闭代理或检查代理配置：
+
+`unset http_proxy https_proxy  # 临时取消代理`
+	    
+	
+3. **仓库地址是否正确**
+
+确认仓库地址是否存在：
+
+`git ls-remote git@github.com:opentiny/tiny-editor.git`
+	    
+### **附：为什么会出现这个错误？**
+
+• GitHub 会定期更新服务器 SSH 密钥（最近一次更新在 2023 年 3 月），导致旧客户端密钥不匹配。
+• 如果确定是 GitHub 官方变更，直接删除旧密钥即可；若不确定，需警惕中间人攻击。
+
+问题解决后，你应该能正常克隆仓库。如果仍有问题，可以贴出完整报错日志进一步排查 😊

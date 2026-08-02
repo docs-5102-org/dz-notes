@@ -1,0 +1,39 @@
+---
+title: 概览
+subTitle: 自建代码托管与 CI/CD
+description: 整理 Gitea 服务部署、仓库管理、SSH 授权和 Gitea Actions Runner 实践。
+category:
+  - 代码托管
+  - Gitea
+---
+
+# Gitea
+
+Gitea 是轻量级的自建 Git 服务与 DevOps 平台，提供仓库管理、代码评审、Issue、软件包和 Gitea Actions 等功能。
+
+## 内容范围
+
+- Gitea 服务配置、用户注册和仓库访问控制
+- SSH 密钥生成、授权与多账号访问
+- Gitea Actions 工作流、Act Runner 配置和镜像映射
+- Runner 缓存、插件选择和常见自动化实践
+
+## 文档导航
+
+### 基础配置
+
+- [Gitea 使用指南](/docs/code-hosting/gitea/gitea-guide)
+- [禁用 Gitea 用户注册](/docs/code-hosting/gitea/disable-registration)
+- [Gitea SSH 密钥配置](/docs/code-hosting/gitea/ssh-key-setup)
+- [Gitea 实践笔记](/docs/code-hosting/gitea/practical-notes)
+
+### Gitea Actions 与 Runner
+
+- [Gitea 常见工作流](/docs/code-hosting/gitea/common-workflows)
+- [Gitea Runner 配置与自定义标签](/docs/code-hosting/gitea/runner-configuration-and-labels)
+- [Gitea Runner 运行原理](/docs/code-hosting/gitea/runner-architecture)
+- [Gitea Runner 镜像映射](/docs/code-hosting/gitea/runner-image-mapping)
+- [Gitea Actions 缓存机制](/docs/code-hosting/gitea/action-cache)
+- [Gitea 工作流插件汇总](/docs/code-hosting/gitea/workflow-plugins)
+
+平台版本、Runner 镜像与 Action 兼容性会随版本更新变化，部署前请以当前 Gitea 官方文档为准。

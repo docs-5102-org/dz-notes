@@ -1,0 +1,16 @@
+{
+  "title": "Gitea",
+  "pages": [
+    "index",
+    "gitea-guide",
+    "disable-registration",
+    "ssh-key-setup",
+    "common-workflows",
+    "runner-configuration-and-labels",
+    "runner-architecture",
+    "runner-image-mapping",
+    "action-cache",
+    "workflow-plugins",
+    "practical-notes"
+  ]
+}

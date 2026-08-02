@@ -1,0 +1,123 @@
+---
+title: 安装 Git
+subTitle: Linux、Windows 与 macOS
+description: 整理 Linux、Windows 和 macOS 环境下安装、编译、验证与卸载 Git 的方法。
+category:
+  - 代码托管
+  - Git
+---
+
+# 安装 Git
+
+## Linux 系统安装
+
+### CentOS/Red Hat 系统安装
+
+#### 线上直接安装
+
+安装依赖包
+
+```bash
+$ yum install curl-devel expat-devel gettext-devel \
+    openssl-devel zlib-devel
+```
+
+安装git包
+
+```bash
+$ yum -y install git-core
+
+$ git --version
+git version 1.8.3.1
+```
+
+#### 源码安装（推荐，可下载最新版本）
+
+除了通过包管理器安装，也可以从源码编译安装，好处是能拿到最新版本，且不受发行版软件源版本滞后的影响。
+
+**获取最新源码包**
+
+访问 Git 官网可以找到当前最新版本的下载地址：
+
+1. 打开 [git-scm.com/download](https://git-scm.com/download)
+2. 进入 [Linux/Unix 下载页](https://git-scm.com/download/linux)
+3. 页面会列出当前最新的源码包下载链接，以及对应的镜像地址
+
+> **提示**：官网下载页展示的始终是当前最新版本，因此不建议在文档中固定写死具体版本号（如 `git-2.38.1.tar.gz`），下载前请以官网页面实际显示的版本为准。
+
+**下载地址说明**
+
+以下三个地址提供的是同一份源码，选择离你更近或访问更稳定的即可：
+
+| 地址类型 | 示例 | 说明 |
+| --- | --- | --- |
+| 官方源地址 | `https://www.kernel.org` | Git 源码的官方托管地址 |
+| 镜像地址 | `https://mirrors.edge.kernel.org` | kernel.org 的镜像，部分地区访问更快 |
+| GitHub Releases | `https://github.com/git/git/releases` | 可查看所有历史版本及对应源码包 |
+
+安装指定系统的依赖包：
+
+```bash
+$ yum install curl-devel expat-devel gettext-devel \
+    openssl-devel zlib-devel
+```
+
+解压安装下载的源码包：
+
+```bash
+$ wget http://mirrors.edge.kernel.org/pub/software/scm/git/git-<version>.tar.gz
+$ tar xvf git-<version>.tar.gz 
+$ cd git-<version>
+$ ./configure
+$ make
+$ make install
+```
+
+> **说明**
+>
+> - 将 `<version>` 替换为下载页中的实际版本号。
+> - 如果下载时遇到证书问题，请优先使用 HTTPS 或系统软件源。
+> - 默认安装路径通常是 `/usr/local/bin` 和 `/usr/local/lib`，可通过 `./configure --help` 查看配置项。
+> - 可使用 `./configure && make -j 4 && make install` 并行编译；`-j` 后的数字可按 CPU 核心数调整。
+
+### 验证安装
+
+```bash
+$ whereis git
+git: /usr/bin/git /usr/local/bin/git /usr/share/man/man1/git.1.gz
+$ git --version
+git version <version>
+```
+
+（`<version>` 为你实际编译安装的版本号）
+
+### 卸载 Git
+
+直接卸载
+
+```bash
+yum remove git
+```
+
+如果是源码安装，需要进入实际安装目录后再删除。操作前请确认路径并做好备份：
+
+```bash
+#查看git的安装目录
+$ which -a git  或 $ whereis git
+#进入显示出来的git安装路径
+$cd /git安装路径
+#在git的安装路径下，执行卸载命令(谨慎使用)
+$sudo rm -rf git*
+```
+
+## Debian/Ubuntu 系统安装
+
+[参考教程：Git 安装配置](https://www.runoob.com/git/git-install-setup.html)
+
+## Windows 系统安装
+
+[参考教程：Git 安装配置](https://www.runoob.com/git/git-install-setup.html)
+
+## macOS 系统安装
+
+[参考教程：Git 安装配置](https://www.runoob.com/git/git-install-setup.html)

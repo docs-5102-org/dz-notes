@@ -1,0 +1,51 @@
+---
+title: Git Crypt 文件加密
+subTitle: Git 仓库中的敏感文件保护
+description: 介绍 git-crypt 的工作方式、适用场景和使用限制。
+category:
+  - 代码托管
+  - Git
+---
+
+# Git Crypt 文件加密
+
+## 📦 什么是 git-crypt？
+
+[git-crypt 官网](https://www.agwa.name/projects/git-crypt/)
+
+- git-crypt 是一个命令行工具，作用是让你在 Git 仓库里，对选定的文件进行透明加密/解密。也就是说：**你提交的文件里哪一部分是敏感数据，就设置成加密状态**，当别人 clone／checkout 下来时，如果没有密钥，那部分仍是加密的；如果有密钥，就能自动解密看到原文。([Agwa](https://www.agwa.name/projects/git-crypt/?utm_source=chatgpt.com "git-crypt - transparent file encryption in git"))
+    
+- 它的目标是：在一个仓库里既有公开内容（比如文档、代码）也有私密内容（如密钥、凭证），你能把这两者混在一起管理，但不必把整个仓库都锁起来。([Debian Manpages](https://manpages.debian.org/testing/git-crypt/git-crypt.1.en.html?utm_source=chatgpt.com "git-crypt — Debian testing"))
+    
+- 它在 commit/checkout 的过程中“自动工作”——对敏感文件加密，在检出时解密，对用户透明，无需每次手动加解密。([Debian Manpages](https://manpages.debian.org/testing/git-crypt/git-crypt.1.en.html?utm_source=chatgpt.com "git-crypt — Debian testing"))
+    
+
+---
+
+## 🔍 在这个官网页面上可以看到什么？
+
+在这个 `agwa.name` 的项目页面里，你通常能看到：
+
+- git-crypt 的**简介**：它做什么、为什么要做
+    
+- 下载 / 获取方式：如 GitHub 仓库链接等
+    
+- 基本用法示例 / 安装说明
+    
+- 作者信息 / 许可协议（开源协议）
+    
+
+不过目前访问这个页面可能遇到 “Internal Error” 的情况，可能是服务器、配置或者临时访问问题。
+
+---
+
+## ⚠️ 使用 git-crypt 的注意事项 &限制
+
+- 虽然它能加密文件内容，但 **文件名、提交信息、仓库元数据、文件长度变化等** 并不会被隐藏／加密。也就是说，加密并不是“全方位隐藏”，而是“对内容层面的保护”。([blog.fernvenue.com](https://blog.fernvenue.com/archives/using-git-crypt-to-encrypt-repository/?utm_source=chatgpt.com "Using git-crypt to Encrypt Repository"))
+    
+- 合作团队里，没有密钥的人仍然可以 clone 仓库（不过看到的是加密后的内容）。这保证了“公共 + 私密混合仓库”的灵活性。([Debian Manpages](https://manpages.debian.org/testing/git-crypt/git-crypt.1.en.html?utm_source=chatgpt.com "git-crypt — Debian testing"))
+    
+- 在某些平台或操作系统下可能有兼容性问题（尤其 Windows、或者 GPG 配置差异）——使用前要做测试。([blog.fernvenue.com](https://blog.fernvenue.com/archives/using-git-crypt-to-encrypt-repository/?utm_source=chatgpt.com "Using git-crypt to Encrypt Repository"))
+    
+
+---

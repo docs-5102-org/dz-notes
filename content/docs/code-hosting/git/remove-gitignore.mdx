@@ -1,0 +1,20 @@
+---
+title: 从 Git 仓库移除 .gitignore
+subTitle: 停止跟踪已提交文件
+description: 介绍将 .gitignore 从 Git 仓库中移除、但保留本地文件的处理方法。
+category:
+  - 代码托管
+  - Git
+---
+
+# 从 Git 仓库移除 `.gitignore`
+
+如果 `.gitignore` 已经被提交到仓库，可以停止 Git 对它的跟踪，同时保留本地文件：
+
+```bash
+git rm --cached .gitignore
+git commit -m "chore: stop tracking .gitignore"
+git push
+```
+
+![移除 .gitignore 示例](/assets/images/code-hosting/git/gitignore1.png)

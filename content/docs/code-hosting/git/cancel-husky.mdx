@@ -1,0 +1,38 @@
+---
+title: 禁用 Husky
+subTitle: Git 提交钩子管理
+description: 介绍临时跳过 Husky 检查和禁用本地 Git hooks 的方法。
+category:
+  - 代码托管
+  - Git
+---
+
+# 禁用 Husky
+
+## 删除本地 hooks
+
+删除hooks目录下的内容！没错，是删除！
+
+## 临时跳过 Husky 检查
+
+```bash
+git commit --no-verify -m "feat: xxx"
+```
+
+这会跳过 Husky 的 `pre-commit`、`commit-msg` 等本地 hooks，例如 lint、type check、commitlint。
+
+PowerShell 也可以用 Husky 环境变量：
+
+```powershell
+$env:HUSKY=0
+git commit -m "feat: xxx"
+Remove-Item Env:HUSKY
+```
+
+如果只是这一次提交，推荐用：
+
+```bash
+git commit --no-verify -m "xxx"
+```
+
+注意：这只能跳过本地检查，远端 CI / GitLab / GitHub 的流水线检查还是会执行。
