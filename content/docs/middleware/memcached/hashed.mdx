@@ -16,11 +16,11 @@ tag:
 
 与传统哈希算法相比，一致性哈希的核心优势在于：当节点加入或退出系统时，**仅需重新定位少量数据**，而不需要像传统哈希那样重新分配所有数据。这一特性使其特别适合动态变化的分布式环境，如P2P网络、分布式缓存和负载均衡等场景。
 
-<img src="/assets/images/hashed/hashed-1.png"
+<img src="/assets/images/middleware/memcached/hashed/hashed-1.png"
   alt="图片"
   height="auto"/>
 
-<img src="/assets/images/hashed/hashed-2.png"
+<img src="/assets/images/middleware/memcached/hashed/hashed-2.png"
   alt="图片"
   height="auto"/>
 
@@ -34,7 +34,7 @@ tag:
 2. **均匀分布**：使用MD5、SHA-1或MurmurHash等哈希函数将节点和数据映射到环上
 3. **顺时针定位**：数据对象根据哈希值在环上顺时针查找最近的节点作为存储位置
 
-<img src="/assets/images/hashed/hashed-3.png"
+<img src="/assets/images/middleware/memcached/hashed/hashed-3.png"
   alt="图片"
   height="auto"/>
 
@@ -48,12 +48,12 @@ tag:
 
 当环上没有节点时(如系统初始化)，数据会被分配到哈希值最小的节点上。这种设计确保了数据分布的**确定性**和**可预测性**。
 
-<img src="/assets/images/hashed/hashed-4.png"
+<img src="/assets/images/middleware/memcached/hashed/hashed-4.png"
   alt="图片"
   height="auto"/>
 
 
-<img src="/assets/images/hashed/hashed-5.png"
+<img src="/assets/images/middleware/memcached/hashed/hashed-5.png"
   alt="图片"
   height="auto"/>
 
@@ -66,13 +66,17 @@ tag:
 3. **实际映射**：数据定位到虚拟节点后，再映射回对应的物理节点
 
 
-<img src="/assets/images/hashed/hashed-6.png"
+<img src="/assets/images/middleware/memcached/hashed/hashed-6.png"
   alt="图片"
   height="auto"/>
 
-<img src="/assets/images/hashed/hashed-7.png"
+<img src="/assets/images/middleware/memcached/hashed/hashed-7.png"
   alt="图片"
   height="auto"/>  
+
+<img src="/assets/images/middleware/memcached/hashed/hashed-8.png"
+  alt="物理节点 A 和 B 各自映射为三个虚拟节点，分布在一致性哈希环上"
+  height="auto"/>
 
 虚拟节点技术有效解决了以下问题：
 - 物理节点数量少时的数据分布不均

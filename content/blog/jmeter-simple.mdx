@@ -48,7 +48,7 @@ tag: JMeter
 2. 右键点击 **"Test Plan"**
 3. 选择 **Add** → **Threads (Users)** → **Thread Group**
 
-<img src="assets/images/file/jmeter1.png" />
+<img src="/assets/images/jmeter/file/jmeter1.png" />
 
 ### 步骤 2: 配置线程组参数
 
@@ -60,7 +60,7 @@ tag: JMeter
 | **Ramp-Up Period (in seconds)** | 60 | 在 60 秒内逐步启动所有用户 |
 | **Loop Count** | 10 | 每个用户执行 10 次请求 |
 
-<img src="assets/images/file/jmeter2.png" />
+<img src="/assets/images/jmeter/file/jmeter2.png" />
 
 > 📊 **测试策略**: 
 > - 第一次测试：100 个用户，观察系统表现
@@ -71,7 +71,7 @@ tag: JMeter
 1. 右键点击刚创建的 **Thread Group**
 2. 选择 **Add** → **Sampler** → **HTTP Request**
 
-<img src="assets/images/file/jmeter3.png" />
+<img src="/assets/images/jmeter/file/jmeter3.png" />
 
 ### 步骤 4: 配置 HTTP 请求参数
 
@@ -84,7 +84,7 @@ tag: JMeter
 | **HTTP Request** | `GET` 或 `POST` | 请求方法 |
 | **Path** | `/register/submit` | 报名接口路径 |
 
-<img src="assets/images/file/jmeter4.png" />
+<img src="/assets/images/jmeter/file/jmeter4.png" />
 
 **POST 请求示例参数**:
 ```
@@ -95,7 +95,7 @@ email=test@example.com
 
 ### 步骤 5: 添加结果监听器
 
-<img src="assets/images/file/jmeter5.png" />
+<img src="/assets/images/jmeter/file/jmeter5.png" />
 
 为了分析测试结果，需要添加监听器：
 
@@ -122,7 +122,7 @@ email=test@example.com
 
 #### 聚合报告关键指标
 
-<img src="assets/images/file/jmeter6.png" />
+<img src="/assets/images/jmeter/file/jmeter6.png" />
 
 | 指标 | 含义 | 期望值 |
 |------|------|--------|
@@ -136,7 +136,7 @@ email=test@example.com
 
 #### 图形结果分析
 
-<img src="assets/images/file/jmeter7.png" />
+<img src="/assets/images/jmeter/file/jmeter7.png" />
 
 - **绿线**: 平均响应时间
 - **红线**: 吞吐量
