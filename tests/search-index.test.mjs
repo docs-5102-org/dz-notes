@@ -169,7 +169,7 @@ test('mergeSearchResults removes highlighted duplicates', () => {
 
 test('search handler returns standard JSON results', async () => {
   const indexes = await createKeywordFixture();
-  const GET = createSearchHandler(async () => indexes);
+  const GET = createSearchHandler(async () => createKeywordSearch(indexes));
 
   const response = await GET(
     new Request('http://localhost/api/search?query=Java'),

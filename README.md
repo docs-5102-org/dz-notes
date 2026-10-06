@@ -2,6 +2,8 @@
 
 基于 [Fumadocs](https://github.com/fuma-nama/fumadocs) 和 Next.js 构建的知识文档站，主要用于沉淀多频道技术笔记、专题内容与文档组件实践。
 
+项目变更与文档更新记录见 [更新日志](CHANGELOG.md)。
+
 ## 本地开发
 
 ```bash
@@ -9,6 +11,16 @@ pnpm dev
 ```
 
 启动后访问 `http://localhost:3000`。
+
+需要 Node.js 22.18 或更新版本。开发环境直接读取最新文档，修改内容后无需手动生成搜索快照。
+
+生产构建使用 `pnpm build`，会先生成搜索索引快照，再执行 Next.js 构建。文档或博客更新后重新构建即可更新搜索内容。单独生成快照可执行：
+
+```bash
+pnpm search:build
+```
+
+快照保存在 `.search/snapshot.json.gz`，由构建自动生成，不提交 Git；生产搜索接口读取快照并缓存在函数实例内，首次搜索不再加载全部 MDX 或重建全文索引。`next.config.mjs` 已配置将快照打包进 `/api/search` 函数。部署时请保留 `pnpm build` 作为构建命令。
 
 ---
 

@@ -2,8 +2,12 @@
   "name": "dz-notes",
   "version": "0.0.0",
   "private": true,
+  "engines": {
+    "node": ">=22.18.0"
+  },
   "scripts": {
-    "build": "next build",
+    "build": "pnpm search:build && next build",
+    "search:build": "fumadocs-mdx && node --experimental-strip-types scripts/build-search-index.mjs",
     "dev:webpack": "next dev --webpack",
     "dev": "next dev",
     "start": "next start",
@@ -16,6 +20,7 @@
   "dependencies": {
     "@ai-sdk/react": "^3.0.170",
     "@openrouter/ai-sdk-provider": "^2.8.0",
+    "@orama/orama": "3.1.18",
     "@radix-ui/react-presence": "^1.1.5",
     "ai": "^6.0.168",
     "class-variance-authority": "^0.7.1",
@@ -39,6 +44,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@mdx-js/mdx": "3.1.1",
     "@tailwindcss/postcss": "^4.2.4",
     "@types/hast": "^3.0.4",
     "@types/mdx": "^2.0.13",

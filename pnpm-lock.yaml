@@ -14,6 +14,9 @@ importers:
       '@openrouter/ai-sdk-provider':
         specifier: ^2.8.0
         version: 2.9.0(ai@6.0.184(zod@4.4.3))(zod@4.4.3)
+      '@orama/orama':
+        specifier: 3.1.18
+        version: 3.1.18
       '@radix-ui/react-presence':
         specifier: ^1.1.5
         version: 1.1.5(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -78,6 +81,9 @@ importers:
         specifier: ^4.3.6
         version: 4.4.3
     devDependencies:
+      '@mdx-js/mdx':
+        specifier: 3.1.1
+        version: 3.1.1
       '@tailwindcss/postcss':
         specifier: ^4.2.4
         version: 4.3.0

@@ -99,32 +99,22 @@ export async function buildUnifiedIndexes(
   return Promise.all(pages.map(toAdvancedIndex));
 }
 
-let unifiedIndexes: Promise<AdvancedIndex[]> | undefined;
-
-export function getUnifiedSearchIndexes() {
-  unifiedIndexes ??= Promise.all([
-    import('@/lib/source'),
-    import('collections/server'),
-  ]).then(([{ source }, { blog }]) => buildUnifiedIndexes(source.getPages(), blog));
-
-  return unifiedIndexes;
-}
-
 function normalize(value: string) {
   return value.trim().toLocaleLowerCase();
 }
 
-export function findSubstringMatches(
-  indexes: readonly AdvancedIndex[],
-  query: string,
-) {
-  const needle = normalize(query);
-  if (!needle) return [];
+export type SubstringRecord = {
+  normalized: string;
+  result: SortedResult;
+};
 
+export function buildSubstringRecords(
+  indexes: readonly AdvancedIndex[],
+) {
   const results: SortedResult[] = [];
 
   for (const page of indexes) {
-    if (normalize(page.title).includes(needle)) {
+    if (page.title) {
       results.push({
         id: `${page.id}:title`,
         type: 'page',
@@ -134,7 +124,7 @@ export function findSubstringMatches(
       });
     }
 
-    if (page.description && normalize(page.description).includes(needle)) {
+    if (page.description) {
       results.push({
         id: `${page.id}:description`,
         type: 'text',
@@ -145,8 +135,6 @@ export function findSubstringMatches(
     }
 
     page.structuredData.headings.forEach((heading, index) => {
-      if (!normalize(heading.content).includes(needle)) return;
-
       results.push({
         id: `${page.id}:heading:${index}`,
         type: 'heading',
@@ -157,8 +145,6 @@ export function findSubstringMatches(
     });
 
     page.structuredData.contents.forEach((content, index) => {
-      if (!normalize(content.content).includes(needle)) return;
-
       results.push({
         id: `${page.id}:content:${index}`,
         type: 'text',
@@ -169,7 +155,29 @@ export function findSubstringMatches(
     });
   }
 
-  return results;
+  return results.map((result): SubstringRecord => ({
+    normalized: normalize(result.content),
+    result,
+  }));
+}
+
+export function searchSubstringRecords(
+  records: readonly SubstringRecord[],
+  query: string,
+) {
+  const needle = normalize(query);
+  if (!needle) return [];
+
+  return records
+    .filter((record) => record.normalized.includes(needle))
+    .map((record) => record.result);
+}
+
+export function findSubstringMatches(
+  indexes: readonly AdvancedIndex[],
+  query: string,
+) {
+  return searchSubstringRecords(buildSubstringRecords(indexes), query);
 }
 
 const resultTypePriority: Record<SortedResult['type'], number> = {
@@ -206,23 +214,26 @@ export function createKeywordSearch(indexes: readonly AdvancedIndex[]) {
     language: 'english',
     indexes: [...indexes],
   });
+  const fallback = buildSubstringRecords(indexes);
 
   return {
     async search(query: string, options: QueryOptions = {}) {
       if (!query.trim()) return [];
 
       const primaryResults = await primary.search(query, options);
-      const fallbackResults = findSubstringMatches(indexes, query);
+      const fallbackResults = searchSubstringRecords(fallback, query);
 
       return mergeSearchResults(primaryResults, fallbackResults, options.limit ?? 20);
     },
   };
 }
 
-export function createSearchHandler(
-  getIndexes: () => Promise<AdvancedIndex[]>,
-) {
-  let search: Promise<ReturnType<typeof createKeywordSearch>> | undefined;
+export type KeywordSearch = {
+  search: (query: string, options?: QueryOptions) => Promise<SortedResult[]>;
+};
+
+export function createSearchHandler(getSearch: () => Promise<KeywordSearch>) {
+  let search: Promise<KeywordSearch> | undefined;
 
   return async function GET(request: Request) {
     const url = new URL(request.url);
@@ -234,7 +245,10 @@ export function createSearchHandler(
     const limit =
       Number.isInteger(limitValue) && limitValue > 0 ? limitValue : undefined;
 
-    search ??= getIndexes().then(createKeywordSearch);
+    search ??= getSearch().catch((error) => {
+      search = undefined;
+      throw error;
+    });
 
     return Response.json(await (await search).search(query, { limit }));
   };
