@@ -1,0 +1,406 @@
+---
+title: Lua 入门教程
+description: 基于 Lua 5.5 的入门教程，涵盖基础语法、table、函数、模块、错误处理与新版特性
+category:
+  - 脚本
+tag:
+  - Lua
+date: '2022-02-10'
+---
+
+# Lua 入门教程
+
+Lua 适合编写配置、自动化脚本，也可以嵌入其他程序。本文从一个可以直接运行的脚本开始，逐步介绍常用语法。
+
+## 版本与官网
+
+截至 **2026-10-07**，官网当前稳定版本为 **Lua 5.5.1**，发布于 2026-08-03。本文以 Lua 5.5 为基准；版本信息可在[官方版本历史](https://www.lua.org/versions.html)中核对。
+
+- [Lua 官网](https://www.lua.org/)
+- [官方下载页面](https://www.lua.org/download.html)
+- [Lua 5.5 参考手册](https://www.lua.org/manual/5.5/)
+- [官方文档入口与历史版本手册](https://www.lua.org/manual/)
+
+> 在其他程序中使用 Lua 时，先确认宿主提供的解释器版本。本文标注“Lua 5.5”的示例需要对应版本；不要直接放入旧版解释器执行。
+
+## 第一个脚本
+
+从官方下载页面获取源码或其链接的二进制发行包，安装解释器并将其目录加入 `PATH`。在终端检查版本：
+
+```bash
+lua -v
+```
+
+新建 UTF-8 编码的 `hello.lua`：
+
+```lua
+local name = "Lua"
+print("Hello, " .. name .. "!")
+print("解释器版本：", _VERSION)
+```
+
+在脚本所在目录执行：
+
+```bash
+lua hello.lua
+```
+
+`print` 输出内容，`..` 拼接字符串。以下示例除模块文件外，可以分别保存为 `.lua` 文件运行。
+
+## 变量、类型与注释
+
+```lua
+-- 单行注释
+--[[
+多行注释
+]]
+
+local name = "dz-notes"
+local count = 3
+local price = 12.5
+local enabled = true
+local missing = nil
+
+print(type(name))     -- string
+print(type(count))    -- number
+print(type(enabled))  -- boolean
+print(type(missing))  -- nil
+
+local left, right = 10, 20
+left, right = right, left
+print(left, right)    -- 20  10
+```
+
+优先使用 `local` 声明变量。变量的值可以换成其他类型，名称区分大小写。
+
+| 类型 | 示例或用途 |
+| --- | --- |
+| `nil` | 缺失值、未初始化的变量 |
+| `boolean` | `true`、`false` |
+| `number` | 整数与浮点数 |
+| `string` | 字符串 |
+| `table` | 数组、映射、对象 |
+| `function` | 函数 |
+| `thread` | 协程 |
+| `userdata` | 宿主程序提供的数据 |
+
+## 运算与字符串
+
+```lua
+print(7 / 2)     -- 3.5：普通除法
+print(7 // 2)    -- 3：向下取整除法，Lua 5.3+
+print(-7 // 2)   -- -4
+print(7 % 2)     -- 1：取模
+print(2 ^ 3)     -- 8：乘方
+print(3 ~= 4)    -- true：不相等
+print(5 & 3)     -- 1：按位与，Lua 5.3+
+
+local message = "Hello, " .. "Lua"
+print(string.upper(message))
+print(string.format("%s：%d 篇", "文档", 3))
+
+local text = "你好"
+print(#text)             -- UTF-8 编码下为 6：字节数
+print(utf8.len(text))    -- 2：Unicode 码点数，Lua 5.3+
+
+local multiline = [[第一行
+第二行]]
+print(multiline)
+```
+
+比较使用 `==`、`~=`、`<`、`<=`、`>`、`>=`；逻辑运算使用 `and`、`or`、`not`。只有 `nil` 和 `false` 在条件中为假，`0` 与空字符串都为真。
+
+`or` 常用于默认值，但它也会替换 `false`。需要保留布尔值时，单独判断 `nil`：
+
+```lua
+local options = { enabled = false }
+local enabled = options.enabled
+if enabled == nil then
+  enabled = true
+end
+print(enabled)  -- false
+```
+
+## 分支与循环
+
+```lua
+local score = 85
+if score >= 90 then
+  print("优秀")
+elseif score >= 60 then
+  print("通过")
+else
+  print("未通过")
+end
+
+for i = 1, 3 do
+  print("第", i, "次")
+end
+
+for i = 3, 1, -1 do
+  print("倒计时", i)
+end
+
+local remaining = 2
+while remaining > 0 do
+  remaining = remaining - 1
+end
+
+local attempts = 0
+repeat
+  attempts = attempts + 1
+until attempts == 2
+```
+
+`repeat` 的循环体至少执行一次。`break` 退出当前循环；Lua 没有 `continue` 关键字，通常用条件分支控制本次执行的内容。
+
+## table：数组与映射
+
+### 连续序列
+
+```lua
+local languages = { "BAT", "Lua", "JavaScript" }
+print(languages[1])  -- BAT：构造器中的顺序元素从索引 1 开始
+
+table.insert(languages, "Python")
+table.remove(languages, 1)
+
+for index, language in ipairs(languages) do
+  print(index, language)
+end
+
+print(#languages)                  -- 3
+print(table.concat(languages, ", "))
+```
+
+`ipairs` 在第一个缺失索引处停止。使用 `#table` 计算连续序列长度时，不要在序列中间留下 `nil`；它也不能统计映射的键数量。
+
+### 键值映射
+
+```lua
+local article = {
+  title = "Lua 入门教程",
+  category = "脚本",
+  ["reading-time"] = 10,
+}
+
+print(article.title)
+print(article["reading-time"])
+
+for key, value in pairs(article) do
+  print(key, value)
+end
+
+article.category = nil  -- 删除这个键
+```
+
+`pairs` 遍历键值对，顺序不保证固定。table 赋值传递引用；将一个 table 赋给另一个变量不会自动复制内容。
+
+## 函数、闭包与可变参数
+
+### 参数与多返回值
+
+```lua
+local function divide(a, b)
+  if b == 0 then
+    return nil, "除数不能为零"
+  end
+  return a / b
+end
+
+local value, err = divide(10, 2)
+if value == nil then
+  print(err)
+else
+  print(value)  -- 5.0
+end
+```
+
+### 闭包
+
+```lua
+local function makeCounter()
+  local count = 0
+  return function()
+    count = count + 1
+    return count
+  end
+end
+
+local nextCount = makeCounter()
+print(nextCount())  -- 1
+print(nextCount())  -- 2
+```
+
+### 可变参数
+
+下面的 `table.pack` 写法适用于 Lua 5.2 及以上版本，通过 `n` 保留包含 `nil` 的参数数量：
+
+```lua
+local function inspect(...)
+  local args = table.pack(...)
+  for i = 1, args.n do
+    print(i, args[i])
+  end
+end
+
+inspect("Lua", nil, 42)
+```
+
+## 方法与元表
+
+```lua
+local Counter = {}
+Counter.__index = Counter
+
+function Counter.new(initial)
+  return setmetatable({ value = initial or 0 }, Counter)
+end
+
+function Counter:increment()
+  self.value = self.value + 1
+  return self.value
+end
+
+local counter = Counter.new(10)
+print(counter:increment())  -- 11
+```
+
+定义方法时，`:` 自动加入 `self` 参数；调用时，`counter:increment()` 等价于 `counter.increment(counter)`。这里的 `__index` 让实例在自身找不到字段时，从 `Counter` 中查找方法。
+
+## 模块
+
+将下面内容保存为 `math_utils.lua`：
+
+```lua
+local M = {}
+
+function M.sum(values)
+  local total = 0
+  for _, value in ipairs(values) do
+    total = total + value
+  end
+  return total
+end
+
+return M
+```
+
+在同一目录创建 `main.lua`：
+
+```lua
+local mathUtils = require("math_utils")
+print(mathUtils.sum({ 10, 20, 30 }))  -- 60
+```
+
+在该目录运行 `lua main.lua`。`require` 使用模块名而不是文件扩展名，按 `package.path` 查找 Lua 文件；成功加载后，通常从 `package.loaded` 缓存中获取模块。
+
+## 错误处理与文件操作
+
+### 捕获错误
+
+```lua
+local function parsePort(text)
+  local port = assert(tonumber(text), "端口必须是数字")
+  assert(port % 1 == 0 and port >= 1 and port <= 65535, "端口超出范围")
+  return port
+end
+
+local ok, result = pcall(parsePort, "8080")
+if ok then
+  print("端口：", result)
+else
+  print("解析失败：", result)
+end
+```
+
+`pcall` 的首个返回值表示是否成功，后续返回值是函数结果或错误对象。需要带调用栈的错误信息时，可使用 `xpcall` 和 `debug.traceback`。
+
+### 只读变量与自动关闭文件（Lua 5.4+）
+
+```lua
+local filename <const> = "notes.txt"
+do
+  local file <close> = assert(io.open(filename, "w"))
+  assert(file:write("Hello, Lua!\n"))
+end
+
+do
+  local file <close> = assert(io.open(filename, "r"))
+  print(assert(file:read("a")))
+end
+```
+
+此示例会在当前工作目录创建或覆盖 `notes.txt`。`<const>` 限制变量重新赋值，不会冻结 table 内部字段；`<close>` 在退出作用域时关闭资源，包括错误退出。使用 `io.open` 前，应确认宿主开放了文件访问能力。
+
+## Lua 5.5 新语法与标准库
+
+### 显式全局变量声明
+
+以下片段分别运行。显式声明可以帮助编译器发现未声明的名称，包括拼写错误：
+
+```lua
+global print
+local count = 1
+print(count)
+-- pritn(count)  -- 取消注释后，编译时报未声明名称
+```
+
+声明也可以带初始值；初始化一个已经具有非 `nil` 值的全局变量会报错：
+
+```lua
+global print
+global siteName = "dz-notes"
+print(siteName)
+```
+
+没有显式全局声明的脚本仍保留默认的全局访问方式。还可以用 `global<const> *` 将未另行声明的全局名称设为只读；这些限制作用于名称访问，不等于冻结全局环境。详见[变量声明](https://www.lua.org/manual/5.5/manual.html#3.3.7)。
+
+### 具名可变参数表
+
+```lua
+local function inspect(...args)
+  for i = 1, args.n do
+    print(i, args[i])
+  end
+end
+
+inspect("Lua", nil, 42)
+```
+
+`...args` 为额外参数提供一个只读的局部变量名称，`args.n` 表示参数数量；旧版可用前面的 `table.pack(...)` 示例。详见[函数参数](https://www.lua.org/manual/5.5/manual.html#3.4.11)。
+
+### table 预分配
+
+```lua
+local items = table.create(3, 1)
+items.label = "脚本"
+for i = 1, 3 do
+  items[i] = "item-" .. i
+end
+print(#items)  -- 3
+```
+
+`table.create(nseq, nrec)` 创建空表，为序列和其他键预分配空间；它不填充元素，刚创建时长度仍为 `0`。详见[table.create](https://www.lua.org/manual/5.5/manual.html#pdf-table.create)。
+
+### 循环变量只读
+
+Lua 5.5 的数值 `for` 控制变量，以及泛型 `for` 的第一个变量只读。需要计算新值时，创建其他局部变量：
+
+```lua
+for i = 1, 3 do
+  local nextIndex = i + 1
+  print(i, nextIndex)
+end
+```
+
+## 版本兼容速查
+
+| 写法 | 最低版本 |
+| --- | --- |
+| `table.pack`、`table.unpack` | Lua 5.2 |
+| `//`、原生位运算、`utf8` 标准库 | Lua 5.3 |
+| 局部变量 `<const>`、`<close>` | Lua 5.4 |
+| `global`、具名可变参数 `...args`、`table.create` | Lua 5.5 |
+
+升级旧脚本时，应同时核对[Lua 5.5 不兼容变更](https://www.lua.org/manual/5.5/manual.html#8)与宿主文档；解释器的版本可以通过 `_VERSION` 查看。

@@ -79,7 +79,8 @@ export const blog = defineCollections({
 const isDev = process.env.NODE_ENV === 'development';
 
 export default defineConfig({
-  mdxOptions: {
+  // Shiki 会扩充语言别名字典；各编译上下文需要独立配置，避免共享注册状态。
+  mdxOptions: async () => ({
     // remark-image，它在 MDX 编译期会 fetch 远程图片获取尺寸，所以不吃 Next 的白名单。
     // 这样远程图片尺寸获取失败不会中断 MDX 编译。
     // remarkImageOptions: isDev ? false : {
@@ -104,10 +105,13 @@ export default defineConfig({
         'js',
         'yml',
         'yaml',
+        'vb',
       ],
       langAlias: {
         // 非 Shiki 内置的别名才需要声明
         cmd: 'bat',
+        batch: 'bat',
+        vbscript: 'vb',
         dotenv: 'ini',
         env: 'ini',
         gradle: 'groovy',
@@ -118,5 +122,5 @@ export default defineConfig({
         redis: 'bash',
       },
     },
-  },
+  }),
 });

@@ -1,0 +1,256 @@
+---
+title: BAT 脚本实战
+description: 使用 ImageMagick 批量转换图片、清理项目文件并查看完整 BAT 脚本
+category:
+  - 脚本
+tag:
+  - BAT
+date: '2022-02-10'
+---
+
+# BAT脚本实战
+
+## bat执行脚本调用Imagemagic执行转图的脚本
+
+这是一个Windows批处理脚本，用于处理和清理某种项目文件夹结构。让我来分析一下它的功能和使用方法：
+
+### 主要功能：
+1. **图片格式转换**：将 `.jpg` 文件转换为 `.gif` 文件
+2. **图片优化**：根据颜色数量自动选择压缩级别
+3. **文件清理**：删除不需要的文件和文件夹
+
+### 处理的文件夹结构：
+```text
+源文件夹/
+├── files/
+│   ├── mobile/     (处理jpg转gif)
+│   ├── thumb/      (处理jpg转gif)
+│   ├── extfiles/   (删除整个文件夹)
+│   └── mobile-ext/ (删除整个文件夹)
+└── mobile/
+    ├── style/
+    │   ├── icon/   (删除整个文件夹)
+    │   ├── raw/    (删除整个文件夹)
+    │   └── *.css   (删除多个CSS文件)
+    └── javascript/
+        └── *.js    (删除多个JS文件)
+```
+
+### 基本语法：
+```bat
+run.bat "源文件夹路径"
+```
+
+### 使用示例：
+```bat
+# 处理D盘的project文件夹
+run.bat "D:\project"
+
+# 处理当前目录下的myfiles文件夹
+run.bat "C:\Users\Username\myfiles"
+```
+
+### 具体处理流程
+
+#### 1. 图片转换（mobile和thumb文件夹）
+- 扫描 `.jpg` 文件
+- 使用ImageMagick的 `identify` 命令检测颜色数量
+- 根据颜色数量选择压缩参数：
+  - 颜色 < 256：使用 `convert -colors 8`
+  - 颜色 ≥ 256：使用 `convert -colors 32`
+- 转换完成后删除原始 `.jpg` 文件
+
+#### 2. 文件清理
+删除以下文件和文件夹：
+- `files\extfiles\` 文件夹
+- `files\mobile-ext\` 文件夹
+- `mobile\style\icon\` 文件夹
+- `mobile\style\raw\` 文件夹
+- 多个CSS和JS文件
+
+### 使用前提条件
+
+1. **安装ImageMagick**：脚本使用 `convert` 和 `identify` 命令
+2. **文件夹结构匹配**：目标文件夹需要有相应的子文件夹结构
+3. **管理员权限**：可能需要管理员权限来删除某些文件
+
+[下载 run.bat](/assets/_resources/scripts/bat/run.bat)
+
+### 完整脚本
+
+```bat
+echo off
+setlocal enabledelayedexpansion
+echo ============convert start============
+
+::src forder
+set srcForder=%1
+
+
+if "%srcForder%"=="" (
+  echo srcForder not exist
+  goto end
+)
+
+set desForder=%srcForder%
+set str1=srcForder:
+set str2=desForder:
+::des forder
+
+rem 针对 目录有盘符的情况
+cd /D %srcForder%
+
+
+rem 查找数字文件夹
+:: set numberFolderName=0;
+
+:: for /f "delims=" %%a in (' dir /b^|findstr "^[0-9]*$" ') do (
+::	set numberFolderName=%%a
+:: )
+:: echo is numberName %numberFolderName%
+
+rem 替换index.html
+rem =====================================================================================
+rem xcopy %srcForder%\index.html %srcForder%\%numberFolderName% /y
+
+
+rem files\mobile 图片jpg转gif 图片修改
+rem =====================================================================================
+set mobileFolder=%srcForder%\files\mobile
+
+echo %mobileFolder%
+
+cd /D %mobileFolder%
+
+for /f %%i in ('dir /b *.jpg') do (
+
+set src=%%i
+
+set des=%mobileFolder%\%%~ni.gif
+
+set /a str3 = 0
+
+for /f "delims=" %%a in ('identify -format %%k %%i') do (
+	if %%a=="" goto aa
+	echo %%a
+	set /a str3 = %%a
+)
+:aa
+if !str3! LSS 256 (
+	echo '!str3! less 256 run convert -colors 8'
+	convert -colors 8 !src! !des!
+) else (
+	echo '!str3! more 256 run convert -colors 32'
+	convert -colors 32 !src! !des!
+)
+echo %str1% !src! %str2% !des!
+)
+
+rem 删除当前文件夹中的.jpg文件
+
+for /f %%i in ('dir /b *.jpg') do (
+
+set src=%%i
+
+echo del !src!
+
+del !src!
+
+)
+
+
+rem files\thumb 图片jpg转gif 图片修改
+rem =====================================================================================
+
+set thumbFolder=%srcForder%\files\thumb
+
+echo %thumbFolder%
+
+cd /D %thumbFolder%
+
+for /f %%i in ('dir /b *.jpg') do (
+
+set src=%%i
+
+set des=%thumbFolder%\%%~ni.gif
+
+set /a str3 = 0
+
+for /f "delims=" %%a in ('identify -format %%k %%i') do (
+	if %%a=="" goto aa
+	echo %%a
+	set /a str3 = %%a
+)
+:aa
+if !str3! LSS 256 (
+	echo '!str3! less 256 run convert -colors 8'
+	convert -colors 8 !src! !des!
+) else (
+	echo '!str3! more 256 run convert -colors 32'
+	convert -colors 32 !src! !des!
+)
+echo %str1% !src! %str2% !des!
+)
+
+rem 删除当前文件夹中的.jpg文件
+
+for /f %%i in ('dir /b *.jpg') do (
+	set src=%%i
+
+	echo del !src!
+
+	del !src!
+
+)
+
+rem files\extfiles && files\mobile-ext 删除
+rem mobile\style\icon 删除
+rem mobile\style\raw 删除
+rem mobile\javascript\jquery-1.9.1.min.js 删除
+rem mobile\javascript\main.js 删除
+rem mobile\style\phoneTemplate.css 删除
+rem mobile\style\player.css 删除
+rem mobile\style\style.css 删除
+rem mobile\style\template.css 删除
+:b
+set extfilesFolder=%srcForder%\files\extfiles
+if exist %extfilesFolder% (
+  rd /s /q %extfilesFolder%
+)
+
+set mobileExtFolder=%srcForder%\files\mobile-ext
+if exist %mobileExtFolder% (
+  rd /s /q %mobileExtFolder%
+)
+
+set iconFolder=%srcForder%\mobile\style\icon
+if exist %iconFolder% (
+  rd /s /q %iconFolder%
+)
+
+set rawFolder=%srcForder%\mobile\style\raw
+if exist %rawFolder% (
+  rd /s /q %rawFolder%
+)
+
+set jqueryFile=%srcForder%\mobile\javascript\jquery-1.9.1.min.js
+if exist %jqueryFile% ( del /f /s /q %jqueryFile% )
+
+set mainFile=%srcForder%\mobile\javascript\main.js
+if exist %mainFile% ( del /f /s /q %mainFile% )
+
+set phoneTemplateFile=%srcForder%\mobile\style\phoneTemplate.css
+if exist %phoneTemplateFile% ( del /f /s /q %phoneTemplateFile% )
+
+set playerFile=%srcForder%\mobile\style\player.css
+if exist %playerFile% ( del /f /s /q %playerFile% )
+
+set styleFile=%srcForder%\mobile\style\style.css
+if exist %styleFile% ( del /f /s /q %styleFile% )
+
+set templateFile=%srcForder%\mobile\style\template.css
+if exist %templateFile% ( del /f /s /q %templateFile% )
+
+:end
+Pause
+```

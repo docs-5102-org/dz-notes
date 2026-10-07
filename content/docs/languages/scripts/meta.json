@@ -1,0 +1,10 @@
+{
+  "title": "脚本",
+  "pages": [
+    "index",
+    "bat",
+    "lua",
+    "tampermonkey",
+    "tools"
+  ]
+}

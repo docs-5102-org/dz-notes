@@ -67,7 +67,7 @@ const channelDescriptionFallbackMap: Record<string, string> = {
   web: '前端框架、工程化与页面实现',
   mobile_native: 'iOS、Android 与原生应用开发',
   cross_platform: 'Flutter、React Native 与多端方案',
-  languages: 'Java、Go、PHP、Python 与游戏开发笔记',
+  languages: 'Java、Go、PHP、Python、脚本与游戏开发笔记',
   coding: '算法、数据结构与基础编程笔记',
   java: 'Java 语言、框架与后端开发实践',
   go: 'Go 语言、工程规范与框架实践',
