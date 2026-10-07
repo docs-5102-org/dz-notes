@@ -1,0 +1,423 @@
+/* Keep every override inside the blog, including after client-side navigation. */
+.dz-blog-shell {
+  min-width: 0;
+  color: var(--color-fd-foreground);
+  background: var(--color-fd-background);
+}
+
+.dz-blog-shell .dz-blog {
+  width: 100%;
+  max-width: 1100px;
+  padding: 3rem 1.5rem 5rem;
+}
+
+.dz-blog-shell .dz-blog-eyebrow {
+  margin-bottom: 0.5rem;
+  color: var(--color-fd-muted-foreground);
+  font-size: 0.875rem;
+}
+
+.dz-blog-shell .dz-section-head__title {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+}
+
+.dz-blog-shell .dz-section-head__description {
+  margin: 0.75rem 0 2rem;
+  color: var(--color-fd-muted-foreground);
+  font-size: 1rem;
+}
+
+.dz-blog-shell .dz-blog-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.25rem 0 1.5rem;
+}
+
+.dz-blog-shell .dz-blog-filters a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.875rem;
+  border: 1px solid var(--color-fd-border);
+  border-radius: 999px;
+  background: var(--color-fd-card);
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.dz-blog-shell .dz-blog-filters a span {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.dz-blog-shell .dz-blog-filters a:hover {
+  border-color: var(--color-fd-muted-foreground);
+}
+
+.dz-blog-shell .dz-blog-filters a[aria-current] {
+  border-color: var(--color-fd-primary);
+  background: var(--color-fd-primary);
+  color: var(--color-fd-primary-foreground);
+}
+
+.dz-blog-shell .dz-blog-results {
+  padding: 0.25rem 0 0.75rem;
+  color: var(--color-fd-muted-foreground);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+  scroll-margin-top: calc(var(--fd-nav-height, 4rem) + 1rem);
+}
+
+.dz-blog-shell .dz-blog-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-fd-border);
+  font-size: 0.875rem;
+}
+
+.dz-blog-shell .dz-blog-pagination__numbers {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dz-blog-shell .dz-blog-pagination__control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-fd-border);
+  border-radius: 0.5rem;
+  background: var(--color-fd-card);
+  white-space: nowrap;
+}
+
+.dz-blog-shell .dz-blog-pagination a:hover {
+  border-color: var(--color-fd-muted-foreground);
+}
+
+.dz-blog-shell .dz-blog-pagination a[aria-current='page'] {
+  border-color: var(--color-fd-primary);
+  background: var(--color-fd-primary);
+  color: var(--color-fd-primary-foreground);
+}
+
+.dz-blog-shell .dz-blog-pagination [aria-disabled='true'] {
+  color: var(--color-fd-muted-foreground);
+  opacity: 0.5;
+}
+
+.dz-blog-shell .dz-blog-pagination__state {
+  display: none;
+  color: var(--color-fd-muted-foreground);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.dz-blog-shell .dz-blog-list {
+  gap: 0;
+  margin-top: 0;
+}
+
+.dz-blog-shell .dz-blog-card {
+  display: grid;
+  grid-template-columns: 8rem minmax(0, 1fr);
+  gap: 1.5rem;
+  padding: 1.75rem 0;
+  border: 0;
+  border-top: 1px solid var(--color-fd-border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+  transition: color 150ms ease;
+}
+
+.dz-blog-shell .dz-blog-card:hover {
+  border-color: var(--color-fd-border);
+  box-shadow: none;
+  transform: none;
+}
+
+.dz-blog-shell .dz-blog-card__date {
+  padding-top: 0.25rem;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.dz-blog-shell .dz-blog-card__title {
+  margin: 0 0 0.75rem;
+  font-size: 1.25rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.dz-blog-shell .dz-blog-card:hover .dz-blog-card__title {
+  color: var(--color-fd-primary);
+}
+
+.dz-blog-shell .dz-blog-card__excerpt {
+  margin-bottom: 0.75rem;
+  color: var(--color-fd-muted-foreground);
+  font-size: 0.9375rem;
+  overflow-wrap: anywhere;
+}
+
+.dz-blog-shell .dz-badge {
+  max-width: 100%;
+  padding: 0.2rem 0.65rem;
+  background: var(--color-fd-secondary);
+  color: var(--color-fd-secondary-foreground);
+  font-size: 0.75rem;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.dz-blog-shell .dz-blog-empty {
+  padding: 3rem 1rem;
+  border-top: 1px solid var(--color-fd-border);
+  text-align: center;
+}
+
+.dz-blog-shell .dz-blog-empty a {
+  display: inline-block;
+  margin-top: 1rem;
+  text-decoration: underline;
+  text-underline-offset: 0.25rem;
+}
+
+.dz-blog-shell .dz-blog-detail {
+  width: 100%;
+  max-width: 56rem;
+  min-width: 0;
+  padding: 1.5rem 1.5rem 4rem;
+}
+
+.dz-blog-shell .dz-blog-breadcrumb ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+  color: var(--color-fd-muted-foreground);
+  font-size: 0.875rem;
+}
+
+.dz-blog-shell .dz-blog-breadcrumb li {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.dz-blog-shell .dz-blog-breadcrumb li + li::before {
+  content: '/';
+  margin-right: 0.5rem;
+  color: var(--color-fd-border);
+}
+
+.dz-blog-shell .dz-blog-back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  color: var(--color-fd-muted-foreground);
+  font-size: 0.875rem;
+}
+
+.dz-blog-shell .dz-blog-back:hover,
+.dz-blog-shell .dz-blog-breadcrumb a:hover {
+  color: var(--color-fd-foreground);
+  text-decoration: underline;
+  text-underline-offset: 0.25rem;
+}
+
+.dz-blog-shell .dz-blog-detail__header {
+  margin: 2rem 0;
+}
+
+.dz-blog-shell .dz-blog-detail__meta {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.dz-blog-shell .dz-blog-detail__title {
+  margin: 0;
+  font-size: clamp(1.75rem, 3.2vw, 2.5rem);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.dz-blog-shell .dz-blog-detail__excerpt {
+  margin: 1rem 0 0;
+  color: var(--color-fd-muted-foreground);
+  font-size: 1rem;
+}
+
+.dz-blog-shell .dz-prose {
+  min-width: 0;
+  max-width: 100%;
+  padding-top: 2rem;
+  font-size: 1rem;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+
+/* Fumadocs typography defines h1-h4; real posts also contain deeper headings. */
+.dz-blog-shell .dz-prose :where(h5, h6):not(:where(.not-prose, .not-prose *)) {
+  margin: 1.5rem 0 0.5rem;
+  color: var(--color-fd-foreground);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.dz-blog-shell .dz-prose h6:not(:where(.not-prose, .not-prose *)) {
+  font-size: 0.9375rem;
+}
+
+.dz-blog-shell .dz-blog-table-scroll {
+  max-width: 100%;
+  margin: 1.75rem 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  border-radius: 0.75rem;
+}
+
+.dz-blog-shell .dz-blog-table-scroll table {
+  width: 100%;
+  min-width: 40rem;
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+.dz-blog-shell .dz-blog-table-scroll :is(th, td) {
+  min-width: 6rem;
+}
+
+.dz-blog-shell .dz-blog-table-scroll :is(th, td):first-child {
+  min-width: 9rem;
+}
+
+.dz-blog-shell .dz-prose pre {
+  overflow-wrap: normal;
+}
+
+.dz-blog-shell .dz-prose img {
+  max-width: 100%;
+  height: auto;
+}
+
+.dz-blog-shell .dz-blog-adjacent {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 3rem 0 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-fd-border);
+}
+
+.dz-blog-shell .dz-blog-adjacent a {
+  padding: 1.25rem;
+  border: 1px solid var(--color-fd-border);
+  border-radius: 1rem;
+  background: var(--color-fd-card);
+  overflow-wrap: anywhere;
+}
+
+.dz-blog-shell .dz-blog-adjacent a:hover {
+  border-color: var(--color-fd-muted-foreground);
+}
+
+.dz-blog-shell .dz-blog-adjacent a[rel='next'] {
+  grid-column: 2;
+  text-align: right;
+}
+
+.dz-blog-shell .dz-blog-adjacent span {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--color-fd-muted-foreground);
+  font-size: 0.875rem;
+}
+
+.dz-blog-shell .dz-blog-adjacent strong {
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.dz-blog-shell :is(a, button, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-fd-ring);
+  outline-offset: 4px;
+}
+
+@media (max-width: 640px) {
+  .dz-blog-shell .dz-blog {
+    padding: 2rem 1.25rem 3rem;
+  }
+
+  .dz-blog-shell .dz-blog-filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 0.25rem 0.25rem 1rem;
+    scroll-padding-inline: 0.25rem;
+  }
+
+  .dz-blog-shell .dz-blog-filters a {
+    flex-shrink: 0;
+  }
+
+  .dz-blog-shell .dz-blog-pagination {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+
+  .dz-blog-shell .dz-blog-pagination__numbers {
+    display: none;
+  }
+
+  .dz-blog-shell .dz-blog-pagination__state {
+    display: block;
+  }
+
+  .dz-blog-shell .dz-blog-card {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+    padding: 1.5rem 0;
+  }
+
+  .dz-blog-shell .dz-blog-detail {
+    padding-inline: 1.25rem;
+  }
+
+  .dz-blog-shell .dz-blog-adjacent {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dz-blog-shell .dz-blog-adjacent a[rel='next'] {
+    grid-column: auto;
+    text-align: left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dz-blog-shell .dz-blog-card {
+    transition: none;
+  }
+}
