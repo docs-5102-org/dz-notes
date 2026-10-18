@@ -1,0 +1,118 @@
+---
+title: Windows 11 自启动与服务管理笔记
+description: 按用途整理 Claude Cowork、SysMain、手机连接、Dolby 及输入组件的关闭条件、影响与恢复方式。
+category:
+  - 操作系统
+tags:
+  - Windows
+  - 自启动
+  - 服务管理
+---
+
+## 哪些项目可以按需关闭
+
+减少后台驻留时，先确认是否使用对应功能，再决定关闭入口。以下记录区分应用启动项、后台权限和 Windows 服务；关闭应用自启动，不代表相关服务也已停止。
+
+| 项目 | 类型与用途 | 适合关闭的条件 | 可能的影响 | 恢复方式 |
+| --- | --- | --- | --- | --- |
+| Claude 桌面应用自启动 | 登录时启动应用的启动项 | 不需要登录后立即使用 Claude | 需手动打开应用 | 重新启用启动项 |
+| Claude Cowork VM 相关服务 | 支撑本地 Cowork 虚拟机的后台服务；具体名称需本机核对 | 暂不使用依赖该服务的功能，且已确认服务归属 | 本地 Cowork 工作区可能无法启动 | 恢复记录的启动类型并启动服务 |
+| SysMain | Windows 性能相关服务 | 默认保留；只有排查明确的持续资源异常时才考虑临时停止作对照 | 性能表现可能变化，停止不保证更快 | 恢复原启动类型与运行状态 |
+| Phone Link（手机连接） | 手机与电脑互联应用 | 不使用手机通知、消息、通话等互联功能 | 相应同步、通知或互联功能不可用 | 重新开启功能、启动项或后台权限 |
+| 移动设备相关组件 | 手机与 PC 的跨设备功能，不能直接等同于 Phone Link | 不需要本机提供的相关功能，并已核对组件身份 | 所关闭功能对应的跨设备能力不可用 | 在对应设置中重新开启，必要时重新配对 |
+| Dolby 相关服务 | 随具体设备和音频软件提供的组件；用途以厂商说明为准 | 不需要对应音效，且已确认依赖关系与恢复方法 | 音效、控制面板或其他音频功能可能受影响 | 恢复服务设置；仍异常时使用设备厂商的驱动修复方案 |
+| Windows 输入体验相关组件 | 文本输入及相关系统体验 | 建议保留，不作为常规精简对象 | 停用关联输入服务可能导致输入法异常 | 恢复改动的服务设置并检查输入功能 |
+
+设置入口和组件名称可能随 Windows、应用及驱动版本变化。以下路径是常见入口；找不到时先在设置中搜索对应功能，核对版本后再处理。
+
+## 先区分三种管理入口
+
+### 应用自启动
+
+在“设置 → 应用 → 启动”中关闭不需要自动启动的应用，或在任务管理器的“启动应用”中禁用对应项目。恢复时重新开启即可。这些入口控制已注册的应用启动任务，不能据此判断 Windows 服务是否运行。
+
+参考：[Microsoft：配置启动应用](https://support.microsoft.com/en-us/windows/experience/startup-boot/configure-startup-applications-in-windows)。
+
+### 后台应用权限
+
+对支持此设置的应用，可在“设置 → 应用 → 安装的应用 → 对应应用 → 高级选项”中查看“后台应用权限”，按需选择“从不”。部分版本也可通过电源与电池页面管理后台活动。恢复时改回原选项。
+
+并非每个应用都提供此入口；桌面程序还可能通过自身设置或独立服务运行。即使安装路径含 `WindowsApps`，也不能只凭路径判断它是 UWP 应用，或断言后台权限能控制其全部组件。选择“从不”可能影响通知与同步；“终止”只结束当前运行，不能代替持久设置。
+
+参考：[Microsoft：后台应用与隐私](https://support.microsoft.com/en-us/windows/privacy/windows-background-apps-and-your-privacy)、[管理后台活动](https://support.microsoft.com/en-us/windows/experience/performance-optimization/manage-background-activity-for-apps-in-windows)。
+
+### Windows 服务
+
+按 `Win + R`，输入 `services.msc`，在目标服务的属性中核对服务名称、描述、可执行文件路径和依赖关系，并记录原启动类型及运行状态。
+
+- “停止”用于结束当前运行；服务仍可能被再次启动。
+- “手动”允许按需启动，不等于永不运行。
+- “禁用”会阻止服务启动，需要恢复启动类型后才能再次启动。
+
+对已确认无需使用的可选服务，可先停止并观察相关功能；确认影响可接受后，再考虑是否调整启动类型。恢复时按原记录还原，必要时启动服务或重启应用。修改若被权限或管理策略阻止，应查对应软件的支持说明，不要靠删除服务、改安装目录权限来绕过。
+
+## Claude Cowork VM 服务
+
+[Anthropic 的 Windows 部署文档](https://support.claude.com/en/articles/12622703-deploy-claude-desktop-for-windows)确认，Claude Desktop 包含运行 Cowork 虚拟机的后台服务，相关桌面功能依赖虚拟化支持。禁用已确认的相关服务可能使本地 Cowork 无法工作。
+
+原始笔记记录的服务候选名称为 `CoworkVMService`，程序为 `cowork-svc.exe`，路径为：
+
+```text
+E:\WindowsApps\Claude_1.18286.0.0_x64__pzs8sxrjxfjjc\app\resources\cowork-svc.exe
+```
+
+这是原笔记环境的安装记录，不是所有安装方式的固定路径。官方部署文档没有承诺该服务名称和路径适用于所有版本，不能只凭文件名就修改服务。应在本机核对服务属性、文件数字签名及安装来源。
+
+需要辅助定位时，可在 PowerShell 中只读查询：
+
+```powershell
+Get-CimInstance Win32_Service |
+  Where-Object {
+    $_.Name -like '*Cowork*' -or
+    $_.DisplayName -like '*Cowork*' -or
+    $_.PathName -like '*cowork-svc.exe*'
+  } |
+  Select-Object Name, DisplayName, State, StartMode, PathName
+```
+
+查询命中只是核对线索，不代表可以批量禁用。`Name`、`DisplayName` 和 `PathName` 的含义见 [Win32_Service 官方文档](https://learn.microsoft.com/en-us/windows/win32/cimwin32prov/win32-service)。
+
+如果只是希望登录时不弹出 Claude，先关闭应用启动项。如果确定暂时不用本地 Cowork，再检查已确认的服务能否通过支持的方式停用；恢复时还原原启动类型、启动服务并打开应用验证。更新后需重新检查状态，不要假定一次修改永久有效。
+
+## SysMain：不能只凭 SSD 判断是否禁用
+
+SysMain 是 Windows 性能相关服务，不能将它理解为只为机械硬盘设计，也不能因电脑使用 SSD 就认定应该禁用。是否需要排查应依据实际异常，不能只看磁盘类型。
+
+默认保留原设置。若怀疑其持续占用 CPU 或磁盘，先用任务管理器、资源监视器确认占用来源和时间范围；必要时临时停止作对照，比较相同工作负载下的资源占用及应用启动表现。无改善时恢复，不把短期变化直接写成通用优化结论。
+
+Microsoft 的 [Windows IoT Enterprise 服务指导](https://learn.microsoft.com/en-us/windows/iot/iot-enterprise/optimize/services)将 SysMain 描述为维护和改善系统性能的服务，并标注不应禁用。该文面向 IoT 专用设备，不能直接当作普通 Windows 11 电脑的整套精简清单，但也不支持“SSD 必须禁用”的说法。
+
+## Phone Link 与移动设备
+
+### Phone Link（手机连接）
+
+若不需要手机通知、消息、通话等功能，可优先在 Phone Link 自身设置中关闭对应功能，并关闭其应用启动项。若当前版本提供后台权限入口，再按需限制后台活动；恢复时重新开启原选项。
+
+只关闭某项功能时，其他互联功能不一定同时关闭。应按实际需要逐项调整，避免把“关闭自启动”写成“永久停止所有手机互联进程”。功能与设备支持范围见 [Microsoft：Phone Link 要求和设置](https://support.microsoft.com/en-us/windows/apps/phonelink/phone-link-requirements-and-setup)。
+
+### 移动设备相关组件
+
+“移动设备”相关组件不能直接等同于 Phone Link。先确认看到的是启动项、应用、系统设置入口还是服务，再核对发布者和用途。[Microsoft 的手机摄像头功能介绍](https://blogs.windows.com/windows-insider/2024/02/29/ability-to-use-a-mobile-devices-camera-as-a-webcam-on-your-pc-begins-rolling-out-to-windows-insiders/)曾给出“设置 → 蓝牙和设备 → 移动设备 → 管理设备”入口；该文是 2024 年的 Insider 发布记录，当前可用功能和开关以本机版本为准。
+
+不需要某项跨设备功能时，优先关闭该功能入口；如果看到单独的“移动设备”启动项，也应先确认其归属。不能据显示名称猜测服务名，再连带禁用蓝牙或通用设备服务。恢复时重新启用对应功能或启动项，必要时按界面提示重新连接设备。
+
+## Dolby Fusion API Service 与 Dolby DAX API Service
+
+这两个名称来自原笔记，应作为本机服务的核查线索。仅凭名称无法证明 Fusion 一定是 DAX 的新一代引擎，也无法证明并存是升级残留；未找到足以支持这些通用结论的官方说明，因此不据此判断哪个“多余”。
+
+先核对服务程序的数字签名、版本及所属音频驱动包，再查对应电脑型号的厂商支持文档。若只是不用某项音效，优先在 Dolby 或设备厂商的音频面板中关闭该效果。
+
+只有确认相关服务用途、不使用其功能且能恢复时，才考虑逐个停止作对照，检查扬声器、耳机、音效面板及日常音频使用是否受影响。出现异常立即恢复原启动类型与运行状态；必要时使用设备厂商提供的音频驱动修复，不直接删除服务或文件。
+
+## Windows 输入体验：建议保留
+
+任务管理器中的“Windows 输入体验”是组件显示信息，不能直接当作某个可禁用服务的名称。输入法、触摸键盘、手写等输入能力可能涉及多个组件，不能因为当前不用触屏就统一关闭。
+
+[Microsoft 输入法故障说明](https://learn.microsoft.com/en-us/troubleshoot/windows-client/shell-experience/troubleshoot-ime-common-issues)明确指出，禁用 Text Input Management Service 可能使 `Ctfmon.exe` 无法启动、输入法框架不能初始化。服务名称随版本可能不同，应按本机及对应文档核对。
+
+如果只是调整触摸键盘的显示方式，使用系统提供的键盘设置，不通过禁用输入基础服务实现。若此前已改动并出现输入异常，恢复原服务设置，按官方故障说明检查服务状态与输入法功能。

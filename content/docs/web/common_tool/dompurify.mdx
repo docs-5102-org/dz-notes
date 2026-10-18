@@ -1,0 +1,99 @@
+---
+title: DOMPurify：HTML 清洗与 React 富文本安全渲染
+description: 以公告富文本为例，说明 DOMPurify 的使用、配置边界及与后端 Jsoup 清洗的配合。
+category:
+  - 工具集
+tags:
+  - DOMPurify
+  - React
+  - XSS
+  - 富文本
+---
+
+## 适用场景
+
+DOMPurify 用于清洗不可信 HTML，降低跨站脚本攻击（XSS）风险。公告、评论等功能需要显示富文本时，应先清洗，再交给 HTML 渲染入口。普通文本直接使用 React 的文本插值即可，无需转换成 HTML。
+
+DOMPurify 依赖 DOM 环境：可在浏览器中使用，也可在 Node.js 中配合合适的 DOM 实现使用，并非只能用于前端。运行方式与配置参见 [DOMPurify 官方说明](https://github.com/cure53/DOMPurify)。
+
+## 为什么不能直接渲染公告 HTML
+
+React 的 `dangerouslySetInnerHTML` 会将字符串作为 HTML 插入，不会替应用完成安全清洗。后台保存或编辑器生成的内容，也可能包含历史脏数据、导入内容或恶意输入。
+
+例如，下面的事件属性在相应事件发生时可能执行代码：
+
+```html
+<img src="x" onerror="alert(1)">
+```
+
+不能将风险简单理解为“插入的所有脚本都会执行”：通过 `innerHTML` 插入的 `script` 元素不会因此执行，但事件属性等入口仍可能引入 XSS。分别参见 [React 对原始 HTML 的警告](https://react.dev/reference/react-dom/components/common#dangerously-setting-the-inner-html) 和 [MDN 的 innerHTML 安全说明](https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML#security_considerations)。
+
+## React 公告渲染示例
+
+先在使用该库的应用中安装依赖：
+
+```bash
+npm install dompurify
+```
+
+下面示例用于浏览器端 React 渲染，限定为 HTML，并额外禁止样式标签和内联样式：
+
+```tsx
+import DOMPurify from 'dompurify';
+
+type AnnouncementProps = {
+  content: string;
+};
+
+export function Announcement({ content }: AnnouncementProps) {
+  const markup = {
+    __html: DOMPurify.sanitize(content, {
+      USE_PROFILES: { html: true },
+      FORBID_TAGS: ['style'],
+      FORBID_ATTR: ['style'],
+    }),
+  };
+
+  return <div dangerouslySetInnerHTML={markup} />;
+}
+```
+
+将清洗结果直接用于渲染，不要随后拼接未经清洗的 HTML，也要检查后续处理库是否会重新引入危险内容。`DOMPurify.removed` 可辅助调试，不应用于判断输入是否安全。
+
+如果应用有服务端渲染（SSR），需单独处理服务端的 DOM 环境；不要假定上面的浏览器导入方式能直接运行于所有服务端。DOMPurify 官方给出了 Node.js 配合 `jsdom` 的示例，并提醒持续更新 DOM 实现及清洗库。
+
+## 清洗范围与业务配置
+
+在默认安全配置下，DOMPurify 会清理危险元素、事件属性及不安全的 URL 等内容。它可保留段落、强调、列表、表格、图片等常见富文本，但实际输出取决于版本、配置和输入，不能把标签清单视为固定承诺。
+
+- `USE_PROFILES: { html: true }` 将范围限制为 HTML，不启用 SVG、MathML。
+- 如需更严格的业务白名单，可使用 `ALLOWED_TAGS`、`ALLOWED_ATTR`；不要同时设置 `USE_PROFILES` 和 `ALLOWED_TAGS`，官方说明前者会覆盖后者。
+- HTML 清洗不等于业务内容审核。图片来源、链接目标、内容长度等仍需业务规则约束；也不能将清洗结果直接当作 JavaScript、CSS 等其他上下文的安全输入。
+
+配置和后处理的注意事项见 [DOMPurify 官方文档](https://github.com/cure53/DOMPurify#can-i-configure-dompurify)。不要自行用正则表达式替代 HTML 清洗器。
+
+## 后端 Jsoup 与前端清洗如何配合
+
+对于 Java 后端的公告功能，可采用以下流程：
+
+1. 后端校验操作权限、字段和长度，在保存或更新富文本前使用 Jsoup `Safelist` 清洗。
+2. 前端在 HTML 渲染入口使用 DOMPurify 再清洗，覆盖历史数据、导入内容及其他来源。
+3. 为两端约定所需标签、属性和 URL 规则，避免内容被意外删除；历史数据也应纳入处理范围。
+
+Jsoup 的最小示例：
+
+```java
+import org.jsoup.Jsoup;
+import org.jsoup.safety.Safelist;
+
+String safeHtml = Jsoup.clean(rawHtml, Safelist.basicWithImages());
+// 完成权限、字段等业务校验后，保存 safeHtml，而非 rawHtml。
+```
+
+`basicWithImages()` 允许基础文本标签和图片，并对图片 URL 协议作限制；它不包含表格，不能假定与前端示例保留的格式完全一致。需要表格等能力时，应评审白名单再扩展，并用实际公告样例验证两端结果。详见 [Jsoup 清洗教程](https://jsoup.org/cookbook/cleaning-html/safelist-sanitizer) 与 [Safelist API](https://jsoup.org/apidocs/org/jsoup/safety/Safelist)。
+
+前端清洗可以被客户端绕过，不能代替服务端校验；两层清洗也不能代替身份认证、授权和其他业务安全措施。
+
+## 接入后的检查
+
+检查普通段落、列表、表格和图片能否按约定显示，以及事件属性、危险 URL、脚本和嵌入内容是否被清除。确认测试覆盖新增、编辑、历史公告及导入路径，并在升级库或调整白名单后复查。示例攻击片段应在隔离的测试环境中验证。
