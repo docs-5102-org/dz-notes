@@ -1,0 +1,909 @@
+---
+title: 本地局域网 SSL 证书配置指南
+date: "2026-10-23"
+category: "SSL, DNS"
+excerpt: 使用 WSL、acme.sh 与华为云 DNS-01 为 Windows Nginx 配置局域网 HTTPS，附证书维护脚本下载、部署步骤与续期排查。
+---
+
+本文提供证书维护脚本 <a href="/assets/_resources/scripts/issue-cert.sh" download="issue-cert.sh">下载 issue-cert.sh</a>。保存到本机后，按第 5.0、6.3 或 10.1 节复制到 WSL 的 `/root/bin/issue-cert.sh` 使用。
+
+> 本文整理自原项目文档，保留其环境参数、操作顺序和兼容说明。文中的“本机”指原文示例环境；路径、局域网 IP、域名和邮箱需按自己的环境替换。本文同时提供原项目可选离线验证文件 <a href="/assets/_resources/scripts/validation/test_issue_cert.py" download="test_issue_cert.py">下载 validation/test_issue_cert.py</a>；请按第 13 节保留它与主脚本的相对目录关系。
+>
+> 原环境域名、私人项目路径、证书正文和账号相关日志标识已脱敏；历史日志与验证记录不代表本文导入时重新执行过签发或连通性测试。
+
+适用环境：Windows 已安装 WSL，域名由华为云 DNS 托管，Windows Nginx 位于 `D:\SoftWare\nginx-1.12.2`。目标是让开发者工具和同一局域网内的手机，通过真实域名和受信任的 HTTPS 证书访问本机图片服务。
+
+采用 **WSL 中的 acme.sh + 华为云 AK/SK + DNS-01 签发 + Windows Nginx 反向代理**。证书部署到 Windows Nginx；电脑和手机通常无需额外导入证书。第 4 节保留 lego 安装方式作为可选参考，本文后续统一使用 acme.sh。
+
+DNS-01 通过公网 TXT 记录验证域名控制权，不要求本机能够从公网访问。因此无需公网服务器、端口映射或开放公网 80/443。签发机器仍需联网访问华为云 API、DNS 和 Let's Encrypt。参见 [Let's Encrypt DNS-01 说明](https://letsencrypt.org/docs/challenge-types/)。
+
+## 1 本机路径与需要填写的参数
+
+| 项目 | 本文采用的值 | 是否需要替换 |
+| --- | --- | --- |
+| Nginx 根目录 | `D:\SoftWare\nginx-1.12.2` | 沿用本机目录 |
+| Nginx 主配置 | `D:\SoftWare\nginx-1.12.2\conf\nginx.conf` | 沿用本机目录 |
+| 站点配置目录 | `D:\SoftWare\nginx-1.12.2\conf\vhost` | 沿用本机目录 |
+| 新增站点文件 | `D:\SoftWare\nginx-1.12.2\conf\vhost\dev-img-https.conf` | 新建文件 |
+| 证书部署目录 | `D:\SoftWare\nginx-1.12.2\conf\ssl\dev-img` | 新建目录 |
+| HTTPS 域名 | `dev-img.example.com` | 替换为你已有的实际域名 |
+| Windows 局域网 IPv4 | `192.168.122.101` | 本机当前 WLAN 地址；网络变化后重新确认 |
+| Windows 图片服务 | `http://127.0.0.1:9770` | 确认实际图片服务地址与端口 |
+| 华为云 API 区域 | `cn-north-4` | 示例，确认可访问目标公网 Zone 的区域及授权 |
+| ACME 联系邮箱 | `you@example.com` | 替换为你的邮箱 |
+| WSL 发行版 | `Ubuntu` | 替换为本机实际发行版名 |
+| WSL 用户与主目录 | `root`、`/root` | 本机使用 root；通过 `whoami`、`echo "$HOME"` 确认 |
+
+本机已有 `include vhost/*.conf;`，新增站点文件即可，不需要重复添加 include。实际 Nginx 为 **1.12.2 / OpenSSL 1.0.2l**，本文使用 `ssl_protocols TLSv1.2;`。该组合不能使用 TLS 1.3；TLS 1.3 需要更高版本的 Nginx 和 OpenSSL。参见 [Nginx SSL 模块说明](https://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_protocols)。
+
+`9770` 与本机现有部分反向代理配置一致，但仍需确认图片接口确实运行在该端口。若服务运行在 Docker、WSL 或另一台电脑，应将 `proxy_pass` 改成 **Windows Nginx 能访问到的地址**。
+
+### 1.1 先在华为云添加开发域名解析
+
+先确定用于开发的完整域名，再申请该域名的证书。本机当前 Windows WLAN 的局域网 IPv4 是 **`192.168.122.101`**，A 记录指向这个地址。网络变化后，可在 Windows PowerShell 中执行 `ipconfig`，确认正在联网的 WLAN 或以太网适配器的 IPv4；不要使用 WSL 或 VMware 虚拟网卡的地址。
+
+以下以主域名 `example.com`、开发子域名 `dev-img.example.com` 为例。操作时将 `example.com` 换成你自己的实际主域名。
+
+1. 登录华为云控制台，进入 **云解析服务 DNS → 公网域名**。
+2. 点击已由华为云托管的实际主域名，进入解析记录列表。
+3. 点击 **添加记录集**，为开发子域名新增 A 记录，按下表填写。
+4. 确认提交，等待解析缓存更新。
+
+| 配置项 | 填写内容 |
+| --- | --- |
+| 主机记录 | `dev-img` |
+| 记录类型 | **A — 将域名指向 IPv4 地址** |
+| 线路类型 | 全网默认 |
+| TTL | `300` 秒 |
+| 值或 IP 地址 | `192.168.122.101` |
+
+主机记录只填相对于当前主域名的前缀 `dev-img`；IP 栏只填 `192.168.122.101`，不带 `https://`、端口或路径。参见 [华为云添加子域名解析说明](https://support.huaweicloud.com/dns_faq/dns_faq_042.html)。
+
+添加后的映射关系为：
+
+```text
+dev-img.example.com → 192.168.122.101
+```
+
+为开发环境新增独立子域名，保留现有业务域名的解析。若准备使用的子域名已有记录，先确认其用途；同名同线路的 CNAME 与 A 记录不能并存。
+
+后续三个位置必须使用同一个**完整实际域名**：
+
+| 使用位置 | 本文示例 |
+| --- | --- |
+| 第 5.1 节 `settings.sh` 的证书域名 | `CERT_DOMAIN='dev-img.example.com'` |
+| 第 7.2 节 Nginx 的站点域名 | `server_name dev-img.example.com;` |
+| 小程序图片地址 | `https://dev-img.example.com/实际图片路径.png` |
+
+在 Windows PowerShell 中检查解析，将示例域名替换为实际值：
+
+```powershell
+Resolve-DnsName dev-img.example.com -Type A
+```
+
+结果应包含 `192.168.122.101`。这一步只验证域名解析；证书签发、Nginx 配置及防火墙放行完成后，才能验证 HTTPS 图片访问。
+
+公网 DNS 中填写局域网 IP，只能让能访问该局域网的设备连接到本机，不会将电脑开放到公网。手机需要连接与电脑可互通的局域网。原文示例环境记录了电脑与手机均可访问；在自己的环境中仍需按第 8、9 节验证。
+
+这里添加的 A 记录负责图片访问时的域名映射；后续 DNS-01 签发使用的 `_acme-challenge` TXT 记录由 acme.sh 自动管理。
+
+## 2 证书工具与华为云插件选择
+
+acme.sh 和 lego 都是申请、续期 HTTPS 证书的 ACME 客户端，均可向 Let's Encrypt 申请受信任证书。按照本机的使用方式，本文选择 **acme.sh + `dns_hw` 插件**，两者的区别见第 4.3 节。
+
+acme.sh 的两个华为云插件使用不同凭证，不要混用：
+
+| 插件 | 凭证变量 | 本文是否使用 |
+| --- | --- | --- |
+| `dns_hw` | `HW_AK`、`HW_SK`，可选 `HW_Region` | 使用，适配已有 AK、SK |
+| `dns_huaweicloud` | `HUAWEICLOUD_Username`、`HUAWEICLOUD_Password`、`HUAWEICLOUD_DomainName` | 不使用，属于用户名和密码方式 |
+
+`HW_Region` 如 `cn-north-4`。`dns_huaweicloud` 的 `DomainName` 是华为云账号名，不是申请证书的网站域名。参见 [官方 AK/SK 插件 dns_hw](https://github.com/acmesh-official/acme.sh/blob/master/dnsapi/dns_hw.sh) 和 [账号密码插件 dns_huaweicloud](https://github.com/acmesh-official/acme.sh/blob/master/dnsapi/dns_huaweicloud.sh)。
+
+旧版 acme.sh 可能不包含 `dns_hw.sh`。第 4.2 节会安装并检查该插件；不能直接用 `dns_huaweicloud` 替代 `dns_hw`。已创建的 `huawei-ak`、`huawei-sk` 文件可以继续使用，第 6 节会把其中的值读入 acme.sh 所需变量。
+
+## 3 准备华为云 DNS 权限和访问密钥
+
+### 3.1 确认域名的公网权威 DNS
+
+域名可以在其他平台注册，但实际公网权威 DNS 必须由华为云托管，或将 ACME 验证子域委派给华为云。仅在华为云控制台添加一个未生效的 Zone，无法完成验证。
+
+在 Windows PowerShell 中检查主域名的 NS：
+
+```powershell
+Resolve-DnsName example.com -Type NS
+```
+
+确认返回的 NS 与华为云对应公网域名的 NS 一致。若你的域名已经正常使用华为云 DNS，保留现状即可。
+
+**签发证书的 TXT 记录必须在公网可查询的 Zone 中。** 华为云绑定 VPC 的“内网域名”不能单独完成公网 CA 的 DNS-01 验证；家庭或办公局域网的 DNS 也不等同于华为云 VPC 内网 DNS。
+
+### 3.2 使用专门的 IAM 用户
+
+为证书自动化准备独立 IAM 用户，并授予目标 DNS 资源的必要权限。需要查询 Zone，以及查询、创建、更新和删除验证记录。可从这些授权项开始配置，再按实际 API 报错补齐依赖权限：
+
+```text
+dns:zone:list
+dns:zone:get
+dns:recordset:list
+dns:recordset:get
+dns:recordset:create
+dns:recordset:update
+dns:recordset:delete
+```
+
+这是操作范围清单，不是可直接导入的完整 IAM 策略。资源范围、授权区域与依赖项应结合你的 IAM 配置确定。参见 [华为云 DNS 授权项和依赖说明](https://support.huaweicloud.com/api-dns/dns_api_70002.html)。
+
+### 3.3 获取 AK 和 SK
+
+使用上述 IAM 用户登录华为云控制台，进入 **右上角用户名 → 我的凭证 → 访问密钥 → 新增访问密钥**，按要求完成验证并下载密钥文件。
+
+AK 是访问密钥 ID，SK 是对应的秘密访问密钥；SK 需在创建时妥善保存。它们与域名证书的私钥是不同用途的凭证。参见 [华为云访问密钥说明](https://support.huaweicloud.com/usermanual-ca/ca_01_0003.html)。
+
+AK、SK 只提供给 WSL 签发工具，不写入 Nginx、前端代码、项目配置或 Git 仓库，也不需要发送到聊天中。
+
+## 4 在现有 WSL 中安装证书工具
+
+Windows PowerShell：
+
+```powershell
+wsl.exe --list --verbose
+wsl.exe --distribution Ubuntu --user root
+```
+
+已有 WSL，无需重复执行 `wsl --install`。将 `Ubuntu` 换成列表中的实际发行版名。后续标记为 Bash 的命令均在 WSL 中运行，本机继续使用 root 用户，避免切换用户导致证书目录发生变化。参见 [Microsoft WSL 命令说明](https://learn.microsoft.com/en-us/windows/wsl/basic-commands)。
+
+以下依赖安装命令适用于 Ubuntu 或 Debian：
+
+```bash
+apt-get update
+apt-get install -y ca-certificates curl wget tar openssl util-linux
+whoami
+echo "$HOME"
+ls -ld /mnt/d/SoftWare/nginx-1.12.2/conf/vhost
+```
+
+Windows 的 `D:\` 在 WSL 中通常对应 `/mnt/d/`。本方案只在 Windows 上运行 Nginx，WSL 无需安装 Nginx，也无需将 WSL IP 暴露给手机。
+
+### 4.1 lego 安装方式 可选参考
+
+**本机后续使用 acme.sh，可跳过本小节，直接执行第 4.2 节。** 已经安装 lego 也无需卸载；后续不会调用它。
+
+以下保留 [lego v4.26.0 官方发布包](https://github.com/go-acme/lego/releases/tag/v4.26.0)的安装方式。它是一个编译好的 Linux 程序，下面根据架构选择 amd64 或 arm64，并核对发布包校验值：
+
+```bash
+(
+  set -e
+  case "$(uname -m)" in
+    x86_64) lego_arch=amd64 ;;
+    aarch64|arm64) lego_arch=arm64 ;;
+    *) echo '请从官方发布页选择适配的 Linux 架构'; exit 1 ;;
+  esac
+  lego_version=4.26.0
+  lego_archive="lego_v${lego_version}_linux_${lego_arch}.tar.gz"
+  lego_download_dir="$(mktemp -d)"
+  cd "$lego_download_dir"
+  curl -fLO "https://github.com/go-acme/lego/releases/download/v${lego_version}/${lego_archive}"
+  curl -fLO "https://github.com/go-acme/lego/releases/download/v${lego_version}/lego_${lego_version}_checksums.txt"
+  sha256sum --check --ignore-missing "lego_${lego_version}_checksums.txt"
+  tar -xzf "$lego_archive" lego
+  install -d -m 700 "$HOME/.local/bin"
+  install -m 700 lego "$HOME/.local/bin/lego"
+)
+
+"$HOME/.local/bin/lego" --version
+```
+
+若 WSL 访问 GitHub 不通，可用 Windows 浏览器从上述官方发布页下载对应 Linux 包和校验文件，再放到 WSL 可访问的位置完成校验与解压。不要误用 Windows 版二进制。
+
+### 4.2 acme.sh 安装方式 本文使用
+
+在 WSL 的 root 账号下，使用官方在线安装入口安装到 `/root/.acme.sh`，无需先克隆 Git 仓库。以下 wget 和 curl 方式**二选一**，先将 `my@example.com` 替换为你的实际邮箱。
+
+使用 wget：
+
+```bash
+wget -O - https://get.acme.sh | sh -s email=my@example.com --nocron
+```
+
+或者使用 curl：
+
+```bash
+curl -fsSL https://get.acme.sh | sh -s email=my@example.com --nocron
+```
+
+安装完成后检查程序版本：
+
+```bash
+"$HOME/.acme.sh/acme.sh" --version
+```
+
+`--nocron` 表示安装时不创建 Linux cron 任务，后续使用第 10 节的 Windows 任务计划程序调度。安装方式和该选项见 [acme.sh 官方安装说明](https://github.com/acmesh-official/acme.sh/wiki/How-to-install)，在线入口支持传递该选项，见 [官方安装入口脚本](https://get.acme.sh/)。如果已经安装且包含 `dns_hw.sh`，可跳过安装命令；如果旧版缺少插件，可按上述在线安装命令更新，再检查插件。已有其他证书时保留原 `.acme.sh` 目录，不要删除重建。
+
+检查安装目录中是否包含华为云 AK/SK 插件：
+
+```bash
+if [ -f "$HOME/.acme.sh/dnsapi/dns_hw.sh" ]; then
+  printf 'dns_hw 插件已就绪\n'
+else
+  printf '缺少 dns_hw.sh，请先更新 acme.sh，再执行后续签发步骤\n'
+fi
+```
+
+必须看到插件已就绪后再继续。本文使用完整程序路径，不依赖安装后是否已经刷新终端中的 `acme.sh` 别名。root 账号对应的程序路径是：
+
+```text
+/root/.acme.sh/acme.sh
+```
+
+### 4.3 acme.sh 与 lego 的区别
+
+| 对比项 | acme.sh | lego |
+| --- | --- | --- |
+| 用途 | 申请、续期和部署 HTTPS 证书 | 申请和续期 HTTPS 证书 |
+| 程序形式 | Shell 脚本，调用 OpenSSL 等工具 | Go 编译的可执行程序 |
+| 本文 root 账号的安装位置 | `/root/.acme.sh/acme.sh` | `/root/.local/bin/lego` |
+| 首次申请命令 | `--issue` | v4 使用 `run` |
+| 续期入口 | `--renew` 或 `--cron` | v4 使用 `renew` |
+| 部署证书 | 使用 `--install-cert`，可记录部署路径和重载命令 | 本文旧方案通过额外脚本复制、重载 |
+| 华为云 AK/SK 插件 | `dns_hw`，读取 `HW_AK`、`HW_SK` | `huaweicloud`，读取 `HUAWEICLOUD_ACCESS_KEY_ID`、`HUAWEICLOUD_SECRET_ACCESS_KEY` |
+| 本文后续选择 | 使用 | 只保留安装参考 |
+
+同样向 Let's Encrypt 申请时，客户端的选择不会改变证书的受信任程度。这里选择 acme.sh，是为了沿用你的工具和操作方式。两者的命令、变量及内部证书目录不同，不能交叉套用。lego 上述示例使用 v4 命令格式，v5 有调整。参见 [acme.sh 官方项目](https://github.com/acmesh-official/acme.sh)、[lego 华为云插件](https://go-acme.github.io/lego/dns/huaweicloud/) 和 [lego v5 迁移说明](https://go-acme.github.io/lego/migration/)。
+
+## 5 在 WSL 中保存本机参数与密钥
+
+本机在 WSL 中使用 root 用户，`$HOME` 对应 `/root`，本节文件实际位于：
+
+```text
+/root/.config/dev-img-acme/settings.sh
+/root/.config/dev-img-acme/huawei-ak
+/root/.config/dev-img-acme/huawei-sk
+```
+
+可执行 `whoami` 和 `echo "$HOME"` 确认当前用户与目录。后续签发、续期保持使用同一个 WSL 用户。
+
+### 5.0 推荐：使用脚本交互引导
+
+首次使用无需手动创建上述三个文件。先下载本文提供的脚本到 Windows 下载目录，将下面源路径中的 `你的用户名` 替换为实际 Windows 用户目录名；若另存到其他位置，同步修改源路径。然后在 WSL root 终端复制脚本，再运行 `init`：
+
+```bash
+install -d -m 700 "$HOME/bin"
+cp '/mnt/c/Users/你的用户名/Downloads/issue-cert.sh' \
+  "$HOME/bin/issue-cert.sh"
+chmod 700 "$HOME/bin/issue-cert.sh"
+bash -n "$HOME/bin/issue-cert.sh"
+bash "$HOME/bin/issue-cert.sh" init
+```
+
+引导先确认以下四个路径，再确认完整域名、联系邮箱、华为云 API 区域和是否重载 Nginx。首次回车使用默认路径，已有设置时回车保留方括号中的当前值。
+
+| 路径参数 | 默认值 | 创建或生成时机 |
+| --- | --- | --- |
+| `SETTINGS_FILE`：配置文件 | `$HOME/.config/dev-img-acme/settings.sh` | `init` 创建父目录并保存配置 |
+| `ACME_HOME`：acme.sh 安装及账号目录 | `$HOME/.acme.sh` | 未安装时由 `issue` 下载安装；已有程序迁移见下文 |
+| `CERT_DIR`：证书部署目录 | `/mnt/d/SoftWare/nginx-1.12.2/conf/ssl/dev-img` | `issue`、`renew` 或 `deploy` 部署时创建并写入证书 |
+| `LOG_DIR`：日志目录 | `$HOME/.local/state/dev-img-acme` | 启动时创建当前日志；`init` 保存新的日志目录供下次执行使用 |
+
+路径输入使用 WSL 格式，例如 `/root/certs/settings.sh`、`/root/tools/acme.sh`、`/mnt/d/certs/dev-img`；不要填写 `D:\...` 形式的 Windows 路径。支持 `~/`、`$HOME/` 和相对路径，保存时会转换为绝对路径，后续从其他工作目录执行也能定位。路径有空格时直接输入，不需要额外加引号。
+
+四个路径会写入选定的配置文件，并记入固定的 **`$HOME/.config/dev-img-acme/paths.conf`**；本机 root 用户对应 `/root/.config/dev-img-acme/paths.conf`。这个文件只记录路径，不保存 AK/SK，也不会作为 Shell 脚本执行。它用于在配置文件自定义到其他位置后找到新配置，后续直接执行 `issue`、`renew` 或 `deploy` 即可，不用重复传入环境变量。没有这个文件时继续读取原来的默认配置，兼容已有安装。
+
+域名填写你自己的实际开发域名（下文统一用 `dev-img.example.com` 作为占位示例）；区域默认 `cn-north-4`，已有配置时沿用原值。空值或示例域名、邮箱会要求重新填写。文档其余手动命令与文件路径示例按默认目录编写；自定义后优先使用统一脚本，手动操作时替换为实际路径。
+
+若已有有效的 AK/SK 文件，直接复用，不重复输入、不覆盖密钥。文件缺失或内容无效时，引导隐藏输入相应密钥，并写入现有配置指定的文件路径；没有配置路径时使用本节开头的默认路径。只输入密钥值，不加变量名或引号。
+
+`init` 保存配置及路径，不从网络安装 acme.sh、不签发证书、不部署或重载 Nginx。若已安装 acme.sh，但将程序目录改为空的新目录，脚本会复制完整安装目录，包括账号和证书状态，原目录保留；不会只复制可执行脚本。新目录非空且没有可执行程序时会报错，避免覆盖其他数据；若新目录已有 acme.sh，则沿用该目录已有状态，不合并原目录。
+
+新配置默认提示 `RELOAD_NGINX=0`，适合尚未配置 HTTPS 站点的首次安装；**如果现有 Nginx 站点已经配置并验证可用，再选择 `1`**。后续也可再次运行 `init` 修改这个选项。变更证书部署目录后，需同步修改 Nginx 的 `ssl_certificate` 和 `ssl_certificate_key`；脚本不会自动修改站点配置。
+
+已有配置会先在原位置备份为 `原配置文件名.bak-运行编号`，原有内容、注释和自定义参数保留，在文件末尾追加本次确认的参数。如果更换配置路径，原配置保留，新配置保存到所选位置，路径记录随后更新；不会覆盖另一份已存在的目标配置。兼容旧版 `HUAWEICLOUD_*` 路径和区域名称。配置、路径记录与新建密钥文件权限为 `600`；所有输入完成后才开始保存，输入过程中按 Ctrl+C 或输入结束会取消本次修改。重复执行 `init` 会再生成备份并追加一组参数，以末尾值为准。
+
+修改日志目录的当次引导日志仍写入启动时的目录，脚本结束时会打印实际日志路径；新的日志目录从下一次执行生效。自定义配置文件位置不会自动改变已有 AK/SK 文件路径，密钥继续按原设置复用。
+
+**你已经配置成功时无需再次初始化。** 更新脚本后直接使用原来的 `settings.sh` 和密钥文件即可。完成引导后，可跳过 5.1～5.4 的手动创建步骤，继续第 6 节。
+
+### 5.1 可选：手动写入参数文件
+
+如果已经创建 `settings.sh`，保留你已填写的真实域名、邮箱和两个密钥文件，无需重建。第 6 节的统一脚本兼容旧版 lego 的密钥路径变量，签发与续期共用这些配置；新配置建议使用下面的名称。以下整段命令用于首次创建参数文件，会覆盖同名文件：
+
+```bash
+install -d -m 700 "$HOME/.config/dev-img-acme"
+umask 077
+cat > "$HOME/.config/dev-img-acme/settings.sh" <<'EOF'
+CERT_DOMAIN='dev-img.example.com'
+ACME_EMAIL='you@example.com'
+export HW_Region='cn-north-4'
+HW_AK_FILE="$HOME/.config/dev-img-acme/huawei-ak"
+HW_SK_FILE="$HOME/.config/dev-img-acme/huawei-sk"
+EOF
+chmod 600 "$HOME/.config/dev-img-acme/settings.sh"
+nano "$HOME/.config/dev-img-acme/settings.sh"
+```
+
+修改域名、邮箱和区域。`cn-north-4` 是示例值，区域必须是 DNS API 支持且当前 IAM 用户具备相关授权的区域，不能根据域名后缀或电脑所在地猜测。没有 nano 时，可用其他文本编辑器。
+
+在 nano 中，按 **Ctrl + O → Enter（回车）→ Ctrl + X** 保存并退出。底部出现 `File Name to Write` 时，表示正在等待确认保存路径，直接按 Enter 即可；底部快捷键中的 `^` 表示 Ctrl。
+
+`HW_AK_FILE` 和 `HW_SK_FILE` 是统一脚本自定义的**本地密钥文件路径**，不是 acme.sh 插件原生的参数。签发和续期时会读取文件，再导出插件真正使用的 `HW_AK`、`HW_SK`。它们不是额外申请的 ID；仅手动写入这些路径不会创建密钥文件。使用 `init` 会引导创建，选择手动配置则继续第 5.2 节。
+
+为兼容之前已保存的配置，脚本按以下顺序读取，当前名称优先：
+
+| 参数 | 当前名称 | 兼容的旧名称 | 两者均未填写时 |
+| --- | --- | --- | --- |
+| AK 文件路径 | `HW_AK_FILE` | `HUAWEICLOUD_ACCESS_KEY_ID_FILE` | `$HOME/.config/dev-img-acme/huawei-ak` |
+| SK 文件路径 | `HW_SK_FILE` | `HUAWEICLOUD_SECRET_ACCESS_KEY_FILE` | `$HOME/.config/dev-img-acme/huawei-sk` |
+| 华为云区域 | `HW_Region` | `HUAWEICLOUD_REGION` | `cn-north-4` |
+
+脚本会打印实际读取的配置文件和 AK/SK 文件路径，不打印密钥内容。若已经将脚本复制到 `/root/bin/`，文档旁的脚本更新后，需要重新复制覆盖 WSL 中的脚本再运行。
+
+### 5.2 手动创建 AK 和 SK 文件
+
+在 WSL 中创建或打开 AK 文件：
+
+```bash
+nano "$HOME/.config/dev-img-acme/huawei-ak"
+```
+
+文件中只填入 **AK 的实际值**。不要加引号，不要写 `AK=`、变量名或 `export`，也不要带额外空格。文件内容为一行，例如：
+
+```text
+你的实际AK值
+```
+
+按 **Ctrl + O → Enter → Ctrl + X** 保存并退出，再创建 SK 文件：
+
+```bash
+nano "$HOME/.config/dev-img-acme/huawei-sk"
+```
+
+文件中只填入 **SK 的实际值**，同样保存并退出。注意不要把 AK、SK 的值填反。
+
+最后设置文件权限：
+
+```bash
+chmod 600 "$HOME/.config/dev-img-acme/huawei-ak" \
+          "$HOME/.config/dev-img-acme/huawei-sk"
+```
+
+### 5.3 补全已有配置中的缺失项
+
+如果 `settings.sh` 已写好，但 AK 或 SK 文件尚未创建，直接运行第 5.0 节的 `init`。已有字段回车保留，已有有效密钥文件直接复用，只会要求输入缺失或无效的密钥。
+
+在交互终端运行 `issue` 时，脚本也会在发现缺少配置、域名、邮箱或密钥文件时自动进入引导；配置完整则直接签发，不额外提问。自动触发的补全流程只询问缺失或无效项。单独运行 `init` 则可以重新确认所有基本字段。
+
+`renew` 和 `deploy` 始终不交互，即使在终端中手动执行也是如此。续期缺少配置或密钥时会记录错误并返回非零退出码；请回到 WSL 终端运行 `init` 修复，再重试续期。不要把 Windows 计划任务的入口改为 `init` 或 `issue`。
+
+### 5.4 检查密钥文件
+
+执行下面的检查，确认文件存在、可读且非空；命令不会输出密钥内容：
+
+```bash
+for task_key_file in "$HOME/.config/dev-img-acme/huawei-ak" \
+                     "$HOME/.config/dev-img-acme/huawei-sk"; do
+  if [ -f "$task_key_file" ] && [ -r "$task_key_file" ] && [ -s "$task_key_file" ]; then
+    printf '文件已就绪：%s\n' "$task_key_file"
+  else
+    printf '请检查文件是否已创建、可读且非空：%s\n' "$task_key_file"
+  fi
+done
+```
+
+密钥文件位于 WSL 的 Linux 文件系统；Windows 上部署的证书私钥则由 NTFS 权限保护，不依赖 `/mnt/d` 上的 `chmod`。
+
+## 6 使用统一脚本签发续期和部署证书
+
+### 6.1 原命令与示例脚本的区别
+
+原来的命令块使用 `set -e`，但 `test -s`、`test -n` 这些检查失败时没有提示，可能在调用 acme.sh 之前就退出。因此不能只依赖 acme.sh 自身的输出来判断执行情况。
+
+你之前使用的 `--dns dns_dp` 是 DNSPod 插件，本机华为云 AK/SK 应使用 `--dns dns_hw`。所提供的示例脚本使用 `dns_huaweicloud` 的账号密码方式，部署到 Linux `/etc/nginx/ssl` 并通过 `systemctl` 重载，不适用于本机 Windows Nginx；它只检查 acme.sh 是否已安装，并未自动安装。WSL 的续期仍采用第 10 节 Windows 计划任务。
+
+旧命令中的 FreeSSL ACME 地址与 Let's Encrypt 属于不同的 CA 配置。本文脚本继续显式使用 `--server letsencrypt`，不自动复用旧 FreeSSL 地址或其中的授权信息。
+
+### 6.2 脚本功能与文件位置
+
+使用本文提供下载的 [issue-cert.sh](/assets/_resources/scripts/issue-cert.sh)，统一处理配置引导、首次签发、续期、部署和 Nginx 重载：
+
+| 命令 | 用途 |
+| --- | --- |
+| `bash /root/bin/issue-cert.sh help` | 查看帮助，也支持 `--help` 或 `-h`；不读取配置、不进入引导或执行证书维护 |
+| `bash /root/bin/issue-cert.sh init` | 交互创建或补全配置，复用已有 AK/SK，不申请或部署证书 |
+| `bash /root/bin/issue-cert.sh issue` | 首次签发并安装；省略动作时默认使用此模式，交互终端中配置不完整会自动引导 |
+| `bash /root/bin/issue-cert.sh renew` | 始终非交互；检查续期，未到期正常跳过，随后检查部署并按配置重载 Nginx |
+| `bash /root/bin/issue-cert.sh deploy` | 仅安装已有证书并重载，不请求签发或续期，也不读取 AK/SK |
+
+四个模式共用配置、文件锁和日志，不再需要独立的续期或重载脚本。`init` 保存配置后结束；证书维护按六个阶段执行：
+
+1. 读取第 5 节的 `settings.sh`，检查实际域名与邮箱；首次交互签发按需引导补全。
+2. 检查依赖；签发与续期读取已有 AK/SK 文件，部署模式跳过密钥读取。
+3. 检查 acme.sh；只有首次签发模式会在缺少程序时自动安装，续期不会重新建立证书状态。
+4. 首次签发时注册或检查 Let's Encrypt 账号，其他模式使用已有账号。
+5. 按模式执行 `--issue`、`--renew` 或跳过证书申请，实时显示 acme.sh 输出。
+6. 使用 `--install-cert` 部署证书，检查域名、有效期和私钥匹配，最后检查并重载 Windows Nginx。
+
+脚本内置 Windows Nginx 重载逻辑：先执行 `nginx.exe -t`，成功后才请求 reload；Nginx 已停止时只部署文件并提示，不自动启动。首次尚未配置站点时，用 `RELOAD_NGINX=0` 仅安装证书，完成第 7 节后再执行 `deploy`。脚本不会创建或修改 Nginx 站点。
+
+失败时输出 `[FAILED]`、失败阶段和非零退出码；签发、续期、安装或重载失败都不会报告成功。无需签发或续期时输出 `[SKIPPED]`，按正常结果继续检查部署。脚本使用同一个文件锁避免维护任务重叠。终端完整输出与 acme.sh 内部日志分别保存，文件名带执行模式和运行编号。acme.sh 的日志和续期退出码说明见 [官方程序](https://github.com/acmesh-official/acme.sh/blob/master/acme.sh)。
+
+### 6.3 复制到 WSL 并执行
+
+先完成第 4 节基础依赖安装。配置可使用第 5 节的 `init` 创建，也可在交互终端直接执行 `issue`，由脚本自动引导。acme.sh 本身可以预先安装，也可以交给本脚本自动安装。以下命令将下载的脚本复制到 root 的脚本目录；将源路径中的 `你的用户名` 替换为实际 Windows 用户目录名，如果文件保存在其他位置，修改 `cp` 的源路径：
+
+```bash
+install -d -m 700 "$HOME/bin"
+cp '/mnt/c/Users/你的用户名/Downloads/issue-cert.sh' \
+  "$HOME/bin/issue-cert.sh"
+chmod 700 "$HOME/bin/issue-cert.sh"
+bash -n "$HOME/bin/issue-cert.sh"
+RELOAD_NGINX=0 bash "$HOME/bin/issue-cert.sh" issue
+printf '本次执行返回码：%s\n' "$?"
+```
+
+上面的首次安装命令暂不重载 Nginx；完成第 7 节后运行 `bash /root/bin/issue-cert.sh deploy`。已经能正常访问图片的本机，可直接按第 10 节更新脚本并验证续期，无需再次签发。
+
+不传域名时读取 `settings.sh` 的 `CERT_DOMAIN`。也可以在动作后显式指定域名，例如：
+
+```bash
+bash "$HOME/bin/issue-cert.sh" issue dev-img.example.com
+```
+
+将示例域名替换后再执行。证书默认部署到 `conf/ssl/dev-img`；如果要另外申请其他域名并保留原证书，应通过 `CERT_DIR` 指定独立部署目录。
+
+查看参数说明：
+
+```bash
+bash "$HOME/bin/issue-cert.sh" --help
+```
+
+也可使用 `bash "$HOME/bin/issue-cert.sh" help` 或 `bash "$HOME/bin/issue-cert.sh" -h`，三种写法显示相同帮助。旧版脚本只支持 `--help` 和 `-h`，会把单独的 `help` 当成域名而触发引导；若仍出现这种情况，按第 6.3 节重新复制最新版脚本。帮助中的方括号表示参数可选，竖线表示选择其中一个动作，不要把它们原样输入命令。
+
+| 参数 | 默认值 | 用途 |
+| --- | --- | --- |
+| `SETTINGS_FILE` | `$HOME/.config/dev-img-acme/settings.sh` | 本机参数与密钥文件路径配置 |
+| `ACME_HOME` | `$HOME/.acme.sh` | acme.sh 安装及账号目录 |
+| `CERT_DIR` | `/mnt/d/SoftWare/nginx-1.12.2/conf/ssl/dev-img` | Windows 证书部署目录 |
+| `DNS_SLEEP` | `300` | TXT 生效等待秒数 |
+| `LOG_DIR` | `$HOME/.local/state/dev-img-acme` | 每次执行的日志目录 |
+| `RELOAD_NGINX` | `1` | 验证证书后检查并重载 Nginx；设为 `0` 仅部署文件 |
+| `RELOAD_CMD` | 不设置，使用内置逻辑 | 可选的自定义重载命令，失败会保留退出码 |
+| `NGINX_ROOT` | `/mnt/d/SoftWare/nginx-1.12.2` | WSL 访问 Windows Nginx 的目录 |
+| `NGINX_PREFIX` | `D:/SoftWare/nginx-1.12.2/` | 传给 Windows Nginx 的绝对工作前缀 |
+
+`init` 会把四个路径和重载选项写入配置文件，并通过第 5.0 节的固定路径记录记住配置位置和日志目录，后续执行自动读取。上述执行选项也可在命令前通过环境变量临时覆盖；临时覆盖不会改写配置文件或路径记录，运行 `init` 确认保存时除外。全新配置的引导默认重载选项为 `0`；已有配置未写该选项时，保持原脚本默认值 `1`。
+
+例如需要延长 DNS 等待时间时：
+
+```bash
+DNS_SLEEP=600 bash "$HOME/bin/issue-cert.sh"
+```
+
+### 6.4 输出与日志排查
+
+下面保留原文历史运行日志的脱敏示例，不代表本次执行结果；部分通知措辞可能与下载脚本不同。排查时重点关注执行阶段、退出码和程序打印的日志路径：
+
+```text
+[2026-10-22 19:01:36] [1/6] 读取本机配置
+[2026-10-22 19:01:36] 目标域名：dev-img.example.com；证书机构：Let's Encrypt；DNS 插件：dns_hw
+[2026-10-22 19:01:36] 配置文件：/root/.config/dev-img-acme/settings.sh
+[2026-10-22 19:01:36] 证书目录：/mnt/d/SoftWare/nginx-1.12.2/conf/ssl/dev-img
+[2026-10-22 19:01:36] [2/6] 检查华为云 AK/SK（不输出密钥内容）
+[2026-10-22 19:01:36] AK 文件路径：/root/.config/dev-img-acme/huawei-ak
+[2026-10-22 19:01:36] SK 文件路径：/root/.config/dev-img-acme/huawei-sk
+[2026-10-22 19:01:36] AK/SK 文件已加载；华为云区域：cn-north-1
+[2026-10-22 19:01:36] [3/6] 安装或检查 acme.sh 与 dns_hw 插件
+[2026-10-22 19:01:36] 使用已有程序：/root/.acme.sh/acme.sh
+https://github.com/acmesh-official/acme.sh
+v3.1.7
+[2026-10-22 19:01:36] [4/6] 注册或检查 Let's Encrypt 账号
+[Thu Oct 22 19:01:39 CST 2026] Account key creation OK.
+[Thu Oct 22 19:01:39 CST 2026] Registering account: https://acme-v02.api.letsencrypt.org/directory
+[Thu Oct 22 19:01:42 CST 2026] Registered
+[Thu Oct 22 19:01:42 CST 2026] ACCOUNT_THUMBPRINT='[账号指纹已脱敏]'
+[2026-10-22 19:01:42] [5/6] 开始 DNS-01 签发，将等待 TXT 生效 300 秒；此阶段请勿关闭终端
+[Thu Oct 22 19:01:45 CST 2026] Using CA: https://acme-v02.api.letsencrypt.org/directory
+[Thu Oct 22 19:01:45 CST 2026] Creating domain key
+[Thu Oct 22 19:01:45 CST 2026] The domain key is here: /root/.acme.sh/dev-img.example.com/dev-img.example.com.key
+[Thu Oct 22 19:01:45 CST 2026] Single domain='dev-img.example.com'
+[Thu Oct 22 19:01:54 CST 2026] Getting webroot for domain='dev-img.example.com'
+[Thu Oct 22 19:01:54 CST 2026] Adding TXT value: [DNS 验证值已脱敏] for domain: _acme-challenge.dev-img.example.com
+[Thu Oct 22 19:01:55 CST 2026] The TXT record has been successfully added.
+[Thu Oct 22 19:01:55 CST 2026] Sleeping for 300 seconds to wait for the the TXT records to take effect
+[Thu Oct 22 19:07:06 CST 2026] Verifying: dev-img.example.com
+[Thu Oct 22 19:07:08 CST 2026] Pending. The CA is processing your order, please wait. (1/30)
+[Thu Oct 22 19:07:18 CST 2026] Success
+[Thu Oct 22 19:07:18 CST 2026] Removing DNS records.
+[Thu Oct 22 19:07:18 CST 2026] Removing txt: [DNS 验证值已脱敏] for domain: _acme-challenge.dev-img.example.com
+[Thu Oct 22 19:07:19 CST 2026] Successfully removed
+[Thu Oct 22 19:07:19 CST 2026] Verification finished, beginning signing.
+[Thu Oct 22 19:07:19 CST 2026] Let's finalize the order.
+[Thu Oct 22 19:07:19 CST 2026] Le_OrderFinalize='https://acme-v02.api.letsencrypt.org/acme/finalize/[账号标识]/[订单标识]'
+[Thu Oct 22 19:07:21 CST 2026] Downloading cert.
+[Thu Oct 22 19:07:21 CST 2026] Le_LinkCert='https://acme-v02.api.letsencrypt.org/acme/cert/[证书标识]'
+[Thu Oct 22 19:07:22 CST 2026] Cert success.
+-----BEGIN CERTIFICATE-----
+[原日志的证书正文已省略；实际输出为 PEM 编码证书]
+-----END CERTIFICATE-----
+[Thu Oct 22 19:07:22 CST 2026] Your cert is in: /root/.acme.sh/dev-img.example.com/dev-img.example.com.cer
+[Thu Oct 22 19:07:22 CST 2026] Your cert key is in: /root/.acme.sh/dev-img.example.com/dev-img.example.com.key
+[Thu Oct 22 19:07:22 CST 2026] The intermediate CA cert is in: /root/.acme.sh/dev-img.example.com/ca.cer
+[Thu Oct 22 19:07:22 CST 2026] And the full-chain cert is in: /root/.acme.sh/dev-img.example.com/fullchain.cer
+[Thu Oct 22 19:07:24 CST 2026] ARI suggestedWindow: 2026-12-20T12:52:54Z to 2026-12-22T08:03:44Z
+[Thu Oct 22 19:07:24 CST 2026] Next renewal time picked from ARI window: 2026-12-20T17:50:18Z
+[2026-10-22 19:07:24] 证书签发命令执行成功。
+[2026-10-22 19:07:24] [6/6] 安装证书到 Windows Nginx 目录并验证
+[2026-10-22 19:07:24] [NOTICE] 本次未提供重载命令；安装证书后仍需完成站点配置和 Nginx 重载。
+[Thu Oct 22 19:07:24 CST 2026] Installing key to: /mnt/d/SoftWare/nginx-1.12.2/conf/ssl/dev-img/privkey.pem
+[Thu Oct 22 19:07:24 CST 2026] Installing full chain to: /mnt/d/SoftWare/nginx-1.12.2/conf/ssl/dev-img/fullchain.pem
+Hostname dev-img.example.com does match certificate
+Certificate will not expire
+subject=CN = dev-img.example.com
+issuer=C = US, O = Let's Encrypt, CN = YR2
+notBefore=Oct 22 10:08:50 2026 GMT
+notAfter=Jan 20 10:08:49 2027 GMT
+[2026-10-22 19:07:24] [SUCCESS] 证书文件已安装，域名、有效期和私钥匹配检查通过。
+[2026-10-22 19:07:24] 完整证书链：/mnt/d/SoftWare/nginx-1.12.2/conf/ssl/dev-img/fullchain.pem
+[2026-10-22 19:07:24] 私钥文件：/mnt/d/SoftWare/nginx-1.12.2/conf/ssl/dev-img/privkey.pem
+[2026-10-22 19:07:24] HTTPS 图片是否可访问，仍需按指南验证 DNS、Nginx 配置和防火墙。
+[2026-10-22 19:07:24] 运行日志：/root/.local/state/dev-img-acme/issue-20261022-190136-14789.log
+[2026-10-22 19:07:24] acme.sh 日志：/root/.local/state/dev-img-acme/acme-20261022-190136-14789.log
+```
+
+如果 AK 文件不存在，会明确显示路径，而不是无提示退出：
+
+```text
+[时间] [ERROR] AK 文件不存在、不可读或为空：/root/.config/dev-img-acme/huawei-ak；请在 WSL 终端执行 init 补全，续期不会等待输入。
+[时间] [FAILED] 失败阶段：检查依赖和 AK/SK 文件；退出码：1
+```
+
+进入执行流程后，每次结束都会打印本次日志的完整路径。root 账号默认日志位于 `/root/.local/state/dev-img-acme/`，自定义后使用保存的 `LOG_DIR`：初始化日志以 `init-` 开头，签发以 `issue-` 开头，续期以 `renew-` 开头，部署以 `deploy-` 开头，内部日志分别为 `acme-动作-运行编号.log`。`init` 不调用 acme.sh，对应内部日志为空；引导保存成功输出 `[CONFIGURED]`，不代表已签发证书。提示会记入运行日志，隐藏输入的 AK/SK 不会写入日志。可先按时间查看文件，再用 `tail -n 100` 查看程序打印的实际日志路径；下面示例使用默认日志目录，自定义后替换为实际目录：
+
+```bash
+ls -lt "$HOME/.local/state/dev-img-acme"
+```
+
+`[5/6]` 阶段的 300 秒 DNS 等待是正常过程，期间可能暂时没有新输出。失败后根据日志修正配置，重新执行同一脚本；不要为重试随意添加 `--force`。脚本不启用 `bash -x`，也不会主动打印 AK、SK 或私钥；日志仍应作为本机文件保管。
+
+工具会通过华为云 API 创建 `_acme-challenge.你的域名` TXT 记录，等待 DNS 生效后请求验证，完成后清理对应验证值。已有 A 记录无需为了签发而改成公网 IP；A 记录与验证 TXT 记录承担不同用途。
+
+`dns_hw` 会把成功使用的 AK、SK 保存到 acme.sh 的账号配置，供后续续期使用，因此 `/root/.acme.sh/account.conf` 也包含敏感凭证，应妥善保护。本文续期脚本仍从你创建的密钥文件加载最新值，方便密钥轮换。参见 [dns_hw 凭证读取与保存实现](https://github.com/acmesh-official/acme.sh/blob/master/dnsapi/dns_hw.sh)。
+
+默认目录下成功签发后，RSA 证书内部文件位于：
+
+```text
+/root/.acme.sh/dev-img.example.com/dev-img.example.com.cer
+/root/.acme.sh/dev-img.example.com/dev-img.example.com.key
+/root/.acme.sh/dev-img.example.com/fullchain.cer
+```
+
+`fullchain.cer` 包含服务器证书和中间证书链，`.key` 是私钥。这些路径仅用于理解 acme.sh 的内部文件；部署时必须使用第 7.1 节的 `--install-cert`，不让 Nginx 直接引用内部目录。参见 [acme.sh 官方证书部署说明](https://github.com/acmesh-official/acme.sh#3%EF%B8%8F%E2%83%A3-install-the-certificate-to-apachenginx)。
+
+检查域名与有效期：
+
+```bash
+source "$HOME/.config/dev-img-acme/settings.sh"
+openssl x509 -in "$HOME/.acme.sh/$CERT_DOMAIN/fullchain.cer" \
+  -noout -subject -issuer -dates -ext subjectAltName
+```
+
+**如果已有 acme.sh 管理的同域名 RSA 证书**，可以跳过重复签发，直接执行第 7.1 节安装。若证书由其他工具签发，应继续由原工具管理续期，或重新通过本节签发后再接入后文脚本；仅拥有证书文件不足以建立 acme.sh 的续期状态。已有 ECC 证书时，其目录通常带 `_ecc`，安装、续期命令需要配套使用 `--ecc`，不能直接套用本文 RSA 路径。
+
+## 7 部署证书和 Windows Nginx 站点
+
+### 7.1 使用 acme.sh 安装证书到 Windows
+
+如果第 6 节脚本已经输出 `[SUCCESS]`，证书已安装到下面的目录，可直接继续第 7.2 节；以下保留手动安装命令，便于单独重新部署。通过 `--install-cert` 将证书安装到 Windows 目录，并记录部署目标：
+
+```bash
+source "$HOME/.config/dev-img-acme/settings.sh"
+task_ssl_dir='/mnt/d/SoftWare/nginx-1.12.2/conf/ssl/dev-img'
+mkdir -p "$task_ssl_dir"
+"$HOME/.acme.sh/acme.sh" --install-cert -d "$CERT_DOMAIN" \
+  --key-file "$task_ssl_dir/privkey.pem" \
+  --fullchain-file "$task_ssl_dir/fullchain.pem"
+```
+
+本步先安装证书文件。新站点在第 7.2 节配置，第 7.3 节检查并启动或重载 Nginx。日后统一通过 `issue-cert.sh renew` 或 `deploy` 更新证书并重载，无需额外重载脚本。
+
+Windows 最终目录：
+
+```text
+D:\SoftWare\nginx-1.12.2\conf\ssl\dev-img\fullchain.pem
+D:\SoftWare\nginx-1.12.2\conf\ssl\dev-img\privkey.pem
+```
+
+在证书目录的 Windows“属性 → 安全”中，只给自己的开发账号、Nginx 运行账号及必要管理员访问权限；不要授予 Everyone 读取私钥。
+
+### 7.2 新建站点文件
+
+创建 `D:\SoftWare\nginx-1.12.2\conf\vhost\dev-img-https.conf`，以 UTF-8 无 BOM 保存。将域名和上游地址替换为实际值：
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name dev-img.example.com;
+
+    ssl_certificate     D:/SoftWare/nginx-1.12.2/conf/ssl/dev-img/fullchain.pem;
+    ssl_certificate_key D:/SoftWare/nginx-1.12.2/conf/ssl/dev-img/privkey.pem;
+    ssl_protocols TLSv1.2;
+    ssl_session_cache shared:DEV_IMG_SSL:10m;
+    ssl_session_timeout 10m;
+
+    client_max_body_size 50m;
+
+    location / {
+        proxy_pass http://127.0.0.1:9770;
+        proxy_http_version 1.1;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 5s;
+        proxy_read_timeout 60s;
+    }
+}
+```
+
+Nginx 配置中的 Windows 路径使用正斜杠。`proxy_pass` 后不增加 URI，因此原图片路径和查询参数会继续传给上游。示例会代理该上游的全部路径；若上游还包含管理接口，可根据实际图片路径收窄 `location` 的范围。
+
+本机主配置已包含：
+
+```nginx
+http {
+    # 其他已有配置保持原样
+    include vhost/*.conf;
+}
+```
+
+这里只展示 include 的位置，不要用这段覆盖完整 `nginx.conf`。
+
+### 7.3 检查并生效
+
+Windows PowerShell，使用与现有 Nginx 相同的 Windows 账号执行：
+
+```powershell
+Set-Location -LiteralPath 'D:\SoftWare\nginx-1.12.2'
+.\nginx.exe -p 'D:/SoftWare/nginx-1.12.2/' -c conf/nginx.conf -t
+```
+
+确认检查成功后，若 Nginx 已运行，执行：
+
+```powershell
+.\nginx.exe -p 'D:/SoftWare/nginx-1.12.2/' -c conf/nginx.conf -s reload
+```
+
+若 Nginx 尚未运行，执行：
+
+```powershell
+Start-Process -FilePath 'D:\SoftWare\nginx-1.12.2\nginx.exe' `
+  -ArgumentList '-p D:/SoftWare/nginx-1.12.2/ -c conf/nginx.conf' `
+  -WorkingDirectory 'D:\SoftWare\nginx-1.12.2' -WindowStyle Hidden
+```
+
+检查 443：
+
+```powershell
+Get-NetTCPConnection -LocalPort 443 -State Listen
+```
+
+本地已有 Nginx 进程时使用 reload，避免重复启动。若另一个程序占用 443，先确认占用者；若改用 8443，站点、URL、防火墙及验证命令均需同步调整。
+
+如果首次引导时保存了 `RELOAD_NGINX=0`，站点配置成功后再次执行 `bash "$HOME/bin/issue-cert.sh" init`，保留其他值，将重载选项改为 `1`。随后运行 `bash "$HOME/bin/issue-cert.sh" deploy` 验证，之后每日续期即可自动重载。
+
+### 7.4 允许局域网手机访问
+
+管理员 PowerShell，为“专用网络”放行本机 TCP 443：
+
+```powershell
+New-NetFirewallRule -DisplayName 'Nginx Dev Image HTTPS 443' `
+  -Direction Inbound -Action Allow -Protocol TCP -LocalPort 443 `
+  -Profile Private -RemoteAddress LocalSubnet
+```
+
+确认当前可信的家庭或办公网络被识别为专用网络；如果是公用网络配置，上述规则不会生效。手机与电脑需在可互通的局域网中，避免访客网络或 Wi-Fi 客户端隔离。
+
+## 8 让域名解析到 Windows 电脑
+
+原文示例环境已按第 1.1 节配置 A 记录，以下为脱敏后的映射：
+
+```text
+dev-img.example.com → 192.168.122.101
+```
+
+电脑和手机连接同一可互通的局域网，即可通过该域名访问 Windows Nginx。**原文记录手机端已验证可用；若你的环境同样已验证可用，则无需额外修改 hosts、路由器 DNS 或部署自建 DNS。**
+
+后续如果 Windows 局域网 IP 发生变化，同步更新华为云 A 记录即可；可在路由器中为电脑保留固定的 DHCP 地址。
+
+## 9 调整图片 URL 并验证
+
+### 9.1 修改开发环境的图片外链前缀
+
+将原地址：
+
+```text
+http://192.168.122.101:9770/实际图片路径.png
+```
+
+改为：
+
+```text
+https://dev-img.example.com/实际图片路径.png
+```
+
+保留图片路径；不再携带原上游端口 `9770`。在项目实际负责生成图片外链的位置修改开发环境配置，不要假设新增一个任意配置项就能生效。已有数据若保存了完整 HTTP URL，也需要定位并处理相应前缀。
+
+如果使用 MinIO 或 S3 预签名 URL，外部 HTTPS 域名、参与签名的 Host 和代理转发的 Host 必须一致；直接替换已签名 URL 的主机名可能产生 403。
+
+### 9.2 先独立验证 Nginx
+
+Windows PowerShell，将路径替换成真实存在的图片：
+
+```powershell
+curl.exe -v --resolve 'dev-img.example.com:443:127.0.0.1' `
+  'https://dev-img.example.com/实际图片路径.png' -o NUL
+```
+
+`--resolve` 临时指定连接地址，同时保留域名证书校验，适合将 DNS 问题和 Nginx 问题分开排查。不要添加 `-k`；它会跳过证书校验。
+
+然后按实际 DNS 解析访问：
+
+```powershell
+curl.exe -v 'https://dev-img.example.com/实际图片路径.png' -o NUL
+```
+
+应当证书校验成功、返回 200 且内容为图片。Windows curl 可能使用 Schannel，成功日志不一定出现 Linux 上的 `SSL certificate verify ok` 原文。
+
+### 9.3 手机与小程序验证
+
+手机连接同一局域网，用浏览器访问同一 HTTPS 图片地址，确认图片可见且没有证书警告，再重新编译小程序并真机预览。
+
+若图片经过 `wx.downloadFile`、`wx.request` 等接口获取，还应检查对应接口的合法域名配置与当前调试模式要求。HTTPS 证书解决传输信任，接口域名白名单是另一项检查；不要把开发者工具的“不校验”选项当作证书已配置正确的证明。参见 [微信小程序网络能力说明](https://developers.weixin.qq.com/miniprogram/dev/framework/ability/network.html)。
+
+## 10 Windows 手动续期与可选的任务计划
+
+**当前按需手动执行，暂不创建或启用定时任务。** `issue-cert.sh renew` 每次只执行一次续期检查、部署及按配置重载 Nginx，结束后退出，不会创建或启动 WSL 的定时任务。需要每日自动执行时，可再按第 10.3 节配置 Windows 计划任务。
+
+脚本只在需要时请求续期，未到期返回正常跳过；随后安装并验证当前证书，按配置检查并重载 Nginx。**续期始终非交互，配置缺失会写入错误日志并退出，不会等待输入。** 安装使用了 `--nocron`，不依赖 WSL 的 cron 常驻。
+
+### 10.1 更新统一脚本并迁移旧配置
+
+重新下载需要使用的脚本版本后，在 WSL root 终端复制；将源路径中的 `你的用户名` 替换为实际 Windows 用户目录名。已有证书和 `settings.sh` 不需要重新创建，也不需要重新申请：
+
+```bash
+install -d -m 700 "$HOME/bin"
+cp '/mnt/c/Users/你的用户名/Downloads/issue-cert.sh' \
+  "$HOME/bin/issue-cert.sh"
+chmod 700 "$HOME/bin/issue-cert.sh"
+bash -n "$HOME/bin/issue-cert.sh"
+bash "$HOME/bin/issue-cert.sh" deploy
+printf '部署检查退出码：%s\n' "$?"
+```
+
+迁移时先运行 `deploy`：它不访问证书机构，会重新安装并验证已有证书，清除 acme.sh 中可能保存的旧重载脚本调用，再由统一脚本直接检查和重载 Nginx。
+
+不再需要创建 `dev-img-cert.sh`、`dev-img-cert-task.sh` 或 `dev-img-nginx-reload.sh`；已有文件可以保留备份，但计划任务应改成下面的新入口。如果 `settings.sh` 中的 `RELOAD_CMD` 显式指向旧脚本，删除该配置即可使用内置 Windows Nginx 重载。
+
+现有完整配置直接兼容，无需运行 `init`。如果检查日志提示配置缺失，在 WSL 终端运行 `bash "$HOME/bin/issue-cert.sh" init` 补全，再重试；不要让计划任务执行引导。使用新引导创建过配置时，确认重载选项已改为 `1`。
+
+通过 `init` 自定义四个路径后，下面的 Windows 调用命令保持原样，脚本会读取该 WSL 用户的路径记录；不会因此启用定时任务。保持相同的 WSL 发行版和 root 用户即可。
+
+接着手动检查一次续期：
+
+```bash
+bash "$HOME/bin/issue-cert.sh" renew
+printf '续期检查退出码：%s\n' "$?"
+```
+
+出现 `[SKIPPED]` 表示未到续期时间，属于正常结果。统一脚本将 acme.sh 的跳过码 2 转为任务成功，不使用 `--force`。如果证书状态不存在或续期失败，保留失败码，不自动重新申请来掩盖错误。
+
+### 10.2 从 Windows 手动执行一次续期检查
+
+在 Windows PowerShell 中运行以下命令，将 `Ubuntu` 换成实际 WSL 发行版名：
+
+```powershell
+wsl.exe --distribution Ubuntu --user root --exec /bin/bash /root/bin/issue-cert.sh renew
+$LASTEXITCODE
+```
+
+Windows 会在需要时启动指定的 WSL 发行版，以 root 身份运行脚本。该命令仅执行一次，不会创建或启用 Windows 计划任务，也不会启动 WSL 的 cron。以后需要检查续期时，再手动执行同一命令即可。
+
+`$LASTEXITCODE` 为 `0` 表示本次执行成功，未到续期时间的正常跳过也算成功；非零时查看脚本打印的日志路径。若以后启用自动续期，计划任务也使用这条调用命令。
+
+### 10.3 可选：配置或更新 Windows 计划任务
+
+当前无需操作本节；以下仅保留未来启用自动续期时的配置方法。需要启用时，打开 Windows“任务计划程序”。如果之前已经创建同名任务，直接修改原任务的“操作”，避免重复创建；没有任务时再创建。
+
+| 设置 | 值 |
+| --- | --- |
+| 任务名称 | `Dev Image HTTPS Certificate Renewal` |
+| 运行身份 | 注册该 WSL 发行版、且可读写 Nginx 目录的同一 Windows 用户 |
+| 初次配置 | 选择“只在用户登录时运行”，先验证通路 |
+| 触发器 | 每天一次，例如 10:00 |
+| 程序 | `C:\Windows\System32\wsl.exe` |
+| 参数 | `--distribution Ubuntu --user root --exec /bin/bash /root/bin/issue-cert.sh renew` |
+| 错过计划 | 启用“如果过了计划开始时间，立即启动任务” |
+| 失败重试 | 每 30 分钟重试，最多 3 次 |
+| 重叠任务 | 如果任务已在运行，不启动新实例 |
+
+无需包装脚本或额外的日志重定向，日志由 `issue-cert.sh` 自动保存。WSL 发行版与 Windows 用户关联，不要将运行身份改成 SYSTEM；WSL 内部继续指定 `--user root`。需要未登录时执行时，以同一个 Windows 用户配置并实际测试该模式。
+
+本机开发电脑宜选择通常开机的时间；长期关机期间无法续期。不要给任务设置过短的停止时限，DNS 验证可能等待数分钟。若旧版安装还创建了 Linux cron 任务或其他 Windows 续期任务，应只保留一种调度。
+
+### 10.4 检查续期日志和结果
+
+在任务计划程序中手动“运行”一次，检查最近运行结果。随后在 WSL 查看日志目录：
+
+```bash
+ls -lt "$HOME/.local/state/dev-img-acme"
+```
+
+本次续期的完整输出保存为 `renew-运行编号.log`，acme.sh 日志为 `acme-renew-运行编号.log`。脚本会打印具体路径，失败日志包含 `[FAILED]`、失败阶段及退出码；未到期会记录 `[SKIPPED]`。
+
+最终还要重新连接 HTTPS 查看服务端实际提供的证书有效期。所有证书维护从统一脚本进入；它使用 `--install-cert` 保存文件部署目标，清空旧的 acme.sh 重载钩子，再在验证后执行内置重载。因此直接单独运行 acme.sh 的 `--cron` 或 `--renew` 不替代本文计划任务入口。
+
+## 11 常见问题排查
+
+| 现象 | 检查与处理 |
+| --- | --- |
+| 签发提示缺少华为云凭证 | 确认已从两个文件读取并导出 `HW_AK`、`HW_SK`，签发插件为 `dns_hw`；只设置文件路径不会自动加载密钥 |
+| 续期提示缺少配置或密钥 | 在 WSL 终端运行 `issue-cert.sh init` 补全后重试；`renew` 按设计不交互，计划任务入口仍使用 `renew` |
+| `init` 提示需要交互终端 | 在 WSL 终端直接运行，避免重定向输入或输出到管道；脚本自身会保存日志，无需外接 `tee` |
+| 引导完成但没有证书文件 | `[CONFIGURED]` 只代表配置保存成功，接着运行 `issue`；已有证书则运行 `deploy` |
+| 提示找不到 `dns_hw` 插件 | 检查 `/root/.acme.sh/dnsapi/dns_hw.sh`，按第 4.2 节从官方仓库更新 acme.sh |
+| 显示证书无需续期且退出码为 2 | acme.sh 的正常跳过结果；使用第 10 节脚本会转换为任务成功，无需加 `--force` |
+| 华为云返回 401 或 403 | 检查 AK/SK 是否配对、密钥状态、IAM 用户权限、区域和项目授权；同时检查系统时间 |
+| 找不到目标 Zone | 核对实际公网 NS、华为云账号、Zone 与 API 区域；域名注册平台不一定是权威 DNS 托管方 |
+| TXT 验证超时 | 查询 `_acme-challenge.实际域名` 的公网 TXT，核对权威 NS、DNS 出站访问及 CAA；不要只查询局域网 DNS |
+| Nginx 提示 TLSv1.3 无效 | 本机 1.12.2 配置使用 `ssl_protocols TLSv1.2;` |
+| Nginx 找不到证书或私钥 | 核对 Windows 绝对路径、正斜杠、文件权限及部署结果 |
+| 浏览器收到其他站点的证书 | 检查实际连接 IP、域名、SNI、同端口的其他 server 配置及是否重载成功 |
+| 电脑正常但手机打不开 | 检查手机 DNS、Windows 防火墙网络类型、局域网 IP、Wi-Fi 隔离；电脑 hosts 对手机无效 |
+| `nslookup` 不返回 hosts 中的 IP | 用浏览器或 `curl.exe` 检查 hosts；`nslookup` 直接查询 DNS |
+| 返回 502 | 从 Windows 直接请求上游的真实图片地址，确认端口、进程和 `proxy_pass` |
+| 返回 403 | 检查对象访问权限及预签名 URL 的 Host、路径、查询参数是否被改写 |
+| 续期后仍显示旧有效期 | 检查 WSL 源证书、Windows 目标证书及 reload 结果；执行脚本 `deploy` 后重新连接验证 |
+| 任务提示找不到发行版 | 使用注册该发行版的 Windows 用户；核对 `--distribution` 与 `--user` |
+| WSL 提示 E_ACCESSDENIED | 在正常 Windows 终端手动检查 WSL 权限与启动状态；不要据此重装已有发行版 |
+| WSL 无法执行 Windows 程序 | 检查 WSL interop 设置和 `/mnt/c` 挂载；先手动验证 `powershell.exe` 与 `nginx.exe` 调用 |
+
+## 12 完成检查
+
+- [ ] 已确认实际域名及华为云公网权威 DNS。
+- [ ] 已安装 acme.sh 并确认包含 `dns_hw` 插件。
+- [ ] IAM 用户具备 DNS 验证所需权限，AK/SK 文件及 acme.sh 账号配置仅保存在 WSL 本地。
+- [ ] 已签发匹配该域名的证书，并检查有效期及 SAN。
+- [ ] 完整证书链和私钥已部署到 Windows Nginx 证书目录。
+- [ ] `dev-img-https.conf` 使用实际域名和上游，Nginx 配置检查及重载成功。
+- [ ] 电脑与手机均能将域名解析到 Windows 局域网 IP。
+- [ ] 无跳过证书校验的情况下，电脑和手机均能打开 HTTPS 图片。
+- [ ] 小程序开发环境返回的是 HTTPS 图片 URL。
+- [ ] 从 Windows 手动调用 `issue-cert.sh renew` 成功，日志可查。
+- [ ] 如需自动续期，再配置 Windows 任务直接调用 `issue-cert.sh renew`；当前暂不启用。
+
+## 13 可选：离线验证脚本
+
+附件包含原项目的离线行为测试 <a href="/assets/_resources/scripts/validation/test_issue_cert.py" download="test_issue_cert.py">下载 test_issue_cert.py</a>，与上文的 `issue-cert.sh` 配套使用。下载后按以下目录保存，不要将两个文件平铺在同一目录：
+
+```text
+local-https/
+├── issue-cert.sh
+└── validation/
+    └── test_issue_cert.py
+```
+
+验证脚本通过自身位置定位上一级目录的 `issue-cert.sh`。它在 `validation` 下创建临时测试目录，使用模拟的 acme.sh、下载器、Nginx、PowerShell 和文件锁，并生成本地自签名测试证书；测试结束后清理对应临时目录。交互用例只在临时副本中模拟终端输入，不修改下载的主脚本。
+
+**运行环境限制：** 该验证文件原样保留 Windows Git 的程序路径：
+
+```text
+BASH = D:\SoftWare\Git\bin\bash.exe
+OPENSSL = D:\SoftWare\Git\usr\bin\openssl.exe
+```
+
+在 Python 与上述 Git Bash/OpenSSL 路径均已具备的 Windows 环境中，从 `local-https` 目录运行：
+
+```powershell
+python validation/test_issue_cert.py
+```
+
+这份原始验证文件不能直接在 Linux 或 WSL 中按上述 Windows 路径运行；如需移植，应先在自己的副本中适配程序路径与平台行为，再确认模拟隔离。本文保留附件原始内容，导入时只检查了 Python 语法和隔离结构，未运行该行为测试，也未据此宣称真实 DNS、证书机构或 Windows Nginx 操作已验证。
