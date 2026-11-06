@@ -9,17 +9,20 @@ category: 随笔
 **最新版下载页面（中文）：**
 👉 https://www.oracle.com/cn/java/technologies/downloads/
 
-目前最新版本情况：
-- **JDK 26**：最新版，免费商用（NFTC 协议），2026年9月前持续更新
-- **JDK 25**：最新 LTS（长期支持版），免费商用，支持至 2028 年
-- **JDK 21**：前一个 LTS，免费商用，支持至 2026 年 9 月
+版本信息核对日期：**2026-11-06**。发布日期与长期支持、许可期限需要分开看：
+
+- **JDK 27**：当前功能版本，非 LTS，Oracle 路线图列出的支持周期至 2027 年 3 月。
+- **JDK 25**：最新 LTS，于 **2025 年 9 月 16 日**发布。Oracle 路线图列出的 Premier Support 至 2030 年 9 月、Extended Support 至 2033 年 9 月。
+- **JDK 21**：前一个 LTS，Oracle 路线图列出的 Premier Support 至 2028 年 9 月、Extended Support 至 2031 年 9 月。
+
+上述支持日期针对符合条件的 Oracle 商业支持客户，不代表免费更新期限。Oracle JDK 21 从 2026 年 10 月 20 日发布的更新起适用 OTN 许可；Oracle JDK 25 在 NFTC 条款下提供，2028 年 9 月之后的更新计划改用 OTN 许可。选版本时还要确认所用发行版的许可证、补丁来源和维护周期，不能把 Oracle JDK 的政策套到所有 OpenJDK 发行版上。参见 [Oracle 支持路线图](https://www.oracle.com/java/technologies/java-se-support-roadmap.html)和 [JDK 25 发布说明](https://www.oracle.com/java/technologies/javase/25-relnote-issues.html)。
 
 **历史版本归档：**
 👉 https://www.oracle.com/cn/java/technologies/downloads/archive/
 
 ---
 
-## OpenJDK（开源免费，无商业限制）
+## OpenJDK 发行版（许可与支持以各发行方为准）
 
 | 发行版 | 推荐场景 | 下载地址 |
 |--------|----------|----------|
@@ -39,4 +42,40 @@ category: 随笔
 
 ---
 
-**建议：** 做 Spring Boot 项目用 JDK 21（LTS）或 JDK 17，推荐 Eclipse Temurin 或 Oracle JDK，国内下载建议走 injdk.cn。
+## JDK 21 与 JDK 25 怎么选？
+
+**对于已经采用 JDK 21、运行稳定且没有明确升级收益的现有项目，可以继续将 JDK 21 作为保守选择；新项目或准备升级的项目，应把 JDK 25 纳入优先评估。** 下面的选择理由以项目的依赖、维护计划和验证结果为前提。
+
+### 为什么现有项目可以继续选 JDK 21？
+
+- **需要的能力可能已经足够。** JDK 21 已正式提供虚拟线程、Record Patterns 和 `switch` 模式匹配。对于主要调用数据库、HTTP 接口或模型服务的应用，可以先评估这些能力带来的收益，不必为了使用虚拟线程而直接升级到 25。虚拟线程主要帮助大量等待 I/O 的并发任务，并不会自动加速 CPU 密集计算。参见 [JDK 21 发布说明](https://www.oracle.com/java/technologies/javase/21-relnote-issues.html)和[虚拟线程使用说明](https://docs.oracle.com/en/java/javase/25/core/virtual-threads.html)。
+- **可以减少一次变更中的变量。** 如果当前目标是接入 Spring AI、调整业务流程或升级框架，暂时保留已验证的 JDK 21，能够把运行时升级拆到单独阶段，便于定位问题和回滚。这是控制项目变更范围的选择，不代表 JDK 25 不稳定。
+- **验证成本要和收益一起算。** JDK 升级除了应用能启动，还涉及构建插件、Lombok 等注解处理器、字节码工具、监控探针、驱动和容器镜像。若这些组件在项目中只验证过 21，而 25 尚无明确性能或功能收益，继续使用 21 并维护安全补丁更容易安排。
+- **继续使用也需要维护计划。** 应确认发行方仍提供所需补丁，并在维护窗口内评估后续版本。Oracle JDK 21 的许可变化与 JDK 21 是否仍有维护支持，是两件不同的事。
+
+### 为什么值得评估 JDK 25？
+
+- **新项目可以从较新的 LTS 起步。** 在依赖和部署平台允许的情况下，采用 25 可以减少未来再做一次从 21 升级的工作。Oracle 的商业支持路线图中，25 的维护终点也比 21 更晚；其他发行版需查各自政策。
+- **虚拟线程有进一步改进。** JDK 25 包含 JDK 24 引入的 JEP 491 改进：虚拟线程在 `synchronized` 方法或代码块内阻塞时，可以释放底层平台线程，消除这一类固定（pinning）问题。大量使用虚拟线程且遇到相关瓶颈的服务，升级理由会更充分；不能据此承诺所有应用都有吞吐提升。参见 [JDK 24 发布说明](https://www.oracle.com/java/technologies/javase/24-relnote-issues.html)。
+- **有可对应到需求的新能力。** Scoped Values 在 25 正式交付，适合评估不可变上下文的传递；紧凑对象头、AOT 启动与预热改进也值得内存敏感、频繁启动的服务测试。是否采用，应看真实工作负载的内存、启动时间和延迟数据。参见 [JDK 25 发布说明](https://www.oracle.com/java/technologies/javase/25-relnote-issues.html)。
+
+注意区分正式功能和预览功能：JDK 25 的 **Scoped Values 是正式 API**，**Stable Values 是预览 API**，Structured Concurrency 仍是预览 API。Stable Values 用于延迟初始化的稳定值，与 Valhalla 的值类（Value Types）是不同的功能。生产选型可以只使用正式能力，预览功能应单独评估。参见 [JDK 25 发布说明](https://www.oracle.com/java/technologies/javase/25-relnote-issues.html)。
+
+### Spring Boot / Spring AI Alibaba 要按具体版本核对
+
+| 框架版本 | 官方文档列出的 Java 兼容范围 | 对选型的影响 |
+|----------|----------------------------|--------------|
+| Spring Boot 3.4.13 | Java 17 至 24 | JDK 21 在范围内；Java 25 不在该版本声明的范围内 |
+| Spring Boot 3.5.16 | Java 17 至 25 | JDK 21 和 25 都在范围内，不能笼统说 Boot 3.x 不支持 25 |
+
+来源：[Spring Boot 3.4.13 系统要求](https://docs.spring.io/spring-boot/3.4/system-requirements.html)、[Spring Boot 3.5.16 系统要求](https://docs.spring.io/spring-boot/3.5/system-requirements.html)。这里的范围针对表中的具体版本，使用其他补丁版本时应查对应文档，不能把同一系列中的声明直接套用。
+
+Spring AI Alibaba 还要先核对配套框架。例如[官方版本矩阵](https://www.java2ai.com/en/docs/versions/)列出 **Spring AI Alibaba 1.1.2.0 → Spring AI 1.1.2 → Spring Boot 3.5.x**，具体 Boot 补丁版本以 BOM 和项目依赖为准。这个矩阵说明框架版本的配对关系，不等于所有 JDK、驱动、探针和部署环境组合都经过完整测试。应先确定实际使用的框架版本，再核对该 Boot 版本的 Java 范围，并验证完整依赖链。
+
+### 落地时怎么决定？
+
+1. **先列出实际版本与约束。** 确认 Boot、Spring AI、Spring AI Alibaba、构建工具、探针及部署镜像的版本，并选定有持续补丁来源的 JDK 发行版。
+2. **在相同条件下比较 21 和 25。** 跑集成测试和关键业务压测，观察启动时间、内存、GC、吞吐、P95/P99 延迟与错误率；模型服务和数据库的波动也要控制。编译通过或单个接口成功不足以决定升级。
+3. **用验证结果安排迁移。** 若现有项目在 21 上满足需求、升级收益有限，就继续维护 21；若 25 的兼容性验证通过，且新能力、维护周期或实测收益符合目标，就安排灰度和回滚方案。迁移时间由这些条件和项目维护窗口共同决定。
+
+**建议：** 现有项目优先考虑保持经过验证的 JDK 21 环境，新项目优先评估 JDK 25。下载时可从上面的 Eclipse Temurin、Oracle JDK 等发行版入口选择，同时确认许可与补丁维护政策。

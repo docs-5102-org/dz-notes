@@ -1,0 +1,329 @@
+---
+title: Outlook 邮件实时推送：Microsoft Graph Webhook 方案
+date: "2026-11-06"
+category: 网络协议与通信
+excerpt: 从日均 800 封邮件的场景出发，整理 Graph 订阅、回调验证、异步处理、自动续期与 Delta Query 补偿的完整方案。
+---
+
+企业 Outlook（Microsoft 365）邮箱收到新邮件后，可以通过 **Microsoft Graph Change Notifications** 通知自己的服务，用于工单、分类、告警或同步工作流。
+
+对于日均约 800 封邮件的场景，推荐采用：**普通通知 + 持久队列 + Worker 拉取详情 + 自动续期 + 生命周期通知 + delta 对账**。这里的“实时”指事件驱动的近实时处理，并非每封邮件都保证秒级到达；官方目前列出的 Outlook 邮件通知平均延迟小于 1 分钟、最大延迟为 3 分钟，故障期间还可能延后。参数核对日期：**2026-11-06**。参见[订阅有效期与通知延迟](https://learn.microsoft.com/en-us/graph/api/resources/subscription?view=graph-rest-1.0#latency)。
+
+## 1. 为什么选择 Webhook？
+
+| 对比项 | Graph Webhook | POP3 / 定时轮询 |
+|--------|---------------|-----------------|
+| 触发方式 | 邮件发生变化后通知服务 | 按固定间隔主动查询 |
+| 延迟 | 取决于通知投递和消费速度 | 额外受轮询间隔影响 |
+| 空闲开销 | 无变化时不必反复查询邮箱 | 即使没有邮件也要轮询 |
+| 维护重点 | 订阅、回调、重试与补偿 | 轮询调度、去重和查询频率 |
+
+Webhook 可以减少空轮询，但仍有订阅配额、回调吞吐和 Graph API 限流，不能理解成“没有频率限制”。低频 delta 查询继续作为漏收补偿。
+
+不同邮箱应采用各自支持的机制：Outlook 使用 Graph；Gmail 使用 [`users.watch` + Google Cloud Pub/Sub](https://developers.google.com/workspace/gmail/api/guides/push)，也需要续期。其他服务商应查具体产品和套餐的接口能力，再评估 IMAP IDLE 或定时轮询，不能一概认定没有推送接口。
+
+## 2. 通知里包含什么？
+
+订阅指定资源、事件类型和回调 URL。Graph 检测到匹配变化后，向回调发送 POST；一次请求可能包含多个订阅的多条通知，需要遍历整个 `value` 数组。
+
+| 事件 | 未使用额外过滤条件时，收件箱订阅中的含义 |
+|------|------------------------------------------------|
+| `created` | 邮件被加入该文件夹，包括新邮件到达或邮件移入 |
+| `updated` | 邮件属性变化，例如已读状态或标记变化 |
+| `deleted` | 邮件从该文件夹删除或移出 |
+
+`created` 不完全等同于“刚从外部收到一封邮件”。如果业务只处理新收邮件，还要结合邮件属性、业务规则和去重判断。参见 [Outlook 变更通知说明](https://learn.microsoft.com/en-us/graph/outlook-change-notifications-overview)。
+
+| 通知方式 | 内容与处理方式 | 本文选择 |
+|----------|----------------|----------|
+| 普通通知（轻通知） | 收到资源 ID 等元数据后，再通过 Graph 获取邮件详情 | 适合日均约 800 封邮件的起步方案 |
+| 富通知 | 携带所选资源数据，需要配置证书并解密，另有字段限制 | 确有减少详情请求的需求时再评估 |
+
+富通知并不意味着可以直接带回完整邮件正文；Outlook 富通知的 `$select` 不支持 `Body`、`UniqueBody` 等字段。参见[富通知配置和字段限制](https://learn.microsoft.com/en-us/graph/outlook-change-notifications-overview#include-resource-data-in-notification-payload)。
+
+## 3. 日均 800 封邮件，需要多大容量？
+
+800 ÷ 1440 ≈ **0.56 封/分钟**，平均负载不高。如果每封邮件取一次详情，基础详情请求约为 800 次/天，但附件、重试、delta 分页和其他业务请求都需要另外计算。
+
+日均量不能代表峰值：短时间集中到达的邮件、积压恢复和批量补同步，都可能同时触发大量请求。可以从队列削峰、按邮箱限制 Worker 并发开始，再根据峰值和处理时延调整。
+
+官方当前列出的 Outlook API 限制包含：同一 **应用 ID + 邮箱** 组合每 10 分钟 10,000 次请求、最多 4 个并发请求。多个限制可能同时生效；遇到 `429` 时按 `Retry-After` 退避，不能仅凭日均量承诺不会限流。参见 [Outlook 服务限流](https://learn.microsoft.com/en-us/graph/throttling-limits#outlook-service-limits)和[限流处理](https://learn.microsoft.com/en-us/graph/throttling)。
+
+## 4. 推荐架构
+
+```text
+Outlook 邮箱
+    │  Graph 变更通知 / 生命周期通知
+    ▼
+公网 HTTPS 回调
+    │  校验订阅与 clientState → 持久入队 → 返回 202
+    ▼
+持久消息队列
+    │
+    ▼
+Worker
+    ├─ 拉取邮件详情 → 幂等业务处理
+    ├─ 重试 / 退避 / 失败任务告警
+    └─ 处理生命周期事件
+
+调度任务
+    ├─ 提前续期订阅，监控实际到期时间
+    └─ 按邮箱和文件夹执行 delta 对账 → 接入同一业务处理链
+```
+
+回调只负责接收和可靠交接，耗时业务放在 Worker 中。队列应配置持久化与故障恢复；使用 Redis、RabbitMQ 或数据库任务表时，需要确认“写入成功”的持久性含义，不能用进程内数组代替。
+
+## 5. 实现步骤
+
+### 5.1 注册应用，确定权限模式
+
+在 Microsoft Entra 管理中心注册应用，按部署方式选择认证流程：
+
+| 模式 | 适用场景 | 资源路径 |
+|------|----------|----------|
+| 委托权限 | 用户登录，监听该用户自己的邮箱 | `me/mailFolders('Inbox')/messages` |
+| 应用权限 | 企业后台服务，无需用户持续在线 | `users/{user-object-id}/mailFolders('Inbox')/messages` |
+
+本文 Worker 需要读取邮件正文，因此使用 `Mail.Read`。如果只读取基础属性，应按官方权限表评估更小的权限；仅接收通知不需要额外申请 `Mail.ReadWrite`。应用权限需要管理员同意；使用应用凭据获取 token 时，没有登录用户，不能使用 `/me`。参见 [Outlook 订阅权限](https://learn.microsoft.com/en-us/graph/outlook-change-notifications-overview#request-permissions)和[无用户访问流程](https://learn.microsoft.com/en-us/graph/auth-v2-service)。
+
+后台应用通常需要租户 ID、应用 ID 和凭据。凭据与通知校验用的 `clientState` 是不同的秘密，均应妥善保存，不写入源码或日志。
+
+### 5.2 创建普通通知订阅
+
+以下以后台应用监听一个企业邮箱收件箱为例：
+
+```http
+POST https://graph.microsoft.com/v1.0/subscriptions
+Authorization: Bearer {access_token}
+Content-Type: application/json
+Prefer: IdType="ImmutableId"
+
+{
+  "changeType": "created",
+  "notificationUrl": "https://your-domain.com/webhook",
+  "lifecycleNotificationUrl": "https://your-domain.com/webhook/lifecycle",
+  "resource": "users/{user-object-id}/mailFolders('Inbox')/messages",
+  "expirationDateTime": "2026-11-09T00:00:00Z",
+  "clientState": "replace-with-a-cryptographically-random-secret"
+}
+```
+
+替换邮箱对象 ID、token、域名和随机 `clientState`。示例时间只用于展示 UTC 格式，实际调用时应动态计算，例如普通订阅申请当前时间加 3 天：
+
+```js
+const expirationDateTime = new Date(
+  Date.now() + 3 * 24 * 60 * 60 * 1000
+).toISOString();
+```
+
+创建前准备好两个回调端点；成功后保存返回的订阅 ID、实际 `expirationDateTime`，以及本地对应的租户、邮箱、资源路径和 `clientState`。普通通知按订阅关联邮箱，后续不要直接信任通知里的任意 URL 去拉取资源。
+
+`Prefer: IdType="ImmutableId"` 用于让通知使用不可变 ID；同一邮箱内移动邮件时更便于关联。创建订阅、读取详情和 delta 查询应保持 ID 格式一致。参见 [Outlook 不可变 ID](https://learn.microsoft.com/en-us/graph/outlook-immutable-id)。
+
+### 5.3 订阅有效期与回调时限
+
+| 项目 | 当前要求 |
+|------|----------|
+| Outlook 普通通知订阅 | 最长 10,080 分钟；实际申请应留余量，不超过上限 |
+| 富通知订阅 | 最长 1,440 分钟，需要更频繁续期 |
+| 创建订阅时验证回调 | POST，在 10 秒内返回 200、`text/plain` 和 URL 解码后的 token |
+| 正常通知交接 | 目标在 3 秒内处理完成，或持久入队后返回 202；失败则返回 5xx |
+
+普通 Outlook 邮件订阅不应再使用“最长 4,230 分钟”的旧说法。续期调度以服务返回的实际到期时间为准，并设置提前量。参见[订阅有效期](https://learn.microsoft.com/en-us/graph/api/resources/subscription?view=graph-rest-1.0#subscription-lifetime)和 [Webhook 投递要求](https://learn.microsoft.com/en-us/graph/change-notifications-delivery-webhooks)。
+
+### 5.4 回调示例：验证、校验、持久入队
+
+下面是 Node.js / Express 回调层，可作为模块接入现有服务。它通过两个依赖连接真实存储：
+
+- `getSubscription(id)`：查询本地订阅，返回 `clientState`、`tenantId`、`mailboxId`，未知订阅返回 `null`。
+- `enqueueBatch(jobs)`：写入持久队列，确认写入成功后才 resolve，失败时抛错。若部分写入后失败，整批重投也要能幂等处理。
+
+OAuth、订阅管理和 Worker 由相应服务实现；这里集中展示 HTTP 回调边界。给存储查询和入队设置短超时，使正常请求能在 3 秒内响应。
+
+```js
+import express from 'express';
+import { timingSafeEqual } from 'node:crypto';
+
+function sameSecret(actual, expected) {
+  if (typeof actual !== 'string' || typeof expected !== 'string') return false;
+  const left = Buffer.from(actual);
+  const right = Buffer.from(expected);
+  return right.length > 0 && left.length === right.length
+    && timingSafeEqual(left, right);
+}
+
+export function createGraphWebhookApp({ getSubscription, enqueueBatch }) {
+  if (typeof getSubscription !== 'function' || typeof enqueueBatch !== 'function') {
+    throw new TypeError('Subscription store and durable queue are required');
+  }
+
+  const app = express();
+  const paths = ['/webhook', '/webhook/lifecycle'];
+
+  // 验证请求为 POST，且可能使用 text/plain，先于 JSON 解析处理。
+  app.post(paths, (req, res, next) => {
+    const token = req.query.validationToken;
+    if (token === undefined) return next();
+    if (typeof token !== 'string' || token.length === 0) return res.sendStatus(400);
+
+    // Express 已对查询参数进行 URL 解码，无需再 decodeURIComponent。
+    return res.status(200).type('text/plain').send(token);
+  });
+
+  app.use(express.json({ limit: '1mb' }));
+
+  function receive(kind) {
+    return async (req, res) => {
+      if (!Array.isArray(req.body?.value) || req.body.value.length === 0) {
+        return res.sendStatus(400);
+      }
+
+      try {
+        const jobs = [];
+        for (const notification of req.body.value) {
+          if (!notification || typeof notification.subscriptionId !== 'string') continue;
+          const subscription = await getSubscription(notification.subscriptionId);
+          if (!subscription || typeof subscription.tenantId !== 'string'
+            || typeof subscription.mailboxId !== 'string'
+            || notification.tenantId !== subscription.tenantId
+            || !sameSecret(notification.clientState, subscription.clientState)) continue;
+
+          const messageId = notification.resourceData?.id;
+          const lifecycleEvent = notification.lifecycleEvent;
+          if (kind === 'mail' && (notification.changeType !== 'created'
+            || typeof messageId !== 'string' || messageId.length === 0)) continue;
+          if (kind === 'lifecycle' && ![
+            'reauthorizationRequired', 'subscriptionRemoved', 'missed',
+          ].includes(lifecycleEvent)) continue;
+
+          jobs.push({
+            kind,
+            subscriptionId: notification.subscriptionId,
+            tenantId: subscription.tenantId,
+            mailboxId: subscription.mailboxId,
+            ...(kind === 'mail' ? { messageId } : { lifecycleEvent }),
+          });
+        }
+
+        if (jobs.length === 0) return res.sendStatus(403);
+        await enqueueBatch(jobs); // 收到持久化确认后，才能向 Graph 确认接收。
+        return res.sendStatus(202);
+      } catch {
+        return res.sendStatus(503); // 存储或队列失败，让 Graph 后续重试。
+      }
+    };
+  }
+
+  app.post('/webhook', receive('mail'));
+  app.post('/webhook/lifecycle', receive('lifecycle'));
+  return app;
+}
+```
+
+此例只消费 `created` 普通通知；如果订阅其他事件，应扩展校验和任务模型。批量请求里无效的项不会进入业务队列，有效项全部持久入队后再返回 202。生产中应监控校验失败和未知订阅，但不记录秘密或邮件正文；重建订阅后也应保留旧订阅的必要映射，以处理在途通知。
+
+两个端点都复用 POST 验证逻辑。验证请求不包含常规通知的 `clientState`，不能先按通知正文校验而拒绝握手。正常通知则必须校验，且不能先返回 202 再尝试入队。参见[回调验证](https://learn.microsoft.com/en-us/graph/change-notifications-delivery-webhooks#notificationurl-validation)。
+
+### 5.5 Worker 拉取详情与幂等处理
+
+Worker 从本地订阅映射得到邮箱 ID，再读取指定邮件：
+
+```http
+GET https://graph.microsoft.com/v1.0/users/{user-object-id}/messages/{message-id}?$select=id,subject,from,receivedDateTime,body
+Authorization: Bearer {access_token}
+Prefer: IdType="ImmutableId"
+```
+
+Graph 和队列都可能重投。对于“同一封新邮件只触发一次业务”的任务，可以用 **租户 ID + 邮箱 ID + 不可变邮件 ID + 业务动作** 作为去重键，避免不同邮箱、不同业务之间误去重。处理成功状态需要持久保存；业务失败后应允许重试，不能在收到通知时就永久标记“已完成”。
+
+调用详情接口可能遇到邮件已删除、权限变化、`429` 或暂时故障，应区分不可恢复错误与可重试错误。邮件 ID 作为路径片段时需要正确编码。参见[读取邮件 API](https://learn.microsoft.com/en-us/graph/api/message-get?view=graph-rest-1.0)。
+
+## 6. 保持通知链路可靠
+
+### 6.1 自动续期
+
+```http
+PATCH https://graph.microsoft.com/v1.0/subscriptions/{subscription-id}
+Authorization: Bearer {access_token}
+Content-Type: application/json
+
+{ "expirationDateTime": "2026-11-09T00:00:00Z" }
+```
+
+时间同样应动态生成。对本文申请约 3 天的普通订阅，可以每天检查并提前续期；富通知的上限更短，应使用更短的检查间隔。续期失败需要重试和告警，保存服务实际返回的到期时间；发现订阅不存在时重建，并补同步。
+
+访问令牌过期与订阅到期是两回事。应用应维护可用 token，不能以“订阅还没到期”推断认证一直有效。
+
+### 6.2 生命周期通知
+
+建议创建订阅时就提供 `lifecycleNotificationUrl`，并在 Worker 中处理：
+
+| 事件 | 含义 | 应对 |
+|------|------|------|
+| `reauthorizationRequired` | 需要重新授权通知链路 | 使用有效 token 调用 reauthorize，或通过一次 PATCH 同时重新授权和续期 |
+| `subscriptionRemoved` | 订阅已被移除 | 重建订阅并执行 delta 补同步 |
+| `missed` | 存在未送达的通知 | 执行 delta 对账，游标不可用时重新建立同步基线 |
+
+`POST /subscriptions/{id}/reauthorize` 本身不会延长订阅有效期。官方还要求同一订阅的 reauthorize 与 PATCH 不要在 10 分钟窗口内分别连续发起；要同时完成两项操作时，用一次带新到期时间的 PATCH，调度任务和事件消费者也应协调。参见[生命周期通知处理](https://learn.microsoft.com/en-us/graph/change-notifications-lifecycle-events)。
+
+生命周期通知不能代替到期监控和定期对账：链路中断时，生命周期事件本身也可能收不到。
+
+### 6.3 重试与超时
+
+Graph 对未成功确认的通知按退避策略重试，窗口最长约 4 小时；收到成功响应后，会认为服务已接管通知。慢回调还可能进入延迟或丢弃状态。因此，短暂宕机不等于一定永久漏收，但也不能依赖重试保证完整性。参见 [Webhook 重试和限流机制](https://learn.microsoft.com/en-us/graph/change-notifications-delivery-webhooks#http-codes-and-retry-logic)。
+
+回调先持久入队，Worker 按业务结果确认任务；不可恢复的任务进入失败队列或人工处理流程，并由 delta 补齐可能的通知缺口。
+
+### 6.4 Delta Query 补同步
+
+```http
+GET https://graph.microsoft.com/v1.0/users/{user-object-id}/mailFolders('Inbox')/messages/delta?$select=id,subject,receivedDateTime
+Authorization: Bearer {access_token}
+Prefer: IdType="ImmutableId"
+```
+
+初次查询用于建立同步基线；遇到 `@odata.nextLink` 要继续翻页，直到取得 `@odata.deltaLink`。可靠处理完这一轮数据后，保存完整 `deltaLink` URL，下一轮直接使用，不自行拼接 token。
+
+delta 按文件夹跟踪，需要按租户、邮箱、文件夹分别保存游标。通知任务和 delta 检出的邮件进入同一套幂等业务链；历史邮件是否触发业务应单独确定，避免首次同步把所有旧邮件都当成新邮件处理。
+
+可以从每 30 分钟至 1 小时对账一次开始，按漏收容忍度、邮箱数量和 API 成本调整；收到 `missed`、重建订阅或故障恢复时立即触发。游标失效时重新同步，并利用已保存的业务处理状态防止重复。delta 反映资源的可查询变化，不能保证找回补同步前已经永久删除的邮件正文。参见[邮件增量同步](https://learn.microsoft.com/en-us/graph/delta-query-messages)。
+
+## 7. 本地开发与联调
+
+Graph 需要可公开访问的 HTTPS 回调，本地服务可以通过隧道联调：
+
+```bash
+# 选择一种工具；以下假设回调服务监听 3000 端口。
+ngrok http 3000
+
+# Cloudflare Quick Tunnel
+cloudflared tunnel --url http://localhost:3000
+```
+
+Cloudflare Quick Tunnel 会分配临时的 `trycloudflare.com` 地址，适合测试。其他工具的域名是否固定取决于配置和套餐；URL 改变后，应同步调整订阅中的回调配置并重新验证。长期使用应配置稳定域名，避免服务重启后订阅指向旧地址。参见 [Cloudflare Quick Tunnels](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/)和 [ngrok HTTP 接入](https://ngrok.com/docs/getting-started/)。
+
+联调至少覆盖：两个端点的 POST 验证、批量通知、错误 `clientState`、队列不可用、重复通知、订阅续期失败和 delta 恢复。公网入口若被登录页或额外网关认证拦住，Graph 的握手和投递也会失败。
+
+## 8. 上线检查清单
+
+- [ ] 确定处理目标：分类、工单、告警还是同步；定义历史邮件和移入邮件的处理规则。
+- [ ] 确定单邮箱或多邮箱、委托或应用权限，完成必要授权。
+- [ ] 两个公网 HTTPS 回调均能在 10 秒内完成 POST 验证。
+- [ ] 创建并保存订阅、到期时间、邮箱映射及 `clientState`；ID 格式保持一致。
+- [ ] 通知先校验、持久入队，再在目标时限内返回 202；失败返回 5xx。
+- [ ] Worker 支持批量通知、业务幂等、限流退避和失败任务恢复。
+- [ ] 自动续期留出重试余量，并协调续期与重新授权操作。
+- [ ] 三类生命周期事件都有消费者，重建订阅后执行补同步。
+- [ ] 初始化 delta 基线，保存完整游标，定期对账并处理游标失效。
+- [ ] 监控订阅到期、续期失败、回调耗时、校验失败、队列积压、消费错误和对账延迟。
+- [ ] 根据历史邮件流量设置异常告警，避免把正常无邮件时段误判为链路故障。
+
+## 参考资料
+
+- [Microsoft Graph Outlook 变更通知](https://learn.microsoft.com/en-us/graph/outlook-change-notifications-overview)
+- [订阅有效期与通知延迟](https://learn.microsoft.com/en-us/graph/api/resources/subscription?view=graph-rest-1.0)
+- [Webhook 验证、响应与重试](https://learn.microsoft.com/en-us/graph/change-notifications-delivery-webhooks)
+- [生命周期通知](https://learn.microsoft.com/en-us/graph/change-notifications-lifecycle-events)
+- [邮件 Delta Query](https://learn.microsoft.com/en-us/graph/delta-query-messages)
+- [Outlook API 限流](https://learn.microsoft.com/en-us/graph/throttling-limits#outlook-service-limits)
+- [不可变资源 ID](https://learn.microsoft.com/en-us/graph/outlook-immutable-id)
