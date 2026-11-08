@@ -1,0 +1,388 @@
+---
+title: OpenAI Codex Harness 工作原理：从 Agent 循环到开源实现
+description: 从模型请求、工具执行与权限边界，到上下文续接、缓存压缩和开源源码入口，理解 Codex Harness 的工作原理。
+category:
+  - AI
+tags:
+  - Codex
+  - AI Agent
+  - Harness
+date: "2026-11-08"
+source: https://developers.openai.com/blog/codex-as-a-platform
+---
+
+> 文档复核日期：2026 年 11 月 8 日。本文整合三份原稿，并区分稳定概念、历史实现与版本相关配置。源码导读固定到提交 `748ab55ca7de0b647d9a7a9d9a8e70e00f28666d`。示例为教学用途，不是某个真实项目的运行记录。
+
+你让 Codex 运行测试。界面先显示“正在执行”，随后出现失败日志，过了一会儿，助手才解释失败原因。这里发生了三件不同的事：模型提出动作，工具产生执行结果，Harness 组织执行、记录状态，并把结果送回模型、把事件交给客户端。
+
+**看见工具输出，不代表任务已经结束；模型也可以不调用工具，直接生成最终回复。** 理解 Codex 的关键，是分清模型生成、工具执行、界面展示和本轮结束这几个环节。[来源：Agent loop][loop]、[App Server][app-server]
+
+## 1. Harness 是什么，开源代码在哪里
+
+Harness 是围绕模型运行的执行系统。它组织上下文，发起模型请求，协调工具与审批，维护运行状态，并处理继续执行或结束运行的条件。模型负责根据上下文生成内容或动作请求，操作系统、工具服务和应用负责落实各自的执行与授权边界。
+
+OpenAI 的官方开源入口是 **[openai/codex][repo]**。官方文章《Codex as a platform: build on the open agent harness》将 Harness 定义为围绕模型的执行系统，并明确说明核心 Harness 和集成接口开源；模型访问与托管服务是另外的部分。[来源：官方平台文章][platform]
+
+| 层次 | 主要职责 | 理解边界 |
+| --- | --- | --- |
+| 模型 | 利用上下文生成回复、推理相关输出或工具调用请求 | 模型生成调用参数，不代表操作已经执行 |
+| Harness | 组织模型与工具交互，维护上下文、运行状态和执行策略 | 不等于模型权重，也不必是单独部署的服务 |
+| 工具与执行环境 | 执行命令、读取文件、查询服务、写入业务数据等 | 可能在本地、容器、远端服务或 API 提供方运行 |
+| 产品与客户端 | 提供界面、业务入口、用户上下文、审批交互及结果展示 | 不等于全部底层开源代码 |
+
+CLI、桌面应用和 IDE 扩展是不同产品入口。`app-server` 通过客户端协议暴露 Codex Harness 的线程、轮次、事件和审批等能力；它是集成入口，不能仅凭名称把所有核心执行逻辑都归到 `app-server` 模块。MCP 则是连接工具和数据的一种方式，不是模型，也不是完整 Harness。
+
+## 2. 官方架构图：组件之间如何分工
+
+![OpenAI 官方架构图：应用提供界面、业务上下文和同意交互，Codex app-server 提供 Agent 循环与沙箱执行，应用自有 MCP 提供数据和操作](/assets/images/ai/codex-harness-guide/codex-platform-agent-stack.webp)
+
+*图 1：OpenAI 官方文章《Codex as a platform: build on the open agent harness》的 Figure 1，保留官方原图，尺寸为 1600×873。版权及原始图文归其权利人所有。*
+
+[查看官方文章][platform] · [打开官方原图][official-image] · [打开随文原图文件](/assets/images/ai/codex-harness-guide/codex-platform-agent-stack.webp)
+
+这张图展示的是组件分工：
+
+1. **应用侧**提供用户界面、选中的业务对象、当前页面状态、业务规则和用户同意交互。
+2. **Codex app-server**提供线程、轮次、流式事件等 Agent 运行能力，并连接相应的受控执行环境。
+3. **应用自有 MCP 服务**暴露业务数据和动作。获准的业务操作完成后，可以更新产品中的状态。
+
+图中的连接不意味着 MCP 服务自动被本地 shell 沙箱隔离。宿主对调用的许可、服务端自身的账号授权和执行隔离，是不同层次的控制。此外，官方图聚焦应用集成，未画出完整的模型服务链路。[来源：官方平台文章][platform]、[MCP 配置][mcp]
+
+## 3. 一轮任务怎样运行
+
+![Codex Harness 合并流程图高清版：左侧为任务主循环，右侧通过编号展开上下文组装、权限检查和结果回流，完成状态独立于回复分支](/assets/images/ai/codex-harness-guide/codex-harness-flow-hd.png)
+
+*图 2：本文配图，依据本次对话确认的修正版流程图重新排版，不是 OpenAI 官方架构图。PNG 为 3840×2640，另附可缩放的 SVG。实线表示执行流程；①②③只是左右两侧的对应引用。*
+
+[打开高清 PNG](/assets/images/ai/codex-harness-guide/codex-harness-flow-hd.png) · [打开矢量 SVG](/assets/images/ai/codex-harness-guide/codex-harness-flow.svg) · [打开本次对话确认的原始修正版（1536×1024）](/assets/images/ai/codex-harness-guide/codex-harness-flow-approved-original.png)
+
+图 2 主要解释**由宿主调度执行工具**的常规循环。API 托管工具可能在服务端执行，不必逐次经过客户端的本地执行链路；图中省略并发、重试、恢复和部分中间事件。
+
+### 3.1 从用户任务到下一次动作
+
+1. 用户在客户端提交任务，应用可以同时提供相关业务上下文。
+2. Harness 准备有效上下文和可用工具定义，经 Responses API 请求模型。
+3. 模型可以输出过程说明、答案内容或工具调用请求。一次响应可以包含多种条目，也可能包含多个调用。
+4. 对需要宿主执行的调用，Harness 按工具类型检查执行策略和审批要求。免审批或已获准时才调度执行；被拒绝的操作不执行。
+5. 执行结果与原调用关联，纳入后续有效上下文。只要本轮仍可继续，Harness 可以再次请求模型。
+6. 正常收尾时，模型生成最终回复，Harness 将其转交客户端。客户端可以流式展示文字，并通过本轮终态事件确认运行状态。
+
+工具拒绝、工具执行失败、模型请求失败和用户中断是不同情况。可恢复的工具错误可以作为结果交给模型继续处理；取消或不可恢复的运行错误可能直接结束本轮，不要求先生成一条最终回复。[来源：App Server][app-server]、[Function calling][function-calling]
+
+### 3.2 Thread、Turn 和 Response
+
+| 概念 | 含义 | 例子 |
+| --- | --- | --- |
+| Thread（对话线程） | 保存持续对话及其轮次 | 先查测试失败，再继续要求修复，可以处于同一线程 |
+| Turn（轮次） | 一次用户请求及随后开展的 Agent 工作 | 一轮内可以运行测试、读取报告、修改代码和再次验证 |
+| Response（模型响应） | 一次模型请求对应的响应 | 同一轮可能产生一次或多次模型响应 |
+| 工具调用 | 提出的工具名称、参数及调用标识等 | 请求运行测试 |
+| 工具结果 | 执行得到的数据或状态，或调用未执行的反馈 | 测试日志、退出码、拒绝状态 |
+| 有效上下文 | 当前推理实际可以利用的指令、工具信息及过程记录等 | 历史经过压缩后，可能以更短的表示继续使用 |
+
+**一次 turn 可包含一次或多次模型请求。** 新输入通常可以开始新轮次；app-server 也提供 `turn/steer`，用于把用户补充信息加入正在进行的轮次，不能断言每条新消息都必须创建新 turn。[来源：App Server][app-server]
+
+### 3.3 三个不能混用的“完成”
+
+| 状态 | 能说明什么 | 不能据此推断什么 |
+| --- | --- | --- |
+| 一段文字或一个输出条目完成 | 当前片段或条目已产生 | 整轮工作已经结束 |
+| `response.completed` | 此次模型响应完成 | 响应中的待执行工具调用已经处理完 |
+| `turn/completed` | app-server 报告了本轮终态 | 用户目标必然全部达成 |
+
+收到 `turn/completed` 后，还要检查 `turn.status`：`completed` 表示正常结束，`failed` 表示失败，`interrupted` 表示中断。正常结束也可能是在向用户追问、说明阻碍，或报告任务只完成了一部分。运行状态和业务验收结果需要分别判断。
+
+`turn/completed` 是 Codex app-server 的协议事件名，不是所有 Agent 框架都必须采用的通用事件名。[来源：App Server][app-server]
+
+## 4. Harness 如何组织上下文
+
+### 4.1 请求中的三个核心字段
+
+| 字段 | 作用 | 注意事项 |
+| --- | --- | --- |
+| `instructions` | 为本次模型请求提供高层指令 | 不能把所有指令来源都简单等同于这个字段 |
+| `tools` | 声明可请求的工具及参数格式 | 工具定义不会自行执行；实际可用性和授权仍由运行环境决定 |
+| `input` | 提供消息、文件、图像及工具交互等输入条目 | 不同类型条目的结构不同，续接时也可能只发送新增项 |
+
+请求还有模型名称、输出设置等参数。客户端提供结构化字段，服务端将其转为模型可消费的输入。2026 年 1 月工程文章给出的排列示意用于解释当时实现，不应被当成所有兼容服务必须遵守的字符串拼接格式。[来源：Agent loop][loop]、[Function calling][function-calling]
+
+`input` 并不要求每个条目都具有 `role` 和 `content`。用户消息可以是带角色的消息条目，函数结果则通过 `type`、`call_id`、`output` 等字段表达。系统、开发者和用户指令之间的优先关系描述的是指令冲突处理，不能把它泛化为“所有输入数据都按角色分配可信权重”。工具返回的外部内容也不应被当成新的高优先级指令。
+
+### 4.2 项目约定与环境信息
+
+Codex 可将项目说明、环境信息、权限说明和技能信息等组织进上下文。`AGENTS.md` 用于传达项目约定；它告诉模型应怎样工作，并不替代执行层的权限控制。
+
+按当前官方说明，`AGENTS.md` 的发现路径包括：
+
+1. 全局配置目录：在 `CODEX_HOME`（默认 `~/.codex`）查找全局说明，优先采用非空的 `AGENTS.override.md`。
+2. 项目目录链：从项目根目录到当前工作目录，逐层查找 `AGENTS.override.md`、`AGENTS.md` 或配置的备用文件名，每层至多采用一个文件。
+3. 组合说明：更深目录的约定可以细化上层约定；项目文档的合计大小受配置限制。
+
+具体默认大小与配置名见附录。权限说明写进模型上下文，是为了帮助模型提出合适的动作；真正限制写入、网络和远端业务操作的，是有效执行策略及相应环境。[来源：AGENTS.md 指南][agents-md]、[审批与安全][security]
+
+## 5. 从模型输出到工具结果
+
+### 5.1 流式事件与界面展示
+
+Responses API 事件描述模型响应；app-server 事件描述客户端所见的 Agent 运行过程。HTTP 流式请求可以使用 SSE，WebSocket 模式也能传递 Responses 事件。两层的结束时机不能混用。
+
+| 事件或字段 | 如何理解 |
+| --- | --- |
+| `response.output_text.delta` | 一段文字增量，可用于流式展示 |
+| `response.reasoning_summary_text.delta` | 接口提供的推理摘要增量，不是完整内部推理过程或最终答复 |
+| `response.output_item.added` / `response.output_item.done` | 输出条目开始或完成；不要重复登记成两个调用 |
+| `agentMessage.phase` | 存在该字段时，可区分 `commentary`、`partial_answer` 和 `final_answer` |
+| 工具进度、日志、文件差异等事件 | 可以同步展示；显示出来本身不结束本轮 |
+
+应用应维护条目、调用和轮次状态，而不是在收到第一段助手文字时就退出。推理条目中的摘要、加密字段等，应按接口约定承接，不应假定每次响应都包含同一种字段组合。[来源：App Server][app-server]、[WebSocket 模式][websocket]
+
+### 5.2 工具调用和结果怎样配对
+
+下面假设应用注册了一个 `run_test` 函数工具。工具名称、测试名称和结果均为教学示例，不是 Codex 内置命令。
+
+模型提出调用：
+
+```json
+{
+  "type": "function_call",
+  "name": "run_test",
+  "arguments": "{\"test\":\"DistrictServiceTests\"}",
+  "call_id": "call_test_01"
+}
+```
+
+工具获准执行后，应用用相同标识回填结果：
+
+```json
+{
+  "type": "function_call_output",
+  "call_id": "call_test_01",
+  "output": "Exit 1. Tests run: 3, Failures: 1. expected: 2, actual: 3."
+}
+```
+
+`call_id` 说明“这个结果属于哪次调用”。如果模型接下来还要读取测试报告，新的调用应有自己的标识。只凭上述摘要，可以知道存在断言失败，但不能确定根因是业务代码、测试数据还是错误的预期；模型可以在同一轮继续检查。
+
+显式管理上下文时，需要保留接口要求的相关模型输出、调用与结果；使用续接机制时，则按约定发送新增项。多个工具调用也需要分别关联，不能因为一个调用先完成就忽略其他待处理工作。[来源：Function calling][function-calling]
+
+### 5.3 工具结果能不能直接交给用户
+
+可以，但必须区分展示与终止策略。
+
+| 处理方式 | 用户看到什么 | 本轮是否因此结束 |
+| --- | --- | --- |
+| 工具结果回到模型 | 模型根据结果继续分析或生成答复 | 不一定，需要继续判断运行状态 |
+| 客户端直接展示工具输出 | 日志、图表、差异或业务组件 | 展示本身不结束本轮 |
+| 自建应用把指定工具结果作为最终交付 | 应用选择的查询结果或卡片 | 由应用显式终止策略决定 |
+
+如果用户问“为什么失败”，展示一个非零退出码还不够；如果用户只要求查询状态，应用可能允许直接交付状态卡片。工具原样输出被放进答案区域，也不意味着模型生成过一条相同内容的助手消息。
+
+Agents SDK for Python 提供函数工具的直接结束策略，详见附录 C。它不是 Codex 的通用配置开关，也不能据此推断 Codex 默认在任意工具返回后结束。[来源：Agents SDK][sdk-agent]
+
+## 6. 谁负责审批、沙箱与执行权限
+
+**模型提出工具调用请求，Harness 和集成环境决定如何落实。** 调用许可与执行能力需要分别检查：即使宿主放行，远端账号仍可能没有写入权限；即使模型参数正确，也可能因沙箱限制而无法执行。
+
+| 工具类型 | 调用层面的控制 | 实际执行边界 |
+| --- | --- | --- |
+| 本地命令或文件工具 | 工具可用性、执行策略、审批要求 | 操作系统、沙箱、可读写目录、网络配置等 |
+| MCP 工具 | 允许或禁用工具、调用审批、连接配置 | MCP 服务的身份、权限、业务规则及部署环境 |
+| API 托管工具 | 请求中的工具配置与服务策略 | API 提供方的工具执行环境 |
+
+本地 shell 沙箱不会自动限制远端 MCP 服务访问其数据库。反过来，“不受本地 shell 沙箱隔离”也不等于“MCP 调用没有权限控制”：当前 MCP 配置支持工具允许/禁用列表和审批策略。[来源：MCP 文档][mcp]、[审批与安全][security]
+
+拒绝执行、执行失败和执行成功应保留不同状态。未获授权时不要实际执行，也不要伪造成功结果。错误能否回填后继续、是否进入失败终态，应根据错误类型、取消状态及运行策略处理。
+
+审批并不始终意味着弹窗询问人类；部分部署支持自动审批审查。最终依据是当前生效的审批模式、组织要求和执行策略，而不是一段提示词中的宽泛承诺。
+
+## 7. 下一次请求如何承接历史
+
+**逻辑上下文与网络请求体是两个层次。** 模型要理解测试日志，需要能利用原任务和相关过程；这些信息是否每次完整重发，取决于传输与续接方式。
+
+| 方式 | 如何承接 | 需要注意 |
+| --- | --- | --- |
+| 显式传递上下文 | 提交当前有效输入、相关输出与新工具结果 | 不等于永远保留未经裁剪的全部历史 |
+| 响应续接 | 使用 `previous_response_id` 等机制关联前序响应，并提供新增条目 | 续接能力受提供商、连接与状态可用性影响 |
+| 压缩后继续 | 使用压缩表示继续推理 | 压缩后的上下文不保证保存每一行原始内容 |
+| 状态恢复 | 在前序状态不可用时补充恢复所需上下文 | 要按接口要求恢复，避免遗漏或重复条目 |
+
+2026 年 1 月的工程文章解释了当时的无状态请求路径。4 月 22 日的后续文章说明，Codex 大部分 Responses API 流量已转向 WebSocket。当前 WebSocket 文档说明，连接内可以利用内存中的前序响应状态，通过新增输入续接；这种模式可以兼容 `store=false` 和 ZDR。
+
+因此，不能把“Codex 始终完整重发历史”“使用响应 ID 就必然持久存储数据”写成普遍结论；也不能反过来假定每个提供商和每次请求都使用同一种续接方式。[来源：WebSocket 工程文章][websocket-blog]、[WebSocket 模式][websocket]
+
+## 8. 缓存与压缩解决不同问题
+
+| 机制 | 主要作用 | 不应混淆为 |
+| --- | --- | --- |
+| 连接内状态复用 | 减少重复传输、解析和准备工作 | 永久保存完整对话 |
+| Prompt caching | 在符合条件时复用匹配前缀的计算状态 | 缓存整段答案，或保证输出相同 |
+| Compaction | 以较短表示承接重要任务状态，释放上下文空间 | 无损保存全部日志，或扩大模型窗口 |
+
+### 8.1 为什么尽量保留稳定前缀
+
+稳定的指令、工具定义与既有输入便于缓存复用。常规循环中，可以追加新消息、工具调用和结果，减少对前部内容的改写。但前缀相同只是条件之一，缓存还受可用条目、模型规则和有效匹配边界等影响。
+
+修改工具列表、切换模型或压缩历史可能影响复用范围。“尽量追加”是策略，不是“历史永远不能替换”的硬性规则。缓存减少的是重复处理，不保证任务总耗时、输出计算量或账单严格线性增长。[来源：Prompt caching][caching]
+
+### 8.2 压缩之后，任务可以继续
+
+上下文窗口有容量限制，还需要为输出留空间。读取长文件和反复收集日志，即使发生在同一轮中，也会占用窗口；缓存命中不会让窗口变大。
+
+Codex 和 Responses API 的压缩机制会随版本演进。早期可通过 `/compact` 请求摘要；独立 `/responses/compact` 端点会返回供后续使用的输入条目，其中可包含不透明的压缩表示。当前 API 也支持通过 `context_management` 和 `compact_threshold` 请求服务端压缩。
+
+不同压缩路径的续接规则不同：独立压缩后，用返回的输入开始新链；服务端压缩的响应续接则按该模式保留响应链。不要混用字段和步骤。需要逐字核对代码或日志时，应回到原始文件，而不是要求压缩表示复原全部内容。[来源：Compaction][compaction]
+
+## 9. 一个测试任务的完整例子
+
+用户提出：“检查测试为什么失败，能修复的话修复并验证。”
+
+1. Harness 组织用户要求、项目约定和环境信息，向模型请求下一步。
+2. 模型提出运行测试。Harness 按策略调度；工具产生非零退出码，界面可先显示失败日志。
+3. Harness 将调用和结果关联，模型据此请求读取报告、测试代码或相关实现。
+4. 模型获得足够证据后提出修改，由文件工具在允许的范围内写入。
+5. 模型再请求验证。Harness 执行测试，并回填真实结果。
+6. 模型生成最终回复，说明改动、验证结果和剩余问题；客户端通过本轮终态确认运行结束。
+
+这只是正常路径。运行测试可能被拒绝，修复可能不成立，验证也可能继续失败。此时应保留实际状态，不能把“工具调用成功提交”“命令退出”“本轮正常结束”混写成“用户要求已经全部完成”。
+
+## 附录 A：集成方式与源码阅读入口
+
+### A.1 从哪一层接入
+
+| 需求 | 可优先阅读的入口 |
+| --- | --- |
+| 脚本、CI、一次性后台任务 | `codex exec` 与非交互模式文档 |
+| 在应用代码中启动、恢复或流式处理 Codex 任务 | 官方 Codex SDK |
+| 自己控制产品中的线程、轮次、事件和审批界面 | Codex app-server 协议 |
+| 向 Agent 提供业务数据和操作 | MCP 或相应工具集成接口 |
+
+这里的 **Codex SDK** 与附录 C 的 **OpenAI Agents SDK** 不是同一个 SDK。前者用于接入 Codex，后者用于构建和编排自己的 Agent。[来源：官方平台文章][platform]
+
+### A.2 固定版本的源码入口
+
+本次核查使用提交 [`748ab55ca7de0b647d9a7a9d9a8e70e00f28666d`][commit]，以下链接固定到该提交，便于复查。
+
+| 入口 | 建议查找 | 阅读目的 |
+| --- | --- | --- |
+| [仓库首页][repo] | CLI、SDK、app-server 相关入口 | 先了解仓库及集成方式 |
+| [core/README.md][core-readme] | `codex-core`、平台执行要求 | 理解核心库定位与执行环境 |
+| [core/src/session/turn.rs][turn-source] | `run_turn` 及其后续处理 | 沿单轮执行理解模型请求、工具交互和控制流 |
+| [core/src/client.rs][client-source] | `ModelClient`、`ModelClientSession`、`previous_response_id` | 理解模型客户端、连接状态和增量续接 |
+| [App Server 文档][app-server] | `thread/start`、`turn/start`、事件与审批 | 理解应用如何驱动和观察 Harness |
+
+`client.rs` 文件头说明了会话与轮次作用域：一个轮次可以发起多次 Responses API 请求，并维护相关连接和路由状态。先读模块说明，再沿调用点阅读，比搜索某个包含 “harness” 的注释更可靠。
+
+旧资料中的 `core/src/codex.rs` 在本次核查时返回 404。旧稿推荐的 `with_runtime_auth` 和 `harness-owned runtime` 也未在本次核查的 `client.rs` 中找到，因此不再作为导航关键词。这是当前版本的核查结果，不用于否定它们在更早版本中存在的可能性。
+
+推荐顺序：官方分层图 → 合并流程图 → 核心库说明 → `run_turn` → 模型客户端 → app-server 协议。简化流程图用于理解职责，不能当成逐行源码调用图。
+
+## 附录 B：配置与历史实现对照
+
+以下是复核时的阅读提示，不是一份应整体复制的配置。实际行为还受客户端版本、配置层级、组织策略和执行环境影响。
+
+### B.1 沙箱与审批
+
+| 设置 | 准确理解 |
+| --- | --- |
+| `sandbox_mode="read-only"` | 约束写入；符合限制的命令仍可以运行 |
+| `sandbox_mode="workspace-write"` | 允许规定范围内写入；网络和受保护路径仍受有效策略控制 |
+| `sandbox_mode="danger-full-access"` | 不启用该 Codex 沙箱限制；操作系统和远端服务权限仍存在 |
+| `approval_policy="on-request"` | 在策略允许时申请所需审批；边界内操作可免审批 |
+| `approval_policy="never"` | 不发起交互审批，不代表无条件执行或绕过沙箱 |
+| `approvals_reviewer="auto_review"` | 在适用配置下由自动审查处理符合条件的审批请求 |
+
+当前文档已停用旧的 `approval_policy="untrusted"`，它与项目 `trust_level="untrusted"` 不是同一设置。非交互模式中的旧 `--full-auto` 也已不再支持。新版权限方案还提供 `default_permissions` 等入口，不能与旧配置名称直接混为一谈。[来源：审批与安全][security]、[权限配置][permissions]、[非交互模式][noninteractive]
+
+### B.2 上下文相关配置
+
+| 配置名 | 所属范围 | 用途 |
+| --- | --- | --- |
+| `model_instructions_file` | Codex 配置 | 指定模型指令文件，具体支持情况按版本核对 |
+| `project_doc_max_bytes` | Codex 配置 | 项目说明文档合计大小限制，当前默认 32 KiB |
+| `project_doc_fallback_filenames` | Codex 配置 | 项目说明备用文件名 |
+| `model_auto_compact_token_limit` | Codex 配置 | 自动压缩阈值，未指定时使用模型默认值 |
+| `context_management` / `compact_threshold` | Responses API 请求 | 服务端压缩的设置 |
+
+原始工程文章中的 `auto_compact_limit` 不宜直接当成当前 `config.toml` 的用户配置键；Codex 配置与 API 请求字段属于不同接口。[来源：配置参考][config]、[Compaction][compaction]
+
+### B.3 端点与历史说明
+
+公共 Responses API 入口为 `https://api.openai.com/v1/responses`。2026 年 1 月工程文章提到的 `https://chatgpt.com/backend-api/codex/responses` 是当时的产品登录路径示例，不应作为第三方应用的公共 API 集成契约。模型提供商、本地服务、认证方式及其兼容程度，应按相应文档配置；不要把 Ollama 的端口直接套用给其他本地服务。[来源：Agent loop][loop]、[配置参考][config]
+
+| 时间或资料 | 本文如何使用 |
+| --- | --- |
+| 2026-01-23《Unrolling the Codex agent loop》 | 理解主循环、上下文组织和早期实现 |
+| 2026-04-22 WebSocket 工程文章 | 补充传输方式和状态复用的演进 |
+| 2026-08-19 平台文章 | 确认开源定位、应用集成及官方架构图 |
+| 2026-11-08 文档与源码复核 | 核对当前协议、配置和源码入口 |
+
+## 附录 C：自建 Agent 的工具直接返回策略
+
+OpenAI Agents SDK for Python 的 `Agent.tool_use_behavior` 提供了以下选择：
+
+| 选项 | 行为 |
+| --- | --- |
+| `"run_llm_again"` | 默认方式，工具执行后将结果交给模型继续处理 |
+| `"stop_on_first_tool"` | 把第一个工具调用的输出作为最终结果 |
+| `StopAtTools` | 指定哪些工具被调用时允许结束运行 |
+
+这些选项针对该 SDK 的函数工具处理，不是写入 Codex `config.toml` 的开关，也不能直接套用于托管搜索等工具。业务上是否允许这样结束，要由应用明确决定。[来源：Agent.tool_use_behavior][sdk-agent]
+
+如果实现自己的循环，至少分别处理：最终答案、过程消息、多个工具调用、调用拒绝、执行错误、取消和不可恢复失败。直接交付某个工具结果前，还应确认没有必须完成的剩余工作。只查询状态可以返回卡片；要求解释失败根因时，通常还需要进一步分析。
+
+## 图片文件与离线阅读
+
+本站版本使用站点根路径引用配图，资源位于 `public/assets/images/ai/codex-harness-guide/`。迁移或部署时请同时保留本文与该资源目录；下表列出站点中的资源地址。原始 Markdown 资料包仍可按其相对目录结构离线阅读，外部来源与 GitHub 源码链接需联网访问。
+
+| 文件 | 规格 | 说明 |
+| --- | --- | --- |
+| `/assets/images/ai/codex-harness-guide/codex-platform-agent-stack.webp` | 1600×873 | 官方原图，按所给地址原样保存，未伪称为 4K 图片 |
+| `/assets/images/ai/codex-harness-guide/codex-harness-flow-hd.png` | 3840×2640 | 修正版内容重新排版的高清 PNG，适合一般 Markdown 阅读器 |
+| `/assets/images/ai/codex-harness-guide/codex-harness-flow.svg` | 矢量；画布 1920×1320 | 可缩放版本，清晰度不依赖固定像素；文字显示需要中文字体 |
+| `/assets/images/ai/codex-harness-guide/codex-harness-flow-approved-original.png` | 1536×1024 | 本次对话已经确认的原始修正版，保留供对照 |
+
+## 来源索引
+
+1. [OpenAI：Unrolling the Codex agent loop（2026-01-23）][loop]
+2. [OpenAI：Codex as a platform: build on the open agent harness（2026-08-19）][platform]
+3. [官方架构图 Figure 1 原图][official-image]
+4. [OpenAI Codex 开源仓库][repo]
+5. [本次源码核查提交][commit]
+6. [Codex App Server 文档][app-server]
+7. [Responses API：Function calling][function-calling]
+8. [Codex：MCP][mcp]
+9. [Codex：Agent approvals & security][security]
+10. [Codex：Permissions][permissions]
+11. [Codex：Custom instructions with AGENTS.md][agents-md]
+12. [OpenAI：Speeding up agentic workflows with WebSockets（2026-04-22）][websocket-blog]
+13. [Responses API：WebSocket mode][websocket]
+14. [Responses API：Prompt caching][caching]
+15. [Responses API：Compaction][compaction]
+16. [Codex：Configuration reference][config]
+17. [Codex：Non-interactive mode][noninteractive]
+18. [OpenAI Agents SDK for Python：Agent.tool_use_behavior][sdk-agent]
+19. [固定版本：core/README.md][core-readme]
+20. [固定版本：core/src/session/turn.rs][turn-source]
+21. [固定版本：core/src/client.rs][client-source]
+
+[loop]: https://openai.com/index/unrolling-the-codex-agent-loop/
+[platform]: https://developers.openai.com/blog/codex-as-a-platform
+[official-image]: https://developers.openai.com/images/blog/codex-platform-agent-stack.webp
+[repo]: https://github.com/openai/codex
+[commit]: https://github.com/openai/codex/commit/748ab55ca7de0b647d9a7a9d9a8e70e00f28666d
+[app-server]: https://learn.chatgpt.com/docs/app-server
+[function-calling]: https://developers.openai.com/api/docs/guides/function-calling
+[mcp]: https://learn.chatgpt.com/docs/extend/mcp?surface=cli
+[security]: https://learn.chatgpt.com/docs/agent-approvals-security
+[permissions]: https://learn.chatgpt.com/docs/permissions
+[agents-md]: https://learn.chatgpt.com/docs/agent-configuration/agents-md
+[websocket-blog]: https://openai.com/index/speeding-up-agentic-workflows-with-websockets/
+[websocket]: https://developers.openai.com/api/docs/guides/websocket-mode
+[caching]: https://developers.openai.com/api/docs/guides/prompt-caching
+[compaction]: https://developers.openai.com/api/docs/guides/compaction
+[config]: https://learn.chatgpt.com/docs/config-file/config-reference
+[noninteractive]: https://learn.chatgpt.com/docs/non-interactive-mode
+[sdk-agent]: https://openai.github.io/openai-agents-python/ref/agent/#agents.agent.Agent.tool_use_behavior
+[core-readme]: https://github.com/openai/codex/blob/748ab55ca7de0b647d9a7a9d9a8e70e00f28666d/codex-rs/core/README.md
+[turn-source]: https://github.com/openai/codex/blob/748ab55ca7de0b647d9a7a9d9a8e70e00f28666d/codex-rs/core/src/session/turn.rs
+[client-source]: https://github.com/openai/codex/blob/748ab55ca7de0b647d9a7a9d9a8e70e00f28666d/codex-rs/core/src/client.rs
