@@ -1,0 +1,328 @@
+---
+title: "Azure 选购 Claude & GPT 模型指南"
+description: "Azure 模型选购调研归档：控制台入口、模型定价、缓存与平台比较（原记录截至 2026 年 6 月）"
+category:
+  - AI
+tags:
+  - LLM
+date: "2026-11-06"
+---
+
+# Azure 选购 Claude & GPT 模型指南
+
+> **归档说明（2026-11-06）：** 本页保留附件的原始调研内容，原记录标注截至 2026 年 6 月。本次归档未逐项重新核实模型可用性、价格、汇率、区域能力与优惠比例，表格不应当作当前报价；实际选购需核对文末官方页面。
+
+> 整理自实际调研，数据截至 2026年6月。价格如有变动以 Azure 官方为准。
+
+---
+
+## 目录
+
+1. [两个入口的区别](#两个入口的区别)
+2. [Marketplace 三个产品解读](#marketplace-三个产品解读)
+3. [Claude 模型定价](#claude-模型定价)
+4. [GPT 模型定价](#gpt-模型定价)
+5. [Claude vs GPT 横向对比](#claude-vs-gpt-横向对比)
+6. [AWS Bedrock vs Azure OpenAI](#aws-bedrock-vs-azure-openai)
+7. [Token 缓存省钱策略](#token-缓存省钱策略)
+8. [选购决策指南](#选购决策指南)
+
+---
+
+## 两个入口的区别
+
+Azure 有两个常用入口，定位完全不同：
+
+| 入口 | 定位 | 适合做什么 |
+|------|------|-----------|
+| [portal.azure.com](https://portal.azure.com) | 全功能云管理控制台 | 创建资源、配置网络/权限、管理账单 |
+| [ai.azure.com](https://ai.azure.com)（Azure AI Foundry） | AI 专属开发工作台 | 部署模型、测试 Prompt、查看用量 |
+
+**典型使用流程：**
+
+```text
+第一步（portal.azure.com）
+└── 创建 Azure OpenAI 资源
+└── 配置网络、权限、密钥
+
+        ↓
+
+第二步（ai.azure.com）
+└── 部署具体模型（GPT-4o、Claude 等）
+└── 在线测试 Prompt（Playground）
+└── 获取 API Endpoint + Key
+└── 开始开发
+```
+
+> 两者是互补关系，不是替代关系。日常开发主要在 `ai.azure.com`。
+
+---
+
+## Marketplace 三个产品解读
+
+在 Azure Marketplace 搜索 OpenAI 时会出现三个相似卡片，含义完全不同：
+
+| 卡片 | 出版方 | 本质 | 是否需要 |
+|------|--------|------|---------|
+| OpenAI（左） | Microsoft Sentinel | 安全审计插件，用于监控 AI 调用日志 | ❌ 一般不需要 |
+| Azure OpenAI Monitor（中） | ECF Data LLC（第三方） | 可视化监控 Token 用量和费用 | ⚠️ 按需选择 |
+| **Azure OpenAI（右）** | **Microsoft 微软官方** | **AI API 核心服务本体** | **✅ 选这个** |
+
+> **结论：** 开通 Azure OpenAI 服务，选右边微软官方出品的卡片。
+
+---
+
+## Claude 模型定价
+
+### 通过 Microsoft Foundry 使用 Claude
+
+Claude 在 Azure 上通过 **Microsoft Foundry** 提供，采用 CCU（Claude Consumption Units）计费，走 Azure 账单。
+
+**CCU 换算：** 实际 Token 费用（USD）÷ $0.01 = CCU 数量
+
+### Claude Opus 4.8 定价（每百万 tokens）
+
+| 计费类型 | 标准模式 | Fast 快速模式（2.5x 速度） |
+|---------|---------|------------------------|
+| 输入 tokens | $5.00 | $10.00 |
+| 输出 tokens | $25.00 | $50.00 |
+| 缓存写入（5min TTL） | $6.25 | — |
+| 缓存写入（1h TTL） | $10.00 | — |
+| 缓存命中 | $0.50 | — |
+
+> Fast 模式比 Opus 4.7 快速模式便宜了 **3倍**（原来是 $30/$150）
+
+### 折扣选项
+
+| 优化方式 | 折扣幅度 | 说明 |
+|---------|---------|------|
+| Prompt 缓存命中 | 最高 **-90%** | 重复前缀自动命中 |
+| Batch 批量处理 | **-50%** | 异步处理，24小时内完成 |
+
+### 长上下文（longctx）
+
+长上下文通道价格与标准通道**完全相同**，但走专属路由，适合超长文档分析。
+
+> ⚠️ **注意：** Microsoft Foundry 上下文窗口在发布初期为 **200K tokens**，Anthropic 官方 API 为 **1M tokens**，建议在 `ai.azure.com` 创建部署时确认实际配置。
+
+---
+
+## GPT 模型定价
+
+以下为 Azure 上 GPT-5.5 定价（货币为挪威克朗 NOK，换算 1 USD ≈ 10.8 NOK）：
+
+### GPT-5.5 定价（每百万 tokens，换算美元）
+
+| 模型 | 输入 | 缓存输入 | 输出 |
+|------|------|---------|------|
+| GPT-5.5 Global | ~$4.32 | ~$0.43 | ~$25.93 |
+| GPT-5.5 Data Zone | ~$4.75 | ~$0.48 | ~$28.52 |
+| GPT-5.5 Pro Global | ~$8.64 | ~$0.86 | ~$38.89 |
+| GPT-5.5 Pro Data Zone | ~$9.51 | ~$0.95 | ~$42.78 |
+
+### Global vs Data Zone 区别
+
+| 维度 | Global | Data Zone |
+|------|--------|-----------|
+| 价格 | 便宜约 10% | 贵约 10% |
+| 数据路由 | 全球动态路由，自动选最优节点 | 数据锁定在特定地理区域 |
+| 适合 | 追求低成本、低延迟 | 有 GDPR 等数据主权合规要求 |
+
+### Standard vs Pro 区别
+
+| 维度 | GPT-5.5 | GPT-5.5 Pro |
+|------|---------|------------|
+| 输入价格 | ~$4.32 | ~$8.64（贵 2x） |
+| 输出价格 | ~$25.93 | ~$38.89（贵 1.5x） |
+| Priority Processing | ✅ 支持 | ❌ 不支持 |
+| 适合场景 | 日常生产任务 | 复杂推理、高质量要求任务 |
+
+### Priority Processing（优先处理）
+
+高峰期不排队，保证低延迟，价格约为标准的 **2.5 倍**：
+
+| 模型 | 标准输入 | 优先输入 | 溢价 |
+|------|---------|---------|------|
+| GPT-5.5 Global | ~$4.32 | ~$10.80 | +150% |
+
+> Pro 版不支持 Priority Processing（本身已是高端档）
+
+### Azure 完整 GPT 系列定价（每百万 tokens，美元）
+
+| 模型 | 输入 | 缓存输入 | 输出 | 上下文 |
+|------|------|---------|------|-------|
+| GPT-5-nano | $0.05 | — | $0.40 | 128K |
+| GPT-5-mini | $0.25 | $0.025 | $2.00 | 128K |
+| GPT-5 | $1.25 | $0.13 | $10.00 | 200K |
+| GPT-5 Pro | $15.00 | $1.50 | $120.00 | 200K |
+| GPT-4.1-nano | $0.10 | $0.025 | $0.40 | 1M |
+| GPT-4.1-mini | $0.40 | $0.10 | $1.60 | 1M |
+| GPT-4.1 | $2.00 | $0.50 | $8.00 | 1M |
+| GPT-4o | $2.50 | $1.25 | $10.00 | 128K |
+| GPT-4o mini | $0.15 | $0.075 | $0.60 | 128K |
+| o3-mini | $1.10 | $0.55 | $4.40 | 200K |
+| o4-mini | $1.10 | $0.275 | $4.40 | 200K |
+
+---
+
+## Claude vs GPT 横向对比
+
+### 旗舰模型对比（每百万 tokens）
+
+| 模型 | 输入 | 输出 | 特点 |
+|------|------|------|------|
+| Claude Opus 4.8 | $5.00 | $25.00 | 编程/Agent 任务强，1M 上下文 |
+| GPT-5.5 Global | ~$4.32 | ~$25.93 | 通用均衡，Azure 原生 |
+| GPT-5.5 Pro Global | ~$8.64 | ~$38.89 | 复杂推理，质量最优 |
+| GPT-5 | $1.25 | $10.00 | 性价比主力 |
+
+### 总结
+
+- GPT-5.5 标准版输入比 Claude Opus 4.8 略便宜，输出基本持平
+- GPT-5.5 Pro 版明显更贵，适合对质量要求极高的场景
+- Claude Opus 4.8 在编程、Agent、长文档任务上有明显优势
+- 两者都可通过缓存和批量处理大幅降低成本
+
+---
+
+## AWS Bedrock vs Azure OpenAI
+
+### 核心差异
+
+| 对比维度 | AWS Bedrock | Azure OpenAI |
+|---------|------------|-------------|
+| 模型选择 | 多厂商市场（Claude + Llama + Mistral + Nova 等） | 专注 OpenAI 全系列 |
+| Claude 定价 | 与官方 API 完全相同 | 与官方 API 完全相同 |
+| GPT 模型 | ❌ 不支持 | ✅ 完整支持 |
+| Llama / 开源模型 | ✅ 支持 | ❌ 不支持 |
+| 数据合规 | AWS IAM + VPC | Azure Entra ID + VNet |
+| 微软生态集成 | ❌ | ✅ M365、Teams、Dynamics |
+| 国内访问 | 需良好网络 | Azure 中国区（世纪互联）更稳 |
+| 计费归属 | 归入 AWS EDP 协议 | 归入 Azure MACC 消费承诺 |
+| 批量折扣 | -50% | -50% |
+| PTU 预置 | 节省 15-40%，需承诺 | 节省最高 70%，起步 ~$2,448/月 |
+
+### 选择建议
+
+**选 AWS Bedrock，如果：**
+- 主要基础设施在 AWS 上
+- 需要多模型灵活切换（Claude + Llama + Nova）
+- 流量不稳定，按量付费更经济
+- 需要 Amazon Nova 超低价模型（$0.035/1M 输入）
+
+**选 Azure OpenAI，如果：**
+- 已是 Microsoft 生态用户（Office 365、Teams）
+- 必须使用最新 GPT-5 / o 系列模型
+- 流量稳定，PTU 预置可节省 70%
+- 在国内使用（世纪互联节点更稳定）
+- 有 EU AI Act / GDPR 合规要求
+
+---
+
+## Token 缓存省钱策略
+
+### 缓存工作原理
+
+Azure 和 Anthropic API 均会对重复的提示词前缀自动缓存，无需手动开启，但需要合理设计 Prompt 结构才能命中。
+
+```text
+不用缓存：每次输入都按全价计费（$5.00/1M）
+
+用缓存（5min TTL）：
+  第一次写入  →  $6.25/1M（略贵）
+  后续命中    →  $0.50/1M  ✅ 节省 90%
+
+用缓存（1h TTL）：
+  第一次写入  →  $10.00/1M（贵，但缓存保留 1 小时）
+  后续命中    →  $0.50/1M  ✅ 适合长会话
+```
+
+### Prompt 结构优化
+
+```python
+messages = [
+    # ✅ 固定内容放最前，容易命中缓存
+    {
+        "role": "system",
+        "content": "你是专业的代码审查助手...（长篇固定内容）"
+    },
+    # ✅ 历史对话也尽量保持不变
+    {"role": "user", "content": "请审查这段代码"},
+    {"role": "assistant", "content": "...上一轮回复..."},
+    # 每次变化的内容放最后
+    {"role": "user", "content": new_user_input}
+]
+```
+
+> ⚠️ **注意：** 如果每次都把变量塞进 system prompt，缓存会完全失效。
+
+### 不同场景的缓存策略
+
+| 场景 | 推荐策略 |
+|------|---------|
+| System Prompt 固定、多次调用 | 5min 缓存，高频命中回本快 |
+| 长对话、Agent 持续工作 | 1h 缓存，避免反复写入 |
+| 一次性单轮调用 | 不用缓存，直接按量 |
+| 超长文档分析（>200K tokens） | 走 longctx 通道 |
+| 非实时批量任务 | Batch API，节省 50% |
+
+### 关于 Token 和分词
+
+- **无需手动处理**：Azure 后端自动分词计量，账单直接显示 token 数
+- **本地预估工具**：可用 `tiktoken` 库估算费用（仅用于成本预估，不影响计费）
+- **中英文密度差异**：英文约 1 token ≈ 4 字符；中文约 1 汉字 ≈ 1-2 tokens，中文场景注意上下文消耗更快
+
+```python
+import tiktoken
+enc = tiktoken.encoding_for_model("gpt-4o")
+tokens = enc.encode("你好，今天天气怎么样？")
+print(len(tokens))  # 本地预估 token 数
+```
+
+---
+
+## 选购决策指南
+
+### 按需求快速选型
+
+| 需求 | 推荐方案 |
+|------|---------|
+| 编程、Agent、长文档分析 | Claude Opus 4.8（Microsoft Foundry） |
+| 通用任务、成本敏感 | GPT-5.5 Global 或 GPT-5-mini |
+| 复杂推理、最高质量 | GPT-5.5 Pro 或 Claude Opus 4.8 |
+| 海量简单任务（分类/提取） | GPT-5-nano 或 GPT-4o mini |
+| 有 GDPR/数据主权要求 | 选 Data Zone 系列 |
+| 高并发、不能排队 | 加购 Priority Processing |
+| 已有 Azure 大合同 | 充分利用 MACC 抵扣，优先 Azure |
+| 已有 AWS 基础设施 | AWS Bedrock + Claude/Nova 组合 |
+
+### 隐藏成本提醒
+
+实际账单通常比 Token 标价高 **15-40%**，主要来源：
+
+- 企业级支持计划：$100–$1,000/月
+- 数据传出费用：$0.087/GB（100GB 以上）
+- 微调模型托管费：约 $1,200–$2,160/月（无论是否使用）
+- 跨区域推理（AWS）：额外 +10%
+
+### 官方资源
+
+| 资源 | 链接 |
+|------|------|
+| Azure AI Foundry | [https://ai.azure.com](https://ai.azure.com) |
+| Azure 控制台 | [https://portal.azure.com](https://portal.azure.com) |
+| Claude 官方定价 | [https://www.anthropic.com/pricing](https://www.anthropic.com/pricing) |
+| Azure OpenAI 定价 | [https://azure.microsoft.com/pricing/details/azure-openai](https://azure.microsoft.com/pricing/details/azure-openai) |
+| AWS Bedrock 定价 | [https://aws.amazon.com/bedrock/pricing](https://aws.amazon.com/bedrock/pricing) |
+
+---
+
+*最后更新：2026年6月 | 价格如有变动以各平台官方页面为准*
+
+## 归档补充：官方核对入口
+
+- [Microsoft Foundry 中的 Claude 模型](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/claude-models)
+- [Claude CCU 计费说明](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/claude-models-billing)
+- [Azure OpenAI 定价](https://azure.microsoft.com/pricing/details/azure-openai/)
+
+以上为本次归档补充的核对入口，原文报价和结论保持为原始记录。

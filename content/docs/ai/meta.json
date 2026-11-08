@@ -4,6 +4,8 @@
   "pages": [
     "index",
     "common-llm",
+    "azure-ai-model-guide",
+    "claude-desktop-gateway",
     "speech",
     "computer-vision",
     "prompts",
